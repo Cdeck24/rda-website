@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drafters 1v1 - Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        /* --- Drafters 1v1 Custom Top Nav --- */
+        nav { display: none !important; } /* Failsafe to hide RDA nav if it accidentally loads */
+
+        .drafters-top-nav {
+            background: rgba(15, 23, 42, 0.6);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+            flex-wrap: wrap;
+        }
+
+        .drafters-top-nav a, .drafters-top-nav button {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+        }
+
+        .drafters-top-nav a:hover, .drafters-top-nav button:hover {
+            color: #fff;
+        }
+
+        .drafters-top-nav .active {
+            color: var(--gold-mid, #d4af37);
+            border-bottom: 2px solid var(--gold-mid, #d4af37);
+            padding-bottom: 4px;
+        }
+
+        /* --- Content Sections --- */
+        .hub-content { max-width: 1200px; margin: 0 auto; padding-bottom: 4rem; padding-top: 2rem; }
+
+        .tab-pane { display: none; animation: fadeIn 0.3s ease-out; }
+        .tab-pane.active { display: block; }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: #eee;
+            text-align: left;
+            padding-left: 0.5rem;
+            border-left: 4px solid var(--gold-mid);
+        }
+
+        /* --- Games Grid (Matchups) --- */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        .game-card {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            display: block; 
+        }
+
+        .game-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-color: #555;
+        }
+
+        /* --- Player Table Styles --- */
+        .data-table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #333;
+            background: #0f0f0f;
+            margin: 0 1rem;
+        }
+
+        .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #222; }
+        .data-table th { background: #1a1a1a; color: #888; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .rank-number { font-weight: 700; color: var(--gold-mid); width: 50px; }
+        .player-name { font-weight: 600; color: #fff; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            .games-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="drafters-top-nav">
+        <a href="index.html">Home</a>
+        <button id="nav-matchups" class="nav-tab-btn active" onclick="switchTab('matchups')">Matchups</button>
+        <button id="nav-players" class="nav-tab-btn" onclick="switchTab('players')">Players</button>
+    </div>
+
+    <h1 style="text-align: center; margin-top: 2.5rem; font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px;">Drafters 1v1</h1>
+    
+    <div class="hub-content">
+        <div style="text-align: center; margin-bottom: 2rem; color: #888;">
+            <span id="season-display" style="font-weight: bold; color: var(--gold-light);">Loading Season...</span>
+        </div>
+
+        <div id="tab-matchups" class="tab-pane active">
+            <h2 class="section-title" style="margin-left: 1rem;">Weekly Matchups</h2>
+            <div class="games-grid" id="matchups-container">
+                <div class="game-card" style="text-align: center; grid-column: 1/-1; padding: 3rem; color: #666; font-style: italic;">
+                    Matchup data will populate here.
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-players" class="tab-pane">
+            <h2 class="section-title" style="margin-left: 1rem;">Player Leaderboard</h2>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Wins</th>
+                            <th>Losses</th>
+                            <th>Total Points</th>
+                        </tr>
+                    </thead>
+                    <tbody id="players-container">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">
+                                Player data will populate here.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Grab the season from the URL so it displays properly
+        const params = new URLSearchParams(window.location.search);
+        const draftersSeason = params.get('season') || '0';
+        
+        document.getElementById('season-display').textContent = `Season ${draftersSeason}`;
+
+        // Expose tab switching to global scope for the inline onclick handlers
+        window.switchTab = function(tabName) {
+            // Remove active classes from content panes
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            // Remove active classes from nav buttons
+            document.querySelectorAll('.nav-tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // Add active classes to the clicked target
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            document.getElementById(`nav-${tabName}`).classList.add('active');
+        };
+
+        // --- FUTURE DATA FETCHING SKELETON ---
+        async function loadDraftersData() {
+            // You can load both your Matchups sheet and Players sheet here later
+        }
+
+        loadDraftersData();
+    </script>
+</body>
+</html>
