@@ -92,7 +92,8 @@ export function initNav() {
     const navHTML = `
     <div class="nav-container">
         <div class="nav-bar">
-            <a href="index.html" class="nav-button">Home</a>
+            <!-- Points to the separated RDA home page instead of portal -->
+            <a href="rda-home.html" class="nav-button">Home</a>
             <a href="hub.html?season=${currentSeason}" class="nav-button" id="nav-hub">Hub</a>
             ${showLive ? `<a href="live-scores.html?season=${currentSeason}" class="nav-button" id="nav-live">Live</a>` : ''}
             <a href="teams.html?season=${currentSeason}" class="nav-button" id="nav-teams">Teams</a>

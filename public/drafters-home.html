@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drafters 1v1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100vh;
+            padding-top: 4rem;
+            padding-bottom: 2rem;
+        }
+
+        .top-left-link {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            text-decoration: none; 
+        }
+
+        .top-left-link:hover {
+            border-color: var(--gold-mid);
+            color: var(--gold-mid);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .subtitle {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 1.2rem;
+            color: var(--gold-mid);
+            opacity: 0.9;
+            margin-bottom: 3rem;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .season-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 800px; 
+            margin: 0 auto;
+            perspective: 1000px;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .season-card {
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 2rem 2.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: row; 
+            align-items: center;
+            justify-content: space-between;
+            min-height: 120px;
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .season-card:hover {
+            transform: translateX(10px); 
+            border-color: var(--gold-mid);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        .season-number {
+            font-family: 'Times New Roman', serif;
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            color: rgba(255,255,255,0.05);
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .season-card:hover .season-number {
+            color: rgba(212, 175, 55, 0.2);
+            transform: translateY(-50%) scale(1.1);
+            left: 2rem;
+        }
+
+        .season-content {
+            z-index: 1;
+            position: relative;
+            margin-left: 4rem; 
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .season-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .season-status {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-muted);
+            display: inline-block;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.4);
+            white-space: nowrap;
+        }
+
+        .season-card.active {
+            border-color: var(--gold-mid);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.15);
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+        }
+        
+        .season-card.active .season-status {
+            background: var(--gold-mid);
+            color: #0f172a;
+            border-color: var(--gold-mid);
+            font-weight: 700;
+        }
+
+        @media (max-width: 600px) {
+            .season-card { padding: 1.5rem; min-height: 100px; }
+            .season-number { font-size: 3rem; left: 1rem; }
+            .season-content { flex-direction: column; align-items: flex-start; gap: 0.5rem; margin-left: 3rem; }
+            .season-title { font-size: 1.1rem; }
+            .season-status { margin-top: 0.2rem; font-size: 0.65rem; padding: 4px 10px; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="top-left-link">&#8592; Leagues</a>
+    
+    <h1 style="text-align: center; margin-top: 1rem; font-size: 3rem; text-transform: uppercase; letter-spacing: 2px; animation: fadeIn 1s ease-out;">Drafters 1v1</h1>
+    <div class="subtitle">Select a Season</div>
+
+    <div class="season-grid">
+        <div class="season-card active" onclick="window.location.href='drafters-matchups.html?season=0'">
+            <div class="season-number">0</div>
+            <div class="season-content">
+                <div class="season-title">Season Zero</div>
+                <div class="season-status">Live Now</div>
+            </div>
+        </div>
+
+        <div class="season-card" onclick="window.location.href='drafters-matchups.html?season=1'">
+            <div class="season-number">I</div>
+            <div class="season-content">
+                <div class="season-title">Season One</div>
+                <div class="season-status">Upcoming</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
