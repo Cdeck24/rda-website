@@ -6,52 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles/global.css">
     <style>
-        /* --- Drafters 1v1 Custom Top Nav --- */
-        nav { display: none !important; } /* Failsafe to hide RDA nav if it accidentally loads */
+        /* --- Drafters 1v1 Layout Overrides --- */
+        /* Explicitly hide the global RDA nav injected by app.js to prevent duplicates */
+        .nav-container:not(.drafters-nav) { display: none !important; }
 
-        .drafters-top-nav {
-            background: rgba(15, 23, 42, 0.6);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 1.2rem;
-            display: flex;
-            justify-content: center;
-            gap: 2.5rem;
-            align-items: center;
-            width: 100%;
-            box-sizing: border-box;
-            flex-wrap: wrap;
-        }
-
-        .drafters-top-nav a, .drafters-top-nav button {
-            color: #888;
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 700;
+        /* Match RDA Header Styling */
+        h1 {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 2.5rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: color 0.3s ease;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-            font-family: inherit;
+            letter-spacing: 2px;
+            color: var(--text-main);
         }
 
-        .drafters-top-nav a:hover, .drafters-top-nav button:hover {
-            color: #fff;
+        /* Content Sections */
+        .hub-content { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding-bottom: 4rem; 
+            padding-top: 1rem; 
+            animation: fadeIn 0.5s ease-out;
         }
 
-        .drafters-top-nav .active {
-            color: var(--gold-mid, #d4af37);
-            border-bottom: 2px solid var(--gold-mid, #d4af37);
-            padding-bottom: 4px;
-        }
-
-        /* --- Content Sections --- */
-        .hub-content { max-width: 1200px; margin: 0 auto; padding-bottom: 4rem; padding-top: 2rem; }
-
-        .tab-pane { display: none; animation: fadeIn 0.3s ease-out; }
-        .tab-pane.active { display: block; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: fadeIn 0.3s ease-out; }
 
         .section-title {
             font-size: 1.5rem;
@@ -61,6 +40,7 @@
             text-align: left;
             padding-left: 0.5rem;
             border-left: 4px solid var(--gold-mid);
+            margin-top: 2rem;
         }
 
         /* --- Games Grid (Matchups) --- */
@@ -103,31 +83,34 @@
         .data-table tr:last-child td { border-bottom: none; }
         .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
 
-        .rank-number { font-weight: 700; color: var(--gold-mid); width: 50px; }
-        .player-name { font-weight: 600; color: #fff; }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         @media (max-width: 768px) {
             .games-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
     
-    <div class="drafters-top-nav">
-        <a href="index.html">Home</a>
-        <button id="nav-matchups" class="nav-tab-btn active" onclick="switchTab('matchups')">Matchups</button>
-        <button id="nav-players" class="nav-tab-btn" onclick="switchTab('players')">Players</button>
+    <h1>Drafters 1v1</h1>
+
+    <!-- Custom Drafters Navigation Bar (Identical styling to RDA) -->
+    <div class="nav-container drafters-nav">
+        <div class="nav-bar">
+            <a href="index.html" class="nav-button">Home</a>
+            <button id="nav-matchups" class="nav-button active" onclick="switchTab('matchups')">Matchups</button>
+            <button id="nav-players" class="nav-button" onclick="switchTab('players')">Players</button>
+        </div>
     </div>
 
-    <h1 style="text-align: center; margin-top: 2.5rem; font-size: 2.2rem; text-transform: uppercase; letter-spacing: 2px;">Drafters 1v1</h1>
-    
     <div class="hub-content">
+        <!-- Season Header -->
         <div style="text-align: center; margin-bottom: 2rem; color: #888;">
-            <span id="season-display" style="font-weight: bold; color: var(--gold-light);">Loading Season...</span>
+            <span id="season-display" style="font-weight: bold; color: var(--gold-light); text-transform: uppercase; letter-spacing: 1px;">Loading Season...</span>
         </div>
 
+        <!-- TAB 1: Matchups -->
         <div id="tab-matchups" class="tab-pane active">
             <h2 class="section-title" style="margin-left: 1rem;">Weekly Matchups</h2>
             <div class="games-grid" id="matchups-container">
@@ -137,6 +120,7 @@
             </div>
         </div>
 
+        <!-- TAB 2: Players -->
         <div id="tab-players" class="tab-pane">
             <h2 class="section-title" style="margin-left: 1rem;">Player Leaderboard</h2>
             <div class="data-table-container">
@@ -163,27 +147,26 @@
     </div>
 
     <script type="module">
-        // Grab the season from the URL so it displays properly
+        // Grab the season from the URL
         const params = new URLSearchParams(window.location.search);
         const draftersSeason = params.get('season') || '0';
         
         document.getElementById('season-display').textContent = `Season ${draftersSeason}`;
 
-        // Expose tab switching to global scope for the inline onclick handlers
+        // Tab Switching Logic
         window.switchTab = function(tabName) {
-            // Remove active classes from content panes
+            // Update Content Panes
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-            // Remove active classes from nav buttons
-            document.querySelectorAll('.nav-tab-btn').forEach(el => el.classList.remove('active'));
-            
-            // Add active classes to the clicked target
             document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Update Nav Button Highlight
+            document.querySelectorAll('.drafters-nav .nav-button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${tabName}`).classList.add('active');
         };
 
         // --- FUTURE DATA FETCHING SKELETON ---
         async function loadDraftersData() {
-            // You can load both your Matchups sheet and Players sheet here later
+            // Your fetching logic for Drafters specific sheets will go here
         }
 
         loadDraftersData();
