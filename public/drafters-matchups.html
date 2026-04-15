@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Drafters 1v1 - Hub</title>
+    <title>Drafters 1v1 - Matchups</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles/global.css">
     <style>
@@ -28,9 +28,6 @@
             padding-top: 1rem; 
             animation: fadeIn 0.5s ease-out;
         }
-
-        .tab-pane { display: none; }
-        .tab-pane.active { display: block; animation: fadeIn 0.3s ease-out; }
 
         .section-title {
             font-size: 1.5rem;
@@ -68,21 +65,6 @@
             border-color: #555;
         }
 
-        /* --- Player Table Styles --- */
-        .data-table-container {
-            overflow-x: auto;
-            border-radius: 12px;
-            border: 1px solid #333;
-            background: #0f0f0f;
-            margin: 0 1rem;
-        }
-
-        .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #222; }
-        .data-table th { background: #1a1a1a; color: #888; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
-        .data-table tr:last-child td { border-bottom: none; }
-        .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         @media (max-width: 768px) {
@@ -98,9 +80,10 @@
     <!-- Custom Drafters Navigation Bar (Identical styling to RDA) -->
     <div class="nav-container drafters-nav">
         <div class="nav-bar">
-            <a href="index.html" class="nav-button">Home</a>
-            <button id="nav-matchups" class="nav-button active" onclick="switchTab('matchups')">Matchups</button>
-            <button id="nav-players" class="nav-button" onclick="switchTab('players')">Players</button>
+            <!-- Home button returns to Drafters Landing Page -->
+            <a href="drafters-home.html" class="nav-button">Home</a>
+            <a id="nav-matchups" href="#" class="nav-button active">Matchups</a>
+            <a id="nav-players" href="#" class="nav-button">Players</a>
         </div>
     </div>
 
@@ -110,38 +93,11 @@
             <span id="season-display" style="font-weight: bold; color: var(--gold-light); text-transform: uppercase; letter-spacing: 1px;">Loading Season...</span>
         </div>
 
-        <!-- TAB 1: Matchups -->
-        <div id="tab-matchups" class="tab-pane active">
-            <h2 class="section-title" style="margin-left: 1rem;">Weekly Matchups</h2>
-            <div class="games-grid" id="matchups-container">
-                <div class="game-card" style="text-align: center; grid-column: 1/-1; padding: 3rem; color: #666; font-style: italic;">
-                    Matchup data will populate here.
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 2: Players -->
-        <div id="tab-players" class="tab-pane">
-            <h2 class="section-title" style="margin-left: 1rem;">Player Leaderboard</h2>
-            <div class="data-table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Player</th>
-                            <th>Wins</th>
-                            <th>Losses</th>
-                            <th>Total Points</th>
-                        </tr>
-                    </thead>
-                    <tbody id="players-container">
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">
-                                Player data will populate here.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Matchups Content -->
+        <h2 class="section-title" style="margin-left: 1rem;">Weekly Matchups</h2>
+        <div class="games-grid" id="matchups-container">
+            <div class="game-card" style="text-align: center; grid-column: 1/-1; padding: 3rem; color: #666; font-style: italic;">
+                Matchup data will populate here.
             </div>
         </div>
     </div>
@@ -153,16 +109,9 @@
         
         document.getElementById('season-display').textContent = `Season ${draftersSeason}`;
 
-        // Tab Switching Logic
-        window.switchTab = function(tabName) {
-            // Update Content Panes
-            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-
-            // Update Nav Button Highlight
-            document.querySelectorAll('.drafters-nav .nav-button').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`nav-${tabName}`).classList.add('active');
-        };
+        // Ensure the custom nav links retain the current season parameter
+        document.getElementById('nav-matchups').href = `drafters-matchups.html?season=${draftersSeason}`;
+        document.getElementById('nav-players').href = `drafters-players.html?season=${draftersSeason}`;
 
         // --- FUTURE DATA FETCHING SKELETON ---
         async function loadDraftersData() {

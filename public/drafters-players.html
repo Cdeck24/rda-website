@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Drafters 1v1 - Players</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        /* --- Drafters 1v1 Layout Overrides --- */
+        /* Explicitly hide the global RDA nav injected by app.js to prevent duplicates */
+        .nav-container:not(.drafters-nav) { display: none !important; }
+
+        /* Match RDA Header Styling */
+        h1 {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-main);
+        }
+
+        /* Content Sections */
+        .hub-content { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding-bottom: 4rem; 
+            padding-top: 1rem; 
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: #eee;
+            text-align: left;
+            padding-left: 0.5rem;
+            border-left: 4px solid var(--gold-mid);
+            margin-top: 2rem;
+        }
+
+        /* --- Player Table Styles --- */
+        .data-table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #333;
+            background: #0f0f0f;
+            margin: 0 1rem;
+        }
+
+        .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #222; }
+        .data-table th { background: #1a1a1a; color: #888; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    
+    <h1>Drafters 1v1</h1>
+
+    <!-- Custom Drafters Navigation Bar (Identical styling to RDA) -->
+    <div class="nav-container drafters-nav">
+        <div class="nav-bar">
+            <a href="drafters-home.html" class="nav-button">Home</a>
+            <a id="nav-matchups" href="#" class="nav-button">Matchups</a>
+            <a id="nav-players" href="#" class="nav-button active">Players</a>
+        </div>
+    </div>
+
+    <div class="hub-content">
+        <!-- Season Header -->
+        <div style="text-align: center; margin-bottom: 2rem; color: #888;">
+            <span id="season-display" style="font-weight: bold; color: var(--gold-light); text-transform: uppercase; letter-spacing: 1px;">Loading Season...</span>
+        </div>
+
+        <!-- Players Content -->
+        <h2 class="section-title" style="margin-left: 1rem;">Player Leaderboard</h2>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Wins</th>
+                        <th>Losses</th>
+                        <th>Total Points</th>
+                    </tr>
+                </thead>
+                <tbody id="players-container">
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">
+                            Player data will populate here.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        // Grab the season from the URL
+        const params = new URLSearchParams(window.location.search);
+        const draftersSeason = params.get('season') || '0';
+        
+        document.getElementById('season-display').textContent = `Season ${draftersSeason}`;
+
+        // Ensure the custom nav links retain the current season parameter
+        document.getElementById('nav-matchups').href = `drafters-matchups.html?season=${draftersSeason}`;
+        document.getElementById('nav-players').href = `drafters-players.html?season=${draftersSeason}`;
+
+        // --- FUTURE DATA FETCHING SKELETON ---
+        async function loadDraftersData() {
+            // Your fetching logic for Drafters specific sheets will go here
+        }
+
+        loadDraftersData();
+    </script>
+</body>
+</html>
