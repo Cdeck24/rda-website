@@ -36,7 +36,9 @@ const HISTORICAL_CSVS = {
     '4': {
         'teams': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=1083528154&single=true&output=csv',
         'players': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=561111419&single=true&output=csv',
-        'games': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=912328044&single=true&output=csv'
+        'games': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=912328044&single=true&output=csv',
+	'playoff-games': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=1605731121&single=true&output=csv',
+        'playoff-players': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=1735166278&single=true&output=csv'
     }
 };
 

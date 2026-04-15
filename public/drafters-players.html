@@ -3,70 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <title>Drafters 1v1 - Players</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="styles/global.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="styles/drafters.css">
     <style>
         /* --- Drafters 1v1 Layout Overrides --- */
-        /* Explicitly hide the global RDA nav injected by app.js to prevent duplicates */
+        html, body {
+            overflow-x: hidden; 
+            width: 100%;
+            max-width: 100vw;
+        }
+
         .nav-container:not(.drafters-nav) { display: none !important; }
 
-        /* Match RDA Header Styling */
         h1 {
             text-align: center;
             margin-top: 2rem;
             font-size: 2.5rem;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: var(--text-main);
+            color: var(--gold-mid);
         }
 
-        /* Content Sections */
         .hub-content { 
+            width: 100%;
             max-width: 1200px; 
             margin: 0 auto; 
             padding-bottom: 4rem; 
             padding-top: 1rem; 
             animation: fadeIn 0.5s ease-out;
+            box-sizing: border-box;
+        }
+
+        /* --- Header & Controls --- */
+        .header-controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto 1.5rem auto;
+            width: calc(100% - 2rem);
+            gap: 1rem;
+            box-sizing: border-box;
         }
 
         .section-title {
-            font-size: 1.5rem;
-            font-weight: 400;
-            margin-bottom: 1.5rem;
-            color: #eee;
-            text-align: left;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
             padding-left: 0.5rem;
             border-left: 4px solid var(--gold-mid);
-            margin-top: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.2);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            box-sizing: border-box;
+        }
+
+        .filter-select {
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 160px;
+        }
+
+        .filter-select:hover, .filter-select:focus {
+            border-color: var(--gold-mid);
+            background: rgba(30, 41, 59, 0.8);
+        }
+        
+        .search-input {
+            width: 100%; 
+            max-width: 250px; 
+            background: rgba(0,0,0,0.2) !important;
         }
 
         /* --- Player Table Styles --- */
         .data-table-container {
+            width: calc(100% - 2rem);
+            max-width: 100%;
+            margin: 0 auto;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch; 
             border-radius: 12px;
-            border: 1px solid #333;
-            background: #0f0f0f;
-            margin: 0 1rem;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card, rgba(15, 23, 42, 0.4));
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            display: block;
         }
 
-        .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #222; }
-        .data-table th { background: #1a1a1a; color: #888; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+        .data-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 500px; 
+            white-space: nowrap; 
+        }
+        
+        .data-table th, .data-table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-subtle); }
+        .data-table th { 
+            background: transparent; 
+            color: var(--gold-mid); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            font-size: 0.75rem; 
+            letter-spacing: 1px; 
+        }
+        
         .data-table tr:last-child td { border-bottom: none; }
-        .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+        
+        /* Clickable Row Styles */
+        .clickable-row { cursor: pointer; transition: all 0.2s ease; }
+        .clickable-row:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .rank-number { font-weight: 600; color: var(--text-muted); width: 60px; }
+        .rank-1 { color: #FFD700; font-weight: 700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); }
+        .rank-2 { color: #C0C0C0; font-weight: 700; }
+        .rank-3 { color: #CD7F32; font-weight: 700; }
+
+        .player-name { font-weight: 500; color: var(--text-main); }
+        .stat-highlight { color: var(--gold-mid); font-weight: 600; }
+
+        /* --- Modal Styles --- */
+        body.modal-open { overflow: hidden; }
+
+        .modal-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85);
+            display: none; justify-content: center; align-items: center; z-index: 9999;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 1rem; animation: fadeIn 0.3s;
+        }
+
+        .modal {
+            background: var(--bg-navy-light); border-radius: 16px; padding: 2rem; max-width: 600px; width: 100%;
+            max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--border-gold); animation: popupSlideIn 0.3s ease-out;
+            box-sizing: border-box;
+        }
+
+        .close-btn {
+            position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);
+            width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: all 0.2s ease; background: rgba(255, 255, 255, 0.05);
+        }
+        .close-btn:hover { color: #ffffff; background: var(--bg-navy); }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); }
+        .modal-header h2 { font-size: 1.8rem; margin: 0; color: var(--text-main); letter-spacing: 1px; }
+        .modal-header .modal-rank { font-size: 1.5rem; font-weight: 800; color: var(--gold-mid); }
+
+        /* Stats Grid in Modal */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; text-align: center; }
+        .stat-box.highlight { border-color: var(--gold-mid); background: rgba(212, 175, 55, 0.05); }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 1px; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: #fff; }
+        .stat-box.highlight .stat-value { color: var(--gold-mid); }
+        
+        .extended-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; font-size: 0.9rem; }
+        .extended-stat-row { display: flex; justify-content: space-between; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid var(--border-subtle); }
+        .extended-stat-row span:first-child { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
+        .extended-stat-row span:last-child { color: #fff; font-weight: 500; }
+
+        /* Form Chart */
+        .form-section { background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1.5rem; }
+        .form-section h3 { margin-top: 0; font-size: 1rem; color: var(--gold-light); text-align: center; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 2px;}
+        .form-chart { display: flex; justify-content: center; gap: 0.75rem; align-items: flex-end; height: 80px; margin-bottom: 1rem; }
+        
+        .form-bar-container { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; width: 40px; }
+        .form-bar { width: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: rgba(0,0,0,0.6); transition: all 0.3s; font-size: 0.9rem;}
+        .form-bar.W { background: #4ade80; height: 100%; box-shadow: 0 0 10px rgba(74, 222, 128, 0.2); } 
+        .form-bar.L { background: #f87171; height: 40%; box-shadow: 0 0 10px rgba(248, 113, 113, 0.2); } 
+        .form-bar.none { background: #333; height: 20%; color: #888; }
+        
+        .form-avg { text-align: center; font-size: 0.9rem; color: var(--text-muted); }
+        .form-avg strong { color: #fff; font-size: 1.1rem; margin-left: 5px; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
+        /* --- Mobile Overrides --- */
         @media (max-width: 768px) {
-            h1 { font-size: 1.8rem; }
+            h1 { font-size: 1.8rem; margin-top: 1rem; }
+            .header-controls-wrapper { margin: 0 auto 1.5rem auto; padding: 0 1rem; width: 100%; }
+            
+            /* Stack controls vertically on mobile */
+            .controls-container { padding: 1rem; flex-direction: column; align-items: stretch; }
+            .filter-select, .search-input { width: 100%; max-width: 100% !important; }
+            
+            /* Modal layout fixes */
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .extended-stats { grid-template-columns: 1fr; }
+            .modal { padding: 1.5rem; width: 95%; }
+            
+            /* Table Mobile Fixes: Forces the 4 columns to fit on screen */
+            .data-table-container {
+                width: 100%;
+                max-width: 100vw;
+                margin: 0;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            .data-table {
+                min-width: 100%; /* Removes the 500px forced scroll width */
+            }
+            .data-table th, .data-table td { 
+                padding: 0.75rem 0.25rem; /* Much tighter horizontal padding */
+                font-size: 0.8rem; /* Slightly smaller text for fit */
+            }
+            .rank-number { width: 30px; }
+            .player-name {
+                max-width: 110px; /* Safe width for mobile */
+                overflow: hidden;
+                text-overflow: ellipsis; /* Adds "..." if name is super long */
+                white-space: nowrap;
+            }
         }
     </style>
 </head>
 <body>
     
-    <h1>Drafters 1v1</h1>
+    <h1 id="main-header">Drafters 1v1</h1>
 
-    <!-- Custom Drafters Navigation Bar (Identical styling to RDA) -->
+    <!-- Custom Drafters Navigation Bar -->
     <div class="nav-container drafters-nav">
         <div class="nav-bar">
             <a href="drafters-home.html" class="nav-button">Home</a>
@@ -76,28 +249,41 @@
     </div>
 
     <div class="hub-content">
-        <!-- Season Header -->
-        <div style="text-align: center; margin-bottom: 2rem; color: #888;">
-            <span id="season-display" style="font-weight: bold; color: var(--gold-light); text-transform: uppercase; letter-spacing: 1px;">Loading Season...</span>
+        <!-- Players Content Header & Filters -->
+        <div class="header-controls-wrapper">
+            <h2 class="section-title">Player Leaderboard</h2>
+            
+            <div class="controls-container" style="justify-content: space-between;">
+                <input type="text" id="search-player" class="filter-select search-input" placeholder="Search Player...">
+
+                <select id="sport-filter" class="filter-select">
+                    <option value="all">Best Sport: All</option>
+                    <option value="cbb">CBB</option>
+                    <option value="fc">FC</option>
+                    <option value="golf">Golf</option>
+                    <option value="main event">Main Event</option>
+                    <option value="mlb">MLB</option>
+                    <option value="nba">NBA</option>
+                    <option value="nhl">NHL</option>
+                </select>
+            </div>
         </div>
 
-        <!-- Players Content -->
-        <h2 class="section-title" style="margin-left: 1rem;">Player Leaderboard</h2>
+        <!-- Overview Table -->
         <div class="data-table-container">
-            <table class="data-table">
+            <table class="data-table" id="players-table">
                 <thead>
                     <tr>
-                        <th>Rank</th>
+                        <th>RK</th>
                         <th>Player</th>
-                        <th>Wins</th>
-                        <th>Losses</th>
-                        <th>Total Points</th>
+                        <th style="text-align: center;">W-L</th>
+                        <th style="text-align: right; padding-right: 1rem;">Avg Score</th>
                     </tr>
                 </thead>
                 <tbody id="players-container">
                     <tr>
-                        <td colspan="5" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">
-                            Player data will populate here.
+                        <td colspan="4" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">
+                            Loading player data...
                         </td>
                     </tr>
                 </tbody>
@@ -105,20 +291,308 @@
         </div>
     </div>
 
+    <!-- Player Details Modal -->
+    <div class="modal-bg" id="player-modal">
+        <div class="modal">
+            <span class="close-btn" id="close-modal">&times;</span>
+            
+            <div class="modal-header">
+                <h2 id="modal-name">PlayerName</h2>
+                <div class="modal-rank" id="modal-rank">#1</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Matches</div>
+                    <div class="stat-value" id="modal-matches">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Record</div>
+                    <div class="stat-value" id="modal-record">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Win %</div>
+                    <div class="stat-value" id="modal-winpct">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Streak</div>
+                    <div class="stat-value" id="modal-streak">-</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Best Sport</div>
+                    <div class="stat-value" id="modal-bestsport" style="color: var(--gold-dark); font-size: 1.2rem;">-</div>
+                </div>
+                <div class="stat-box highlight">
+                    <div class="stat-label">Avg Score</div>
+                    <div class="stat-value" id="modal-avgscore">-</div>
+                </div>
+            </div>
+
+            <div class="extended-stats">
+                <div class="extended-stat-row">
+                    <span>Opponent Win %</span>
+                    <span id="modal-opp-winpct">-</span>
+                </div>
+                <div class="extended-stat-row">
+                    <span>Days Since Match</span>
+                    <span id="modal-days-since">-</span>
+                </div>
+                <div class="extended-stat-row">
+                    <span>First Match</span>
+                    <span id="modal-first-match">-</span>
+                </div>
+                <div class="extended-stat-row">
+                    <span>Last Match</span>
+                    <span id="modal-last-match">-</span>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Last 5 Matches</h3>
+                <div class="form-chart" id="modal-form-chart">
+                    <!-- Bars injected here -->
+                </div>
+                <div class="form-avg">
+                    Adjusted Average in Last 5: <strong id="modal-last5-avg">-</strong>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <script type="module">
-        // Grab the season from the URL
         const params = new URLSearchParams(window.location.search);
         const draftersSeason = params.get('season') || '0';
         
-        document.getElementById('season-display').textContent = `Season ${draftersSeason}`;
-
-        // Ensure the custom nav links retain the current season parameter
+        // Update header dynamically
+        document.getElementById('main-header').textContent = `Drafters 1v1 Season ${draftersSeason}`;
+        
         document.getElementById('nav-matchups').href = `drafters-matchups.html?season=${draftersSeason}`;
         document.getElementById('nav-players').href = `drafters-players.html?season=${draftersSeason}`;
 
-        // --- FUTURE DATA FETCHING SKELETON ---
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        
+        // =======================================================
+        // GOOGLE SHEET CSV URL:
+        // =======================================================
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRB0V7m71K5ORGJbUt_kA67nTH6aVbMFn40ilYot30yuOqUed7eHCdSAK3ft3cgcfN4atDynZqaOvQw/pub?gid=1947950051&single=true&output=csv'; 
+        
+        // State variables
+        let allPlayersData = [];
+        let currentRenderedPlayers = []; // Used for modal lookup
+        let searchQuery = '';
+        let currentSportFilter = 'all';
+
+        // --- Modal Logic ---
+        const modal = document.getElementById('player-modal');
+        const closeModal = document.getElementById('close-modal');
+
+        closeModal.onclick = () => { modal.style.display = "none"; document.body.classList.remove('modal-open'); }
+        window.onclick = (e) => { if (e.target == modal) { modal.style.display = "none"; document.body.classList.remove('modal-open'); } }
+
+        const formatDate = (dateStr) => {
+            if (!dateStr || dateStr === '-') return '-';
+            try {
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch(e) { return dateStr; }
+        };
+
+        // Attach to window so inline onclick can use it
+        window.openPlayerModal = function(username, rankIndex) {
+            const p = currentRenderedPlayers.find(player => player.username === username);
+            if (!p) return;
+
+            // Header
+            document.getElementById('modal-name').textContent = p.username;
+            document.getElementById('modal-rank').textContent = `#${rankIndex + 1}`;
+
+            // Core Stats
+            document.getElementById('modal-matches').textContent = p.matches;
+            document.getElementById('modal-record').textContent = `${p.wins}-${p.losses}`;
+            document.getElementById('modal-winpct').textContent = p.winRate;
+            
+            let streakStyle = '';
+            if (p.streak.includes('W')) streakStyle = 'color: #4ade80;'; 
+            else if (p.streak.includes('L')) streakStyle = 'color: #f87171;'; 
+            
+            const streakEl = document.getElementById('modal-streak');
+            streakEl.textContent = p.streak;
+            streakEl.style = streakStyle;
+
+            document.getElementById('modal-bestsport').textContent = p.bestSport;
+            document.getElementById('modal-avgscore').textContent = p.avg_score.toFixed(2);
+
+            // Extended Stats
+            document.getElementById('modal-opp-winpct').textContent = p.oppWinPct;
+            document.getElementById('modal-days-since').textContent = p.daysSince;
+            document.getElementById('modal-first-match').textContent = formatDate(p.firstMatch);
+            document.getElementById('modal-last-match').textContent = formatDate(p.lastMatch);
+            document.getElementById('modal-last5-avg').textContent = p.last5Avg > 0 ? p.last5Avg.toFixed(2) : '-';
+
+            // Form Chart
+            const chartContainer = document.getElementById('modal-form-chart');
+            chartContainer.innerHTML = ''; // clear old
+
+            const formString = p.last5 || '-';
+            
+            if (formString === '-') {
+                chartContainer.innerHTML = '<div class="form-bar-container"><div class="form-bar none">-</div></div>';
+            } else {
+                // Split string into array of chars (e.g. "WWL" -> ['W','W','L'])
+                const results = formString.split('');
+                results.forEach(res => {
+                    const char = res.toUpperCase();
+                    const validClass = (char === 'W' || char === 'L') ? char : 'none';
+                    chartContainer.innerHTML += `
+                        <div class="form-bar-container">
+                            <div class="form-bar ${validClass}">${char}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            modal.style.display = "flex";
+            document.body.classList.add('modal-open');
+        };
+
+        // --- Controls Listeners ---
+        document.getElementById('search-player').addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            renderTable();
+        });
+
+        document.getElementById('sport-filter').addEventListener('change', (e) => {
+            currentSportFilter = e.target.value.toLowerCase();
+            renderTable();
+        });
+
+        // Extracts all specific stats for a player
+        function extractStats(player) {
+            let adj = parseFloat(player['overall adjusted average']);
+            let raw = parseFloat(player['overall raw average']);
+            let finalAvg = !isNaN(adj) ? adj : (!isNaN(raw) ? raw : 0.00);
+
+            return {
+                username: player['username'] || 'Unknown',
+                matches: parseInt(player['total matches']) || 0,
+                wins: parseInt(player['wins']) || 0,
+                losses: parseInt(player['losses']) || 0,
+                winRate: player['win rate %'] || '0%',
+                bestSport: player['best sport'] || '-',
+                last5: player['last 5'] || '-',
+                streak: player['streak'] || '-',
+                avg_score: finalAvg,
+                
+                // Detailed stats for modal
+                last5Avg: parseFloat(player['last 5 adjusted avg']) || 0.00,
+                oppWinPct: player['average opponent win rate %'] || '-',
+                firstMatch: player['first match'] || '-',
+                lastMatch: player['last match'] || '-',
+                daysSince: player['days since last match'] || '-'
+            };
+        }
+
+        // Render the UI Table
+        function renderTable() {
+            const tbody = document.getElementById('players-container');
+            
+            // 1. Map all raw data to stats
+            let processedPlayers = allPlayersData.map(p => extractStats(p));
+
+            // Filter by search query
+            if (searchQuery) {
+                processedPlayers = processedPlayers.filter(p => p.username.toLowerCase().includes(searchQuery));
+            }
+
+            // Filter by Best Sport
+            if (currentSportFilter !== 'all') {
+                processedPlayers = processedPlayers.filter(p => p.bestSport.toLowerCase() === currentSportFilter);
+            }
+
+            // 2. Sort the array based on total matches, then overall win percentage
+            processedPlayers.sort((a, b) => {
+                if (b.matches !== a.matches) return b.matches - a.matches;
+                
+                const aWinPct = parseFloat(a.winRate) || 0;
+                const bWinPct = parseFloat(b.winRate) || 0;
+                if (bWinPct !== aWinPct) return bWinPct - aWinPct;
+                
+                return b.avg_score - a.avg_score; // Tiebreaker
+            });
+
+            // Save globally for the modal click handler
+            currentRenderedPlayers = processedPlayers;
+
+            // 3. Generate HTML
+            if (processedPlayers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">No players found matching your search.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = processedPlayers.map((p, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                let rankIcon = `#${rank}`;
+                
+                // Add medal icons for top 3
+                if (rank === 1) { rankClass = 'rank-1'; rankIcon = '👑 #1'; }
+                else if (rank === 2) { rankClass = 'rank-2'; rankIcon = '🥈 #2'; }
+                else if (rank === 3) { rankClass = 'rank-3'; rankIcon = '🥉 #3'; }
+
+                // Passed username inside quotes to prevent syntax errors on names with special characters
+                return `
+                <tr class="clickable-row" onclick="openPlayerModal('${p.username.replace(/'/g, "\\'")}', ${index})">
+                    <td class="rank-number ${rankClass}">${rankIcon}</td>
+                    <td class="player-name">${p.username}</td>
+                    <td style="text-align: center;">${p.wins}-${p.losses}</td>
+                    <td class="stat-highlight" style="text-align: right; padding-right: 1rem;">${p.avg_score.toFixed(2)}</td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // Fetch & Parse CSV logic
         async function loadDraftersData() {
-            // Your fetching logic for Drafters specific sheets will go here
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
+                if (!res.ok) throw new Error('Network response was not ok');
+                const csvText = await res.text();
+                
+                // CSV Parser
+                const rows = csvText.split('\n').map(line => {
+                    const values = [];
+                    let currentVal = '', inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                        else currentVal += char;
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+
+                if (rows.length < 2) return;
+
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                
+                allPlayersData = rows.slice(1).map(row => {
+                    const playerObj = {};
+                    headers.forEach((h, i) => {
+                        playerObj[h] = row[i] ? row[i].trim() : '';
+                    });
+                    return playerObj;
+                });
+                
+                // Initial render
+                renderTable();
+
+            } catch (error) {
+                console.error("Error loading Drafters CSV:", error);
+                document.getElementById('players-container').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 3rem; color: #f44336;">Error loading data. Ensure the CSV is published to the web.</td></tr>';
+            }
         }
 
         loadDraftersData();

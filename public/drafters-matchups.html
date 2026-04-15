@@ -4,83 +4,203 @@
     <meta charset="UTF-8">
     <title>Drafters 1v1 - Matchups</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/drafters.css">
     <style>
         /* --- Drafters 1v1 Layout Overrides --- */
-        /* Explicitly hide the global RDA nav injected by app.js to prevent duplicates */
         .nav-container:not(.drafters-nav) { display: none !important; }
 
-        /* Match RDA Header Styling */
         h1 {
             text-align: center;
             margin-top: 2rem;
             font-size: 2.5rem;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: var(--text-main);
+            color: var(--gold-mid);
         }
 
-        /* Content Sections */
         .hub-content { 
+            width: 100%;
             max-width: 1200px; 
             margin: 0 auto; 
             padding-bottom: 4rem; 
             padding-top: 1rem; 
             animation: fadeIn 0.5s ease-out;
+            box-sizing: border-box;
+            overflow-x: hidden; /* Prevents whole page from scrolling sideways */
+        }
+
+        /* --- Header & Controls --- */
+        .header-controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto 1.5rem auto;
+            width: calc(100% - 2rem);
+            gap: 1rem;
+            box-sizing: border-box;
         }
 
         .section-title {
-            font-size: 1.5rem;
-            font-weight: 400;
-            margin-bottom: 1.5rem;
-            color: #eee;
-            text-align: left;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
             padding-left: 0.5rem;
             border-left: 4px solid var(--gold-mid);
-            margin-top: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.2);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            box-sizing: border-box;
+        }
+
+        .filter-select {
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 160px;
+        }
+
+        .filter-select:hover, .filter-select:focus {
+            border-color: var(--gold-mid);
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .search-input {
+            width: 100%; 
+            max-width: 300px; 
+            background: rgba(0,0,0,0.2) !important;
         }
 
         /* --- Games Grid (Matchups) --- */
         .games-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Lowered from 320px for mobile fitting */
             gap: 1.5rem;
             padding: 0 1rem;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .game-card {
-            background: #0f0f0f;
-            border: 1px solid #333;
+            background: var(--bg-card, rgba(15, 23, 42, 0.4));
+            border: 1px solid var(--border-subtle);
             border-radius: 12px;
             padding: 1.5rem;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
             overflow: hidden;
             display: block; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            width: 100%;
         }
 
         .game-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border-color: #555;
+            border-color: var(--gold-mid);
+        }
+
+        .game-date { 
+            font-size: 0.8rem; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            margin-bottom: 1.5rem; 
+            font-weight: 600; 
+            text-align: center; 
+        }
+        
+        .matchup-display { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 1.5rem; 
+        }
+        
+        .team-info { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 0.5rem; 
+            flex: 1; 
+            width: 40%;
+        }
+        
+        .team-name { 
+            font-size: 1.05rem; 
+            font-weight: 600; 
+            text-align: center; 
+            color: var(--text-main); 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 100%;
+        }
+        
+        .team-score { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            color: var(--text-main); 
+        }
+        
+        .winning-score { color: var(--gold-mid); }
+        
+        .vs-badge { 
+            font-size: 0.8rem; 
+            font-weight: 700; 
+            color: var(--text-muted); 
+            padding: 0.5rem; 
+        }
+        
+        .game-meta { 
+            margin-top: 1rem; 
+            padding-top: 1rem; 
+            border-top: 1px solid var(--border-subtle); 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* --- Mobile Overrides --- */
         @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; margin-top: 1rem; }
+            .header-controls-wrapper { margin: 0 auto 1rem auto; padding: 0 1rem; width: 100%; }
             .games-grid { grid-template-columns: 1fr; }
-            h1 { font-size: 1.8rem; }
+            
+            /* Stack controls vertically on mobile */
+            .controls-container { padding: 1rem; flex-direction: column; align-items: stretch; }
+            .filter-select, .search-input { width: 100%; max-width: 100%; }
         }
     </style>
 </head>
 <body>
     
-    <h1>Drafters 1v1</h1>
+    <h1 id="main-header">Drafters 1v1</h1>
 
-    <!-- Custom Drafters Navigation Bar (Identical styling to RDA) -->
+    <!-- Custom Drafters Navigation Bar -->
     <div class="nav-container drafters-nav">
         <div class="nav-bar">
-            <!-- Home button returns to Drafters Landing Page -->
             <a href="drafters-home.html" class="nav-button">Home</a>
             <a id="nav-matchups" href="#" class="nav-button active">Matchups</a>
             <a id="nav-players" href="#" class="nav-button">Players</a>
@@ -88,37 +208,188 @@
     </div>
 
     <div class="hub-content">
-        <!-- Season Header -->
-        <div style="text-align: center; margin-bottom: 2rem; color: #888;">
-            <span id="season-display" style="font-weight: bold; color: var(--gold-light); text-transform: uppercase; letter-spacing: 1px;">Loading Season...</span>
+        <!-- Header & Filters -->
+        <div class="header-controls-wrapper">
+            <h2 class="section-title">Weekly Matchups</h2>
+            
+            <div class="controls-container">
+                <input type="text" id="search-matchup" class="filter-select search-input" placeholder="Search Player...">
+                
+                <select id="sport-filter" class="filter-select">
+                    <option value="all">Sport: All</option>
+                    <option value="cbb">CBB</option>
+                    <option value="fc">FC</option>
+                    <option value="golf">Golf</option>
+                    <option value="main event">Main Event</option>
+                    <option value="mlb">MLB</option>
+                    <option value="nba">NBA</option>
+                    <option value="nhl">NHL</option>
+                </select>
+            </div>
         </div>
 
         <!-- Matchups Content -->
-        <h2 class="section-title" style="margin-left: 1rem;">Weekly Matchups</h2>
         <div class="games-grid" id="matchups-container">
             <div class="game-card" style="text-align: center; grid-column: 1/-1; padding: 3rem; color: #666; font-style: italic;">
-                Matchup data will populate here.
+                Loading matchup data...
             </div>
         </div>
     </div>
 
     <script type="module">
-        // Grab the season from the URL
         const params = new URLSearchParams(window.location.search);
         const draftersSeason = params.get('season') || '0';
         
-        document.getElementById('season-display').textContent = `Season ${draftersSeason}`;
-
-        // Ensure the custom nav links retain the current season parameter
+        // Update header dynamically
+        document.getElementById('main-header').textContent = `Drafters 1v1 Season ${draftersSeason}`;
+        
         document.getElementById('nav-matchups').href = `drafters-matchups.html?season=${draftersSeason}`;
         document.getElementById('nav-players').href = `drafters-players.html?season=${draftersSeason}`;
 
-        // --- FUTURE DATA FETCHING SKELETON ---
-        async function loadDraftersData() {
-            // Your fetching logic for Drafters specific sheets will go here
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        
+        // =======================================================
+        // GOOGLE SHEET CSV URL:
+        // =======================================================
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRB0V7m71K5ORGJbUt_kA67nTH6aVbMFn40ilYot30yuOqUed7eHCdSAK3ft3cgcfN4atDynZqaOvQw/pub?gid=2048260776&single=true&output=csv';
+
+        // State variables
+        let allMatchupsData = [];
+        let searchQuery = '';
+        let currentSport = 'all';
+
+        // Listeners for Filters
+        document.getElementById('search-matchup').addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            renderMatchups();
+        });
+
+        document.getElementById('sport-filter').addEventListener('change', (e) => {
+            currentSport = e.target.value.toLowerCase();
+            renderMatchups();
+        });
+
+        // Helper to cleanly format timestamps to "Feb 12, 2026"
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            try {
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch(e) {
+                return dateStr;
+            }
+        };
+
+        // Helper to format scores safely (Shows '-' if blank instead of forcing 0.00)
+        const formatScore = (val) => {
+            if (val === undefined || val === null || String(val).trim() === '') return '-';
+            const num = parseFloat(val);
+            return isNaN(num) ? '-' : num.toFixed(2);
+        };
+
+        // Render the Grid
+        function renderMatchups() {
+            const container = document.getElementById('matchups-container');
+            let filtered = allMatchupsData;
+
+            // Apply Sport Filter
+            if (currentSport !== 'all') {
+                filtered = filtered.filter(m => m.sport.toLowerCase() === currentSport);
+            }
+
+            // Apply Search Filter
+            if (searchQuery) {
+                filtered = filtered.filter(m => 
+                    m.winner.toLowerCase().includes(searchQuery) || 
+                    m.loser.toLowerCase().includes(searchQuery)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="game-card" style="text-align: center; grid-column: 1/-1; padding: 3rem; color: #666; font-style: italic;">No matchups found matching your criteria.</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(m => `
+                <div class="game-card">
+                    <div class="game-date">${formatDate(m.date)} &bull; ${m.sport}</div>
+                    <div class="matchup-display">
+                        <div class="team-info">
+                            <span class="team-name winning-score" title="${m.winner}">${m.winner}</span>
+                            <span class="team-score winning-score">${formatScore(m.winnerAdj)}</span>
+                        </div>
+                        <div class="vs-badge">VS</div>
+                        <div class="team-info">
+                            <span class="team-name" title="${m.loser}">${m.loser}</span>
+                            <span class="team-score">${formatScore(m.loserAdj)}</span>
+                        </div>
+                    </div>
+                    <div class="game-meta">
+                        <span>${m.format}</span>
+                        <span>Margin: <strong style="color: var(--text-main);">${formatScore(m.margin)}</strong></span>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        loadDraftersData();
+        // Fetch & Parse CSV logic
+        async function loadDraftersMatchups() {
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
+                if (!res.ok) throw new Error('Network response was not ok');
+                const csvText = await res.text();
+                
+                // CSV Parser
+                const rows = csvText.split('\n').map(line => {
+                    const values = [];
+                    let currentVal = '', inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                        else currentVal += char;
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+
+                if (rows.length < 2) return;
+
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                
+                const getVal = (row, colName) => {
+                    const idx = headers.findIndex(h => h === colName);
+                    return idx > -1 ? row[idx] : '';
+                };
+
+                // Map data skipping the header row
+                allMatchupsData = rows.slice(1).map(row => ({
+                    date: getVal(row, 'date'),
+                    sport: getVal(row, 'sport'),
+                    format: getVal(row, 'format'),
+                    winner: getVal(row, 'winner'),
+                    winnerRaw: getVal(row, 'winner raw score'),
+                    winnerAdj: getVal(row, 'winner adjusted score'),
+                    loser: getVal(row, 'loser'),
+                    loserRaw: getVal(row, 'loser raw score'),
+                    loserAdj: getVal(row, 'loser adjusted score'),
+                    margin: getVal(row, 'adjusted margin')
+                }));
+                
+                // Sort by date descending (Newest first)
+                allMatchupsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // Initial render
+                renderMatchups();
+
+            } catch (error) {
+                console.error("Error loading Drafters Matchups CSV:", error);
+                document.getElementById('matchups-container').innerHTML = '<div class="game-card" style="text-align: center; grid-column: 1/-1; padding: 3rem; color: #f44336;">Error loading data. Ensure the CSV is published to the web.</div>';
+            }
+        }
+
+        loadDraftersMatchups();
     </script>
 </body>
 </html>
