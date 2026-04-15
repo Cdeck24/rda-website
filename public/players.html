@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Players</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        .controls-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            flex-wrap: wrap;
+        }
+
+        .controls-container input, 
+        .controls-container select {
+            flex: 1;
+            margin-bottom: 0;
+            min-width: 140px;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden; 
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse; 
+        }
+
+        .data-table tr {
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+        }
+
+        .rank-cell {
+            font-weight: bold;
+            color: var(--text-muted);
+            width: 60px;
+            min-width: 60px;
+            max-width: 60px;
+            box-sizing: border-box;
+            text-align: center !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+
+        .num-cell {
+            text-align: right !important;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .score-cell {
+            font-weight: 700;
+            color: var(--gold-mid) !important;
+        }
+
+        .paa-positive {
+            color: #4CAF50 !important;
+            font-weight: 600;
+        }
+
+        .paa-negative {
+            color: #F44336 !important;
+            font-weight: 600;
+        }
+
+        th.active-sort {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold-light) !important;
+        }
+        
+        .secondary-stat {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .player-name-cell {
+            font-weight: 500; 
+            color: var(--text-main);
+        }
+
+        /* --- Modal Styles --- */
+        body.modal-open { overflow: hidden; }
+        
+        .modal-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); display: none;
+            justify-content: center; align-items: center; z-index: 2000;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            padding: 1rem; animation: fadeIn 0.3s;
+        }
+        
+        .modal {
+            background: var(--bg-navy-light); border-radius: 16px; padding: 1.5rem;
+            max-width: 600px; width: 100%; max-height: 85vh; overflow-y: auto;
+            position: relative; box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-gold); animation: popupSlideIn 0.3s ease-out;
+            text-align: left;
+        }
+        
+        .close-btn {
+            position: absolute; top: 0.75rem; right: 0.75rem; font-size: 1.5rem;
+            cursor: pointer; color: #888; width: 2.5rem; height: 2.5rem;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .close-btn:hover { color: #fff; background: #222; }
+        
+        .modal-title { font-size: 1.5rem; font-weight: 700; color: var(--gold-light); margin-bottom: 0.2rem; }
+        .modal-subtitle { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Player Game Log Dropdowns */
+        .player-date-group {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+        .player-date-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            cursor: pointer;
+            background: rgba(255,255,255,0.03);
+            transition: background 0.2s;
+        }
+        .player-date-header:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .player-date-title {
+            font-weight: 700;
+            color: var(--gold-light);
+            font-size: 1rem;
+        }
+        .player-date-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .player-date-content {
+            display: none;
+            padding: 0;
+            border-top: 1px solid var(--border-subtle);
+        }
+        .player-date-content.open {
+            display: block;
+        }
+        .player-game-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .player-game-row:last-child {
+            border-bottom: none;
+        }
+        .player-game-sport {
+            font-weight: 600;
+            color: var(--gold-mid);
+            font-size: 0.9rem;
+        }
+        .player-game-score {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* --- Mobile Control Stacking & Layout Fixes --- */
+        @media (max-width: 768px) {
+            .controls-container {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .controls-container input, 
+            .controls-container select {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .data-table {
+                table-layout: fixed; 
+            }
+
+            .data-table th:nth-child(1) { width: 15%; } 
+            .data-table th:nth-child(2) { width: 40%; } 
+            .data-table th:nth-child(3) { width: 22%; } 
+            .data-table th:nth-child(4) { width: 23%; } 
+
+            .data-table th, .data-table td {
+                padding: 0.6rem 0.3rem !important; 
+                font-size: 0.85rem !important; 
+            }
+
+            .rank-cell {
+                min-width: unset;
+                max-width: unset;
+                width: auto;
+            }
+
+            .player-name-cell, .secondary-stat {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <h1>RDA Players</h1>
+    
+    <!-- Navigation injected by JS -->
+
+    <div class="controls-container">
+        <select id="season-type" onchange="toggleSeasonType()">
+            <option value="regular">Regular Season</option>
+            <option value="playoffs">Playoffs</option>
+        </select>
+        <input type="text" id="search" placeholder="Search Player or Team..." onkeyup="filter()">
+        
+        <select id="date-filter" onchange="filter()">
+            <option value="ALL">All Dates (Season)</option>
+            <!-- Options injected dynamically -->
+        </select>
+        
+        <select id="sport-filter" onchange="filter()">
+            <option value="ALL">All Sports</option>
+            <!-- Options injected dynamically -->
+        </select>
+        <select id="sort-metric" onchange="filter()">
+            <option value="total">Sort: Total</option>
+            <option value="ppg">Sort: PPG</option>
+            <option value="paa">Sort: PAA</option>
+            <option value="peak">Sort: Peak</option>
+            <option value="share">Sort: Share %</option>
+        </select>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="rank-cell">Rk</th>
+                    <th>Player</th>
+                    <th>Team</th>
+                    <th id="dynamic-stat-header" class="num-cell active-sort" style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr><td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-muted);">Loading players...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Player Game Log Modal -->
+    <div class="modal-bg" id="player-modal">
+        <div class="modal">
+            <span class="close-btn" id="close-player-modal">&times;</span>
+            <div class="modal-title" id="modal-player-name">Player Name</div>
+            <div class="modal-subtitle" id="modal-player-team">Team</div>
+            
+            <div id="modal-game-log-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <!-- JS injects date dropdowns here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, getSeasonData } from './js/app.js';
+        initNav();
+
+        let allRawData = [];
+
+        // --- Modal Interactions ---
+        const playerModal = document.getElementById('player-modal');
+        const closePlayerModal = document.getElementById('close-player-modal');
+        
+        closePlayerModal.onclick = () => { playerModal.style.display = 'none'; document.body.classList.remove('modal-open'); };
+        window.onclick = (e) => { if (e.target == playerModal) { playerModal.style.display = 'none'; document.body.classList.remove('modal-open'); } };
+
+        function parseSortableDate(dateStr) {
+            if (!dateStr) return 0;
+            const parts = dateStr.split('/');
+            if (parts.length >= 2) {
+                const month = parseInt(parts[0], 10);
+                const day = parseInt(parts[1], 10);
+                let year = new Date().getFullYear();
+                if (parts.length === 3) year = parseInt(parts[2], 10);
+                if (year < 100) year += 2000;
+                return new Date(year, month - 1, day).getTime();
+            }
+            const d = new Date(dateStr);
+            return isNaN(d) ? 0 : d.getTime();
+        }
+
+        window.openPlayerModal = (id) => {
+            // Apply the same global filters (Sport & Date) to the modal list, so the modal matches the context of what the user is looking at
+            const sportFilter = document.getElementById('sport-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+
+            let logs = allRawData.filter(d => (d.userId || d.username) === id);
+            
+            // Filter the logs by the currently selected dropdowns so the modal reflects the table
+            logs = logs.filter(d => {
+                const matchSport = sportFilter === 'ALL' || d.sport === sportFilter;
+                const matchDate = dateFilter === 'ALL' || d.date === dateFilter;
+                return matchSport && matchDate;
+            });
+            
+            if (!logs.length) return;
+            
+            // Determine most recent info
+            const name = logs[logs.length-1].username || id;
+            const team = logs.map(d => d.team).filter(t => t && t !== 'Free Agent').pop() || 'Free Agent';
+            
+            document.getElementById('modal-player-name').textContent = name;
+            document.getElementById('modal-player-team').textContent = team;
+            
+            // Group logs by date
+            const logsByDate = {};
+            logs.forEach(log => {
+                const date = log.date || 'Unknown';
+                if (!logsByDate[date]) logsByDate[date] = [];
+                logsByDate[date].push(log);
+            });
+
+            // Sort dates chronologically descending (newest first)
+            const sortedDates = Object.keys(logsByDate).sort((a,b) => parseSortableDate(b) - parseSortableDate(a));
+            
+            const container = document.getElementById('modal-game-log-container');
+            container.innerHTML = sortedDates.map(date => {
+                const dateLogs = logsByDate[date];
+                // Sort by sport alphabetically
+                dateLogs.sort((a,b) => (a.sport||'').localeCompare(b.sport||''));
+                
+                const totalScore = dateLogs.reduce((sum, l) => sum + (parseFloat(l.score) || 0), 0);
+                
+                const rowsHtml = dateLogs.map(log => `
+                    <div class="player-game-row">
+                        <span class="player-game-sport">${log.sport || 'Unknown'}</span>
+                        <span class="player-game-score">${(parseFloat(log.score)||0).toFixed(2)}</span>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="player-date-group">
+                        <div class="player-date-header" onclick="this.nextElementSibling.classList.toggle('open'); const icon = this.querySelector('.toggle-icon'); icon.textContent = icon.textContent === '+' ? '-' : '+'">
+                            <div class="player-date-title">${date}</div>
+                            <div class="player-date-meta">
+                                <span>${dateLogs.length} Game${dateLogs.length > 1 ? 's' : ''} | Total: ${totalScore.toFixed(2)}</span>
+                                <span class="toggle-icon" style="font-weight: 800; font-size: 1.2rem; width: 16px; text-align: center; color: var(--gold-mid);">+</span>
+                            </div>
+                        </div>
+                        <div class="player-date-content">
+                            ${rowsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            playerModal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+        };
+
+        window.toggleSeasonType = async () => {
+            const isPlayoff = document.getElementById('season-type').value === 'playoffs';
+            document.getElementById('table-body').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-muted);">Loading players...</td></tr>';
+            await load(isPlayoff);
+        };
+
+        async function load(isPlayoff = false) {
+            const collectionName = isPlayoff ? 'playoff-players' : 'players';
+            const data = await getSeasonData(collectionName);
+            
+            allRawData = data;
+            
+            const sportsSet = new Set();
+            const datesSet = new Set();
+
+            allRawData.forEach(p => {
+                if (p.sport) sportsSet.add(p.sport);
+                if (p.date) datesSet.add(p.date);
+            });
+            
+            // Populate the sport dropdown dynamically
+            const sportSelect = document.getElementById('sport-filter');
+            const currentSport = sportSelect.value;
+            sportSelect.innerHTML = '<option value="ALL">All Sports</option>'; 
+            
+            Array.from(sportsSet).sort().forEach(sport => {
+                const option = document.createElement('option');
+                option.value = sport;
+                option.textContent = sport;
+                sportSelect.appendChild(option);
+            });
+            if (sportsSet.has(currentSport)) sportSelect.value = currentSport;
+
+            // Populate the date dropdown dynamically
+            const dateSelect = document.getElementById('date-filter');
+            const currentDate = dateSelect.value;
+            dateSelect.innerHTML = '<option value="ALL">All Dates (Season)</option>';
+            
+            // Sort dates chronologically
+            const sortedDates = Array.from(datesSet).sort((a,b) => parseSortableDate(a) - parseSortableDate(b));
+            sortedDates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = date;
+                dateSelect.appendChild(option);
+            });
+            if (datesSet.has(currentDate)) dateSelect.value = currentDate;
+
+            // Run initial filter and render
+            window.filter();
+        }
+
+        // Global filter function triggered by inputs
+        window.filter = () => {
+            const term = document.getElementById('search').value.toLowerCase();
+            const sportFilter = document.getElementById('sport-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+            const sortMetric = document.getElementById('sort-metric').value;
+
+            // 1. Filter the RAW data lines first based on selections
+            const filteredRawLines = allRawData.filter(d => {
+                const matchSport = sportFilter === 'ALL' || d.sport === sportFilter;
+                const matchDate = dateFilter === 'ALL' || d.date === dateFilter;
+                const matchSearch = (d.username && d.username.toLowerCase().includes(term)) || 
+                                    (d.team && d.team.toLowerCase().includes(term));
+                
+                return matchSport && matchDate && matchSearch;
+            });
+
+            // 2. Aggregate the filtered lines per player
+            let totalLeagueScore = 0;
+            let totalLeagueGames = 0;
+            let teamTotals = {};
+            const playerMap = {};
+
+            filteredRawLines.forEach(d => {
+                const id = d.userId || d.username;
+                if (!playerMap[id]) {
+                    playerMap[id] = { 
+                        id: id,
+                        username: d.username,
+                        team: d.team || 'Free Agent',
+                        score: 0,
+                        games: 0,
+                        scoresArray: []
+                    };
+                } else if (d.username && playerMap[id].username.startsWith('User_')) {
+                    playerMap[id].username = d.username;
+                }
+
+                const s = parseFloat(d.score) || 0;
+                playerMap[id].score += s;
+                playerMap[id].games += 1;
+                playerMap[id].scoresArray.push(s);
+                if (d.team && d.team !== 'Free Agent') {
+                    playerMap[id].team = d.team; 
+                }
+
+                totalLeagueScore += s;
+                totalLeagueGames += 1; // Each raw line counts as a game/stat entry
+                teamTotals[playerMap[id].team] = (teamTotals[playerMap[id].team] || 0) + s;
+            });
+            
+            const leagueAvgPPG = totalLeagueGames > 0 ? (totalLeagueScore / totalLeagueGames) : 0;
+
+            // 3. Compute final metrics
+            const mappedList = Object.values(playerMap).map(p => {
+                const ppg = p.games > 0 ? (p.score / p.games) : 0;
+                const paa = ppg - leagueAvgPPG;
+                const peak = p.scoresArray.length > 0 ? Math.max(...p.scoresArray) : 0;
+                const share = teamTotals[p.team] > 0 ? (p.score / teamTotals[p.team]) * 100 : 0;
+                
+                return {
+                    ...p,
+                    currentScore: p.score,
+                    currentPPG: ppg,
+                    currentPAA: paa,
+                    currentPeak: peak,
+                    currentShare: share
+                };
+            });
+
+            // 4. Sort descending by the selected metric
+            mappedList.sort((a, b) => {
+                if (sortMetric === 'total') return b.currentScore - a.currentScore;
+                if (sortMetric === 'ppg') return b.currentPPG - a.currentPPG;
+                if (sortMetric === 'paa') return b.currentPAA - a.currentPAA;
+                if (sortMetric === 'peak') return b.currentPeak - a.currentPeak;
+                if (sortMetric === 'share') return b.currentShare - a.currentShare;
+                return 0;
+            });
+
+            render(mappedList, sortMetric, dateFilter);
+        };
+
+        function render(list, metric, activeDate) {
+            const tbody = document.getElementById('table-body');
+            
+            // Adjust header based on whether we are viewing a specific date
+            let dynamicTitle = '';
+            if (activeDate !== 'ALL' && metric === 'total') dynamicTitle = `Daily Score`;
+            else {
+                const headerTitles = { 'total': 'Total', 'ppg': 'PPG', 'paa': 'PAA', 'peak': 'Peak', 'share': 'Share %' };
+                dynamicTitle = headerTitles[metric] || 'Stat';
+            }
+            
+            document.getElementById('dynamic-stat-header').textContent = dynamicTitle;
+            
+            if(!list.length) { 
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-muted);">No players found matching your criteria.</td></tr>'; 
+                return; 
+            }
+            
+            // Note the onclick handler added to the <tr> element below
+            tbody.innerHTML = list.map((p, index) => {
+                // Styling for Top 3
+                let rankIcon = index + 1;
+                let rankColorStyle = '';
+                if (index === 0) { rankIcon = '👑 #1'; rankColorStyle = 'color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);'; }
+                else if (index === 1) { rankIcon = '🥈 #2'; rankColorStyle = 'color: #C0C0C0; text-shadow: 0 0 10px rgba(192, 192, 192, 0.3);'; }
+                else if (index === 2) { rankIcon = '🥉 #3'; rankColorStyle = 'color: #CD7F32; text-shadow: 0 0 10px rgba(205, 127, 50, 0.3);'; }
+                else { rankIcon = `#${index + 1}`; }
+
+                // Generate HTML for the dynamic stat column based on selected metric
+                let dynamicStatHtml = '';
+                
+                if (metric === 'total') {
+                    dynamicStatHtml = `<td class="num-cell score-cell">${p.currentScore.toFixed(2)}</td>`;
+                } else if (metric === 'ppg') {
+                    dynamicStatHtml = `<td class="num-cell">${p.currentPPG.toFixed(2)}</td>`;
+                } else if (metric === 'paa') {
+                    const paaFormatted = p.currentPAA > 0 ? `+${p.currentPAA.toFixed(2)}` : p.currentPAA.toFixed(2);
+                    const paaClass = p.currentPAA > 0 ? 'paa-positive' : (p.currentPAA < 0 ? 'paa-negative' : '');
+                    dynamicStatHtml = `<td class="num-cell ${paaClass}">${paaFormatted}</td>`;
+                } else if (metric === 'peak') {
+                    dynamicStatHtml = `<td class="num-cell">${p.currentPeak.toFixed(2)}</td>`;
+                } else if (metric === 'share') {
+                    dynamicStatHtml = `<td class="num-cell">${p.currentShare.toFixed(1)}%</td>`;
+                }
+
+                // Add onclick attribute mapped to the player's unique ID
+                return `
+                    <tr onclick="openPlayerModal('${p.id}')">
+                        <td class="rank-cell" style="${rankColorStyle}">${rankIcon}</td>
+                        <td class="player-name-cell" title="${p.username}">${p.username}</td>
+                        <td class="secondary-stat" title="${p.team}">${p.team}</td>
+                        ${dynamicStatHtml}
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Start loading the default view
+        load(false);
+    </script>
+</body>
+</html>

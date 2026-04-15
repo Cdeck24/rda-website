@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Teams</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        /* --- Page Specific Styles --- */
+        
+        /* Headers */
+        h1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        h1.conference-header {
+            font-size: 1.8rem;
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--border-gold);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: var(--gold-mid);
+            text-align: left;
+        }
+        
+        h2.division-header {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Team Grid Layout */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.5rem;
+            max-width: 1000px;
+            margin: 0 auto 3rem auto;
+            padding: 0 1rem;
+        }
+
+        .team-link {
+            /* Inherit global card style, but ensure flex layout for this specific use */
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--border-gold);
+            border-radius: 6px;
+            padding: 2rem 1rem;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .team-link:hover {
+            transform: translateY(-5px);
+            background: linear-gradient(145deg, rgba(51, 65, 85, 0.9), rgba(30, 41, 59, 0.95));
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 0 1px var(--gold-mid);
+            border-color: var(--gold-mid);
+        }
+
+        .team-link span {
+            margin-top: 1rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Stats Cards */
+        .team-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .stat-card .label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            font-family: 'Didot', serif;
+        }
+
+        /* Loading & Placeholders */
+        .loading, .placeholder {
+            padding: 3rem;
+            font-style: italic;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+
+        /* Team Header Image */
+        .header-logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3));
+        }
+
+        .main-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding-bottom: 4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="team-name-header">Teams</h1>
+
+    <!-- Navigation (Injected via JS) -->
+
+    <div class="main-content" id="main-content">
+        <div class="loading">Loading teams...</div>
+    </div>
+
+    <script type="module">
+        import { initNav, getSeasonData, currentSeason } from './js/app.js';
+        import { db } from './js/firebase-config.js';
+        import { collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+        
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+
+        // --- Configuration per Season ---
+        const seasonConfig = {
+            '2': {
+                scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?output=csv',
+                playersUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv', 
+            },
+            '3': {
+                scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1058716618&single=true&output=csv',
+                playersUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv'
+            },
+            '4': {
+                scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv',
+                playersUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
+                draftPicksUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1177404565&single=true&output=csv' 
+            },
+            '5': {
+                scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv',
+                playersUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
+                draftPicksUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=464460076&single=true&output=csv' 
+            }
+        };
+
+        // Default to S5 if config missing
+        const activeConfig = seasonConfig[currentSeason] || seasonConfig['5'];
+
+        // --- Division Structures ---
+        const divisions = {
+            "East Conference": {
+                "Atlantic Division": ["Dragons", "Bajas", "Buffaloes"],
+                "Metro Division": ["Kings", "Underdogs", "Knights"]
+            },
+            "West Conference": {
+                "Central Division": ["Reapers", "Stars", "Zombies"],
+                "Pacific Division": ["Manatees", "Tigers", "Voyagers"]
+            }
+        };
+
+        // --- Image Helper ---
+        function getTeamLogoPath(name) {
+             if(!name) return '';
+             let cleanName = name.trim().toLowerCase();
+             if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
+             cleanName = cleanName.replace(/\s+/g, '-');
+             
+             const isPng = ['reapers', 'zombies', 'free-agents'].includes(cleanName);
+             return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+        }
+
+        // --- Helpers ---
+        async function fetchViaWorker(url) {
+            // Graceful handling if URL is missing
+            if (!url) return null; 
+
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
+                if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
+                return res.text();
+            } catch (e) {
+                console.warn("CSV Fetch failed", e);
+                return null;
+            }
+        }
+
+        async function fetchJSONViaWorker(url) {
+             const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
+             if (!res.ok) throw new Error(`Fetch JSON error`);
+             return res.json();
+        }
+
+        function parseCsvToObject(csvText) {
+            if (!csvText) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            const headers = rows[0].split(',').map(h => h.trim());
+            return rows.slice(1).map(row => {
+                const values = row.split(',');
+                const obj = {};
+                headers.forEach((header, index) => {
+                    // Normalize headers for easier access
+                    obj[header.toLowerCase()] = values[index] ? values[index].trim() : '';
+                });
+                return obj;
+            });
+        }
+
+        // --- Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const teamName = params.get('team');
+            if (teamName) {
+                loadTeamData(decodeURIComponent(teamName));
+            } else {
+                displayTeamGrid();
+            }
+        });
+
+        // 1. GRID VIEW
+        async function displayTeamGrid() {
+            document.getElementById('team-name-header').textContent = `Season ${currentSeason} Teams`;
+            const mainContent = document.getElementById('main-content');
+            
+            let html = '';
+            for (const conference in divisions) {
+                html += `<h1 class="conference-header">${conference}</h1>`;
+                for (const division in divisions[conference]) {
+                    html += `<h2 class="division-header">${division}</h2>`;
+                    html += '<div class="team-grid">';
+                    divisions[conference][division].forEach(team => {
+                        html += `
+                        <a href="teams.html?season=${currentSeason}&team=${encodeURIComponent(team)}" class="team-link">
+                            <img src="${getTeamLogoPath(team)}" alt="${team}" style="width: 80px; height: 80px; object-fit: contain;" onerror="this.style.display='none'">
+                            <span>${team}</span>
+                        </a>`;
+                    });
+                    html += '</div>';
+                }
+            }
+            mainContent.innerHTML = html;
+        }
+
+        // 2. TEAM DETAIL VIEW
+        async function loadTeamData(teamName) {
+            // Update Header
+            const headerEl = document.getElementById('team-name-header');
+            headerEl.innerHTML = `
+                <img src="${getTeamLogoPath(teamName)}" class="header-logo" onerror="this.style.display='none'">
+                ${teamName}
+            `;
+
+            const mainContent = document.getElementById('main-content');
+            mainContent.innerHTML = `
+                <div class="team-stats-grid">
+                    <div class="stat-card"><div class="label">Wins</div><div class="value" id="team-wins">0</div></div>
+                    <div class="stat-card"><div class="label">Losses</div><div class="value" id="team-losses">0</div></div>
+                    <div class="stat-card"><div class="label">Points For</div><div class="value" id="team-pf">0.00</div></div>
+                    <div class="stat-card"><div class="label">Points Against</div><div class="value" id="team-pa">0.00</div></div>
+                </div>
+
+                <h2>Roster</h2>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Player</th><th>GP</th><th>Total Pts</th><th>PPG</th></tr></thead>
+                        <tbody id="roster-tbody"><tr><td colspan="4">Loading roster...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <h2>Draft Capital</h2>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Season</th><th>Round</th><th>Details</th></tr></thead>
+                        <tbody id="draft-tbody"><tr><td colspan="3">Loading draft capital...</td></tr></tbody>
+                    </table>
+                </div>
+
+                <h2>Schedule</h2>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Date</th><th>Opponent</th><th>Result</th><th>Score</th></tr></thead>
+                        <tbody id="schedule-tbody"><tr><td colspan="4">Loading schedule...</td></tr></tbody>
+                    </table>
+                </div>
+            `;
+
+            // Handling Merged Teams for History
+            let teamNamesToQuery = [teamName];
+            if (teamName === 'Reapers') teamNamesToQuery.push('Crovers');
+            if (teamName === 'Zombies') teamNamesToQuery.push('Free Agents');
+
+            try {
+                // Fetch Games from Firestore (Regular Season)
+                const gamesRef = collection(db, `s${currentSeason}-games`);
+                const q1 = query(gamesRef, where('team1', 'in', teamNamesToQuery));
+                const q2 = query(gamesRef, where('team2', 'in', teamNamesToQuery));
+                
+                // Fetch All Data (CSV + Firestore for totals)
+                const [scheduleText, gamesSnap1, gamesSnap2, playersText, draftPicksText, ...playerSnaps] = await Promise.all([
+                    fetchViaWorker(activeConfig.scheduleUrl),
+                    getDocs(q1),
+                    getDocs(q2),
+                    fetchViaWorker(activeConfig.playersUrl),
+                    fetchViaWorker(activeConfig.draftPicksUrl), // Fetch Draft Picks
+                    // Fetch player stats from Firestore for each alias
+                    ...teamNamesToQuery.map(name => getDocs(query(collection(db, `s${currentSeason}-players`), where('team', '==', name))))
+                ]);
+
+                // --- PROCESS SCHEDULE & STATS ---
+                const scheduleData = parseCsvToObject(scheduleText);
+                
+                // Firestore Games Logic (Deduplicate)
+                const completedGames = {};
+                const processDoc = (doc) => {
+                    const data = doc.data();
+                    const k = `${data.date}_${data.team1}_${data.team2}`; // Composite key
+                    completedGames[k] = data;
+                };
+                gamesSnap1.forEach(processDoc);
+                gamesSnap2.forEach(processDoc);
+
+                let wins = 0, losses = 0, pf = 0, pa = 0;
+                const scheduleTbody = document.getElementById('schedule-tbody');
+                scheduleTbody.innerHTML = '';
+
+                // Identify columns in CSV
+                const sampleRow = scheduleData[0] || {};
+                const dateKey = Object.keys(sampleRow).find(k => k.includes('date'));
+                const t1Key = Object.keys(sampleRow).find(k => k.includes('team 1') || k === 'team1');
+                const t2Key = Object.keys(sampleRow).find(k => k.includes('team 2') || k === 'team2');
+                const typeKey = Object.keys(sampleRow).find(k => k.includes('game type') || k === 'type');
+
+                // Filter Schedule CSV
+                const teamSchedule = scheduleData.filter(g => {
+                    // Check if team matches
+                    const isRelevant = teamNamesToQuery.includes(g[t1Key]) || teamNamesToQuery.includes(g[t2Key]);
+                    
+                    // Filter out Preseason games
+                    if (typeKey && g[typeKey]) {
+                        const typeVal = g[typeKey].toLowerCase();
+                        if (typeVal.includes('preseason') || typeVal.includes('pre-season')) {
+                            return false;
+                        }
+                    }
+                    return isRelevant;
+                });
+
+                if (teamSchedule.length === 0) {
+                    scheduleTbody.innerHTML = '<tr><td colspan="4">Schedule not available.</td></tr>';
+                } else {
+                    teamSchedule.forEach(game => {
+                        const gT1 = game[t1Key];
+                        const gT2 = game[t2Key];
+                        const isHome = teamNamesToQuery.includes(gT1);
+                        const opponent = isHome ? gT2 : gT1;
+                        const date = game[dateKey];
+
+                        // Lookup Result
+                        let resultData = completedGames[`${date}_${gT1}_${gT2}`] || completedGames[`${date}_${gT2}_${gT1}`];
+
+                        let scoreStr = 'Upcoming';
+                        let resBadge = '-';
+
+                        if (resultData) {
+                            const ourScore = isHome ? resultData.team1score : resultData.team2score;
+                            const oppScore = isHome ? resultData.team2score : resultData.team1score;
+                            scoreStr = `${ourScore.toFixed(2)} - ${oppScore.toFixed(2)}`;
+                            
+                            // Winner check
+                            if (teamNamesToQuery.includes(resultData.winner)) {
+                                resBadge = '<span class="win">W</span>';
+                                wins++; pf += ourScore; pa += oppScore;
+                            } else {
+                                resBadge = '<span class="loss">L</span>';
+                                losses++; pf += ourScore; pa += oppScore;
+                            }
+                        }
+
+                        scheduleTbody.innerHTML += `<tr><td>${date}</td><td>${opponent}</td><td>${resBadge}</td><td>${scoreStr}</td></tr>`;
+                    });
+                }
+
+                // Update Stat Cards
+                document.getElementById('team-wins').textContent = wins;
+                document.getElementById('team-losses').textContent = losses;
+                document.getElementById('team-pf').textContent = pf.toFixed(2);
+                document.getElementById('team-pa').textContent = pa.toFixed(2);
+
+
+                // --- PROCESS ROSTER ---
+                const rosterTbody = document.getElementById('roster-tbody');
+                const playersData = parseCsvToObject(playersText);
+                
+                // 1. Get List of Players currently on team from CSV
+                // Keys: 'user id', 'username', 'team'
+                const rosterList = playersData.filter(p => teamNamesToQuery.includes(p.team) && p['user id']);
+
+                // 2. Aggregate Stats from Firestore Snapshots
+                const playerStats = {};
+                playerSnaps.forEach(snap => {
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        if (!playerStats[d.userId]) playerStats[d.userId] = { total: 0, games: 0 };
+                        playerStats[d.userId].total += d.score;
+                        playerStats[d.userId].games += 1;
+                    });
+                });
+
+                // 3. Render Roster
+                rosterTbody.innerHTML = '';
+                const renderedRoster = rosterList.map(p => {
+                    const stats = playerStats[p['user id']] || { total: 0, games: 0 };
+                    return {
+                        name: p.username,
+                        games: stats.games,
+                        total: stats.total,
+                        ppg: stats.games > 0 ? (stats.total / stats.games) : 0
+                    };
+                }).sort((a,b) => b.total - a.total); // Sort by total points
+
+                if (renderedRoster.length === 0) {
+                    rosterTbody.innerHTML = '<tr><td colspan="4">No roster data found.</td></tr>';
+                } else {
+                    renderedRoster.forEach(p => {
+                        rosterTbody.innerHTML += `<tr>
+                            <td style="font-weight:600;color:white;">${p.name}</td>
+                            <td>${p.games}</td>
+                            <td class="win">${p.total.toFixed(2)}</td>
+                            <td>${p.ppg.toFixed(2)}</td>
+                        </tr>`;
+                    });
+                }
+
+                // --- PROCESS DRAFT CAPITAL ---
+                const draftTbody = document.getElementById('draft-tbody');
+                draftTbody.innerHTML = '';
+                
+                if (draftPicksText) {
+                    const draftData = parseCsvToObject(draftPicksText);
+                    // Filter where Team matches the current team
+                    const teamPicks = draftData.filter(p => teamNamesToQuery.includes(p['team']));
+                    
+                    if (teamPicks.length === 0) {
+                         draftTbody.innerHTML = '<tr><td colspan="3">No draft capital found.</td></tr>';
+                    } else {
+                        // Sort by Season then Round
+                        teamPicks.sort((a, b) => (parseInt(a.season) - parseInt(b.season)) || (parseInt(a.round) - parseInt(b.round)));
+                        
+                        teamPicks.forEach(pick => {
+                             draftTbody.innerHTML += `<tr>
+                                <td>${pick.season}</td>
+                                <td>${pick.round}</td>
+                                <td style="color: var(--text-muted);">${pick.notes || '-'}</td>
+                            </tr>`;
+                        });
+                    }
+                } else {
+                     draftTbody.innerHTML = '<tr><td colspan="3">Draft capital data not available.</td></tr>';
+                }
+
+            } catch (e) {
+                console.error("Team Load Error:", e);
+                mainContent.innerHTML = `<div class="placeholder">Error loading data for ${teamName}.<br><small>${e.message}</small></div>`;
+            }
+        }
+    </script>
+</body>
+</html>

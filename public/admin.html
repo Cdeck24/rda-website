@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <!-- Required for Hashids Token Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    <style>
+        .admin-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: left;
+        }
+
+        .auth-status {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--gold-light);
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            max-width: 100%;
+            padding: 0.8rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border-subtle);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus, 
+        .form-group select:focus {
+            border-color: var(--gold-mid);
+            outline: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-group button {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        #output {
+            background: #000;
+            color: #4ade80;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 2rem;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-subtle);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* Basic Login Form styles inside admin */
+        #login-container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- Navigation (Injected via JS) -->
+
+    <h1 style="margin-top: 2rem; font-size: 2.5rem; text-align: center;">Admin Panel</h1>
+    
+    <div class="admin-container">
+        
+        <!-- Easy Navigation Links -->
+        <div style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);">
+            <a href="index.html" style="color: var(--gold-mid); text-decoration: none; font-weight: bold; margin-right: 1.5rem;">&larr; Live Scores</a>
+            <span style="color: var(--text-muted);">|</span>
+            <a href="hub.html" style="color: var(--gold-mid); text-decoration: none; font-weight: bold; margin-left: 1.5rem;">Hub &rarr;</a>
+        </div>
+        
+        <!-- Auth Section -->
+        <div class="auth-status">
+            <div id="user-display" style="color: var(--text-muted); margin-bottom: 1rem;">Checking authentication...</div>
+            
+            <div id="login-container" class="hidden">
+                <input type="email" id="login-email" placeholder="Admin Email" style="margin-bottom: 1rem;">
+                <input type="password" id="login-password" placeholder="Password" style="margin-bottom: 1rem;">
+                <button id="btn-login" class="btn-primary" style="width: 100%;">Sign In</button>
+                <div id="login-error" style="color: var(--danger); margin-top: 1rem; font-size: 0.9rem;"></div>
+            </div>
+
+            <button id="btn-logout" class="btn-danger hidden">Sign Out</button>
+        </div>
+
+        <!-- Admin Controls -->
+        <div id="admin-controls" class="hidden">
+            <div class="form-group">
+                <label for="seasonSelect">Season</label>
+                <select id="seasonSelect" onchange="loadScheduleDates()">
+                    <option value="5" selected>Season 5</option>
+                    <option value="4">Season 4</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="dateSelect">Game Date</label>
+                <select id="dateSelect">
+                    <option value="">Loading dates...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="gameType">Game Type</label>
+                <select id="gameType">
+                    <option value="regular">Regular Season</option>
+                    <option value="playoff">Playoff Game</option>
+                </select>
+            </div>
+
+            <div class="form-group hidden" id="playoffSeriesGroup">
+                <label for="playoffSeries">Playoff Series</label>
+                <select id="playoffSeries">
+                    <option value="Wild-Card">Wild Card Round</option>
+                    <option value="Semi-Finals">Semi-Finals Round</option>
+                    <option value="Championship">Championship</option>
+                    <option value="Third-Place">3rd Place Match</option>
+                </select>
+                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">Used to group games together in a Best-of-X series.</small>
+            </div>
+
+            <div class="btn-group">
+                <button id="btn-fetch" class="btn-primary">Fetch & Write Scores</button>
+                <button id="btn-undo" class="btn-danger">Undo Writes for Date</button>
+            </div>
+
+            <pre id="output">Waiting for command...</pre>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initNav } from './js/app.js';
+        import { db, auth } from './js/firebase-config.js';
+        import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
+        import { doc, setDoc, deleteDoc, getDoc, collection, query, where, getDocs, writeBatch, increment } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+
+        // Initialize Global Nav
+        initNav();
+
+        // --- AUTH LOGIC ---
+        const userDisplay = document.getElementById('user-display');
+        const loginContainer = document.getElementById('login-container');
+        const adminControls = document.getElementById('admin-controls');
+        const btnLogout = document.getElementById('btn-logout');
+        const btnLogin = document.getElementById('btn-login');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userDisplay.textContent = `Logged in securely as: ${user.email}`;
+                loginContainer.classList.add('hidden');
+                btnLogout.classList.remove('hidden');
+                adminControls.classList.remove('hidden');
+            } else {
+                userDisplay.textContent = 'Restricted Access. Please log in.';
+                loginContainer.classList.remove('hidden');
+                btnLogout.classList.add('hidden');
+                adminControls.classList.add('hidden');
+            }
+        });
+
+        btnLogin.addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const err = document.getElementById('login-error');
+            err.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                err.textContent = error.message;
+            }
+        });
+
+        btnLogout.addEventListener('click', () => signOut(auth));
+
+        // --- FORM TOGGLES ---
+        const gameTypeSelect = document.getElementById('gameType');
+        const playoffSeriesGroup = document.getElementById('playoffSeriesGroup');
+
+        gameTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'playoff') {
+                playoffSeriesGroup.classList.remove('hidden');
+            } else {
+                playoffSeriesGroup.classList.add('hidden');
+            }
+        });
+
+        // --- FETCH & WRITE LOGIC ---
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f'; 
+        const REAL_VERSION = '27';
+        
+        // Configuration mapping for Seasons
+        const seasonConfigs = {
+            '4': {
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
+                schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv'
+            },
+            '5': {
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
+                schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv'
+            }
+        };
+
+        const output = document.getElementById('output');
+        const dateSelect = document.getElementById('dateSelect');
+        const seasonSelect = document.getElementById('seasonSelect');
+
+        document.getElementById('btn-fetch').addEventListener('click', performFetchAndWrite);
+        document.getElementById('btn-undo').addEventListener('click', performUndo);
+
+        // Make it accessible globally for the select onchange attribute
+        window.loadScheduleDates = async function() {
+            const season = seasonSelect.value;
+            const config = seasonConfigs[season];
+            
+            try {
+                dateSelect.innerHTML = '<option value="">Loading dates...</option>';
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(config.schedule));
+                if (!res.ok) throw new Error("Network response was not ok");
+                const text = await res.text();
+                
+                const rows = text.split('\n').map(line => {
+                    let inQuotes = false;
+                    let currentVal = '';
+                    const values = [];
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                        else currentVal += char;
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                }).filter(r => r.length > 0 && r[0] !== '');
+
+                const headers = rows[0].map(h => h.toLowerCase());
+                const dIdx = headers.findIndex(h => h.includes('date'));
+                
+                if (dIdx === -1) {
+                    dateSelect.innerHTML = '<option value="">Error: Date column not found</option>';
+                    return;
+                }
+
+                const uniqueDates = new Set();
+                rows.slice(1).forEach(r => {
+                    const d = r[dIdx]?.trim();
+                    if (d) uniqueDates.add(d);
+                });
+
+                const parseSortableDate = (dateStr) => {
+                    if (!dateStr) return 0;
+                    const parts = dateStr.split('/');
+                    if (parts.length >= 2) {
+                        const month = parseInt(parts[0], 10);
+                        const day = parseInt(parts[1], 10);
+                        let year = new Date().getFullYear();
+                        if (parts.length === 3) year = parseInt(parts[2], 10);
+                        if (year < 100) year += 2000;
+                        return new Date(year, month - 1, day).getTime();
+                    }
+                    const d = new Date(dateStr);
+                    return isNaN(d) ? 0 : d.getTime();
+                }
+
+                // Sort the dates chronologically
+                const sortedDates = [...uniqueDates].sort((a, b) => {
+                    return parseSortableDate(a) - parseSortableDate(b);
+                });
+
+                dateSelect.innerHTML = '';
+                sortedDates.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    dateSelect.appendChild(opt);
+                });
+
+                if (sortedDates.length === 0) {
+                    dateSelect.innerHTML = '<option value="">No dates found in schedule</option>';
+                }
+            } catch (e) {
+                dateSelect.innerHTML = '<option value="">Error loading schedule</option>';
+                console.error("Failed to load dates:", e);
+            }
+        }
+        
+        // Initialize dates on load
+        window.loadScheduleDates();
+
+        function generateRequestToken() {
+            const timestampMs = Date.now();
+            // @ts-ignore
+            const hasher = new Hashids("realwebapp", 16);
+            return hasher.encode(timestampMs);
+        }
+        
+        function base64ToText(base64String) {
+            if (!base64String) return '';
+            try {
+                const binStr = atob(base64String);
+                const bytes = new Uint8Array(binStr.length);
+                for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+                return new TextDecoder().decode(bytes);
+            } catch (e) { return ''; }
+        }
+
+        async function fetchBatchViaWorker(urls) {
+            const queryParams = new URLSearchParams();
+            urls.forEach(url => queryParams.append('url', url));
+            const urlString = workerProxy + '?' + queryParams.toString();
+            
+            const fetchOptions = {
+                headers: {
+                    'real-auth-info': REAL_AUTH_TOKEN,
+                    'real-device-name': 'Chrome on Web',
+                    'real-device-type': 'desktop_web',
+                    'real-device-uuid': crypto.randomUUID(),
+                    'real-request-token': generateRequestToken(),
+                    'real-version': REAL_VERSION
+                }
+            };
+            const res = await fetch(urlString, fetchOptions);
+            if (!res.ok) throw new Error(`Worker HTTP ${res.status}`);
+            return res.json();
+        }
+
+        async function performFetchAndWrite() {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            const config = seasonConfigs[season];
+            const isPlayoff = gameTypeSelect.value === 'playoff';
+
+            if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
+            
+            output.textContent = `Initializing fetch for Season ${season} on ${selectedDate}...\n`;
+            const logs = [];
+            const batch = writeBatch(db);
+
+            try {
+                // 1. Fetch CSVs
+                const [playersRes, scheduleRes] = await Promise.all([
+                    fetch(workerProxy + '?url=' + encodeURIComponent(config.players)),
+                    fetch(workerProxy + '?url=' + encodeURIComponent(config.schedule))
+                ]);
+                
+                const playersCsvText = await playersRes.text();
+                const scheduleCsvText = await scheduleRes.text();
+
+                // 2. Parse Schedule
+                const scheduleRows = scheduleCsvText.trim().split('\n').map(r => r.split(','));
+                const schedHeaders = scheduleRows[0].map(h => h.trim().toLowerCase());
+                const dIdx = schedHeaders.findIndex(h => h.includes('date'));
+                const t1Idx = schedHeaders.findIndex(h => h.includes('team1') || h.includes('team 1'));
+                const t2Idx = schedHeaders.findIndex(h => h.includes('team2') || h.includes('team 2'));
+
+                const todayGames = [];
+                scheduleRows.slice(1).forEach(r => {
+                    if (r[dIdx]?.trim() === selectedDate) {
+                        todayGames.push({ team1: r[t1Idx]?.trim(), team2: r[t2Idx]?.trim() });
+                    }
+                });
+
+                if (todayGames.length === 0) {
+                    output.textContent += `\nNo games found in schedule for ${selectedDate}.`;
+                    return;
+                }
+
+                // Create two sets for robust case-insensitive matching
+                const activeTeamsRaw = new Set();
+                const activeTeamsLower = new Set();
+                
+                todayGames.forEach(g => { 
+                    if (g.team1) {
+                        activeTeamsRaw.add(g.team1);
+                        activeTeamsLower.add(g.team1.toLowerCase());
+                    }
+                    if (g.team2) {
+                        activeTeamsRaw.add(g.team2);
+                        activeTeamsLower.add(g.team2.toLowerCase());
+                    }
+                });
+                logs.push(`Found ${todayGames.length} games. Active teams: ${[...activeTeamsRaw].join(', ')}`);
+
+                // 3. Parse Players
+                const playersRows = playersCsvText.trim().split('\n').map(r => r.split(','));
+                const pHeaders = playersRows[0].map(h => h.trim().toLowerCase());
+                const uIdx = pHeaders.findIndex(h => h === 'username');
+                const uidIdx = pHeaders.findIndex(h => h.includes('user id') || h.includes('userid'));
+                const teamIdx = pHeaders.findIndex(h => h === 'team');
+                const playIdx = pHeaders.findIndex(h => h.includes('playing'));
+
+                const sportIdIndices = {};
+                pHeaders.forEach((h, i) => {
+                    const m = h.match(/^([a-z]+) id$/);
+                    if (m && h !== 'user id' && h !== 'draft id') sportIdIndices[m[1].toUpperCase()] = i;
+                });
+
+                const allPlayerDataForDay = {};
+                const fetchUrls = [];
+
+                playersRows.slice(1).forEach(row => {
+                    const originalTeam = row[teamIdx]?.trim();
+                    const teamLower = originalTeam?.toLowerCase();
+                    const isPlaying = row[playIdx]?.trim().toLowerCase() === 'yes';
+                    
+                    if (teamLower && activeTeamsLower.has(teamLower) && isPlaying) {
+                        const userId = row[uidIdx]?.trim();
+                        const username = row[uIdx]?.trim();
+                        if (!userId) return;
+
+                        if (!allPlayerDataForDay[userId]) {
+                            allPlayerDataForDay[userId] = { userId, username, team: originalTeam, scoresBySport: {}, totalScore: 0 };
+                        }
+
+                        for (const sport in sportIdIndices) {
+                            const draftId = row[sportIdIndices[sport]]?.trim();
+                            if (draftId) {
+                                fetchUrls.push({
+                                    url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${userId}?contestType=sport&source=home`,
+                                    userId, sport, team: originalTeam, retries: 0
+                                });
+                            }
+                        }
+                    }
+                });
+
+                output.textContent += `\nQueueing ${fetchUrls.length} stat requests to Real API...\n`;
+
+                // 4. Batch Fetch via API Worker (WITH DYNAMIC PACING)
+                const chunkSize = 3; // Reduced chunk size for safety
+                let queue = [...fetchUrls];
+                let loaded = 0;
+
+                while (queue.length > 0) {
+                    const chunk = queue.splice(0, chunkSize);
+                    
+                    try {
+                        const results = await fetchBatchViaWorker(chunk.map(c => c.url));
+                        
+                        if (!Array.isArray(results)) {
+                            throw new Error("Worker responded but the format was not an array.");
+                        }
+
+                        let hitRateLimit = false;
+
+                        results.forEach((res, idx) => {
+                            const req = chunk[idx];
+                            const pData = allPlayerDataForDay[req.userId];
+                            
+                            if (res.status === 200) {
+                                try {
+                                    const data = JSON.parse(base64ToText(res.body));
+                                    
+                                    // Robust Score & Rank extraction
+                                    let scoreDisplay = '0';
+                                    if (data.info?.rankDisplayInfos?.length > 0) {
+                                        scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
+                                    } else if (data.rankDisplayInfos?.length > 0) {
+                                        scoreDisplay = data.rankDisplayInfos[0].scoreDisplay || '0';
+                                    } else if (data.scoreDisplay) {
+                                        scoreDisplay = data.scoreDisplay;
+                                    }
+                                    
+                                    pData.scoresBySport[req.sport] = parseFloat(scoreDisplay || '0');
+                                    if (data.info?.user?.userName) pData.username = data.info.user.userName;
+                                    loaded++;
+                                } catch (e) { 
+                                    pData.scoresBySport[req.sport] = 'Error'; 
+                                    loaded++;
+                                }
+                            } else if (res.status === 429 && req.retries < 3) {
+                                req.retries++;
+                                queue.push(req);
+                                hitRateLimit = true;
+                            } else {
+                                pData.scoresBySport[req.sport] = 'Error';
+                                loaded++;
+                            }
+                        });
+
+                        output.textContent = `Fetched ${loaded}/${fetchUrls.length}...\n`;
+
+                        // Dynamic pacing delays
+                        if (hitRateLimit) {
+                            await new Promise(r => setTimeout(r, 3000));
+                        } else if (queue.length > 0) {
+                            await new Promise(r => setTimeout(r, 300));
+                        }
+
+                    } catch (e) {
+                        chunk.forEach(req => {
+                            const pData = allPlayerDataForDay[req.userId];
+                            if (pData) pData.scoresBySport[req.sport] = 'Error';
+                            loaded++;
+                        });
+                        output.textContent = `Fetched ${loaded}/${fetchUrls.length} (Chunk Failed)...\n`;
+                    }
+                }
+
+                // 5. Prepare Player Database Writes
+                output.textContent = `\nPreparing database writes...\n`;
+                const playerColl = isPlayoff ? `s${season}-playoff-players` : `s${season}-players`;
+                
+                Object.values(allPlayerDataForDay).forEach(player => {
+                    player.totalScore = Object.values(player.scoresBySport).reduce((sum, s) => sum + (typeof s === 'number' ? s : 0), 0);
+                    
+                    for (const sport in player.scoresBySport) {
+                        const score = player.scoresBySport[sport];
+                        if (typeof score === 'number') {
+                            const docId = `${selectedDate.replace(/\//g, '.')}-${player.userId}-${sport}`;
+                            batch.set(doc(db, playerColl, docId), {
+                                username: player.username, userId: player.userId, team: player.team, score, date: selectedDate, sport
+                            });
+                            logs.push(`✓ Queued write for Player: ${player.username} (${sport}) -> ${score}`);
+                        }
+                    }
+                });
+
+                // 6. Game & Team Standings Writes
+                const gameColl = isPlayoff ? `s${season}-playoff-games` : `s${season}-games`;
+                const teamColl = `s${season}-teams`;
+                const playoffsColl = `s${season}-playoffs`;
+
+                todayGames.forEach(game => {
+                    const t1 = game.team1, t2 = game.team2;
+                    let t1Score = 0, t2Score = 0;
+                    let t1SeriesWins = 0, t2SeriesWins = 0;
+
+                    const p1 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t1.toLowerCase());
+                    const p2 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t2.toLowerCase());
+
+                    const allSports = new Set();
+                    [...p1, ...p2].forEach(p => Object.keys(p.scoresBySport).forEach(s => allSports.add(s)));
+
+                    // Calculate score by sport and determine "series" winners
+                    [...allSports].forEach(sport => {
+                        const s1 = p1.reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
+                        const s2 = p2.reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
+                        
+                        if (s1 > s2) t1SeriesWins++;
+                        else if (s2 > s1) t2SeriesWins++;
+                        
+                        t1Score += s1; t2Score += s2;
+                    });
+
+                    let winner = t1SeriesWins > t2SeriesWins ? t1 : (t2SeriesWins > t1SeriesWins ? t2 : (t1Score > t2Score ? t1 : t2));
+                    let loser = winner === t1 ? t2 : t1;
+
+                    const gameId = `${selectedDate.replace(/\//g, '.')}-${t1}-vs-${t2}`.replace(/\s+/g, '');
+                    batch.set(doc(db, gameColl, gameId), {
+                        date: selectedDate, team1: t1, team2: t2, team1score: parseFloat(t1Score.toFixed(2)), team2score: parseFloat(t2Score.toFixed(2)),
+                        winner, team1SeriesWins: t1SeriesWins, team2SeriesWins: t2SeriesWins
+                    });
+                    logs.push(`✓ Queued write for Game: ${t1} vs ${t2} | Winner: ${winner}`);
+
+                    // Write to team standings / playoff bracket
+                    if (!isPlayoff) {
+                        batch.set(doc(db, teamColl, winner), { wins: increment(1), gamesPlayed: increment(1), pointsFor: increment(winner === t1 ? t1Score : t2Score), pointsAgainst: increment(winner === t1 ? t2Score : t1Score), name: winner }, { merge: true });
+                        batch.set(doc(db, teamColl, loser), { losses: increment(1), gamesPlayed: increment(1), pointsFor: increment(loser === t1 ? t1Score : t2Score), pointsAgainst: increment(loser === t1 ? t2Score : t1Score), name: loser }, { merge: true });
+                        logs.push(`✓ Team standings updated for ${winner} and ${loser}`);
+                    } else {
+                        const sId = document.getElementById('playoffSeries').value;
+                        if (sId) {
+                            batch.set(doc(db, playoffsColl, sId), { [winner]: increment(1) }, { merge: true });
+                            logs.push(`✓ Playoff series [${sId}] win incremented for ${winner}`);
+                        }
+                    }
+                });
+
+                // 7. Commit batch
+                await batch.commit();
+                output.textContent = "SUCCESS! All writes committed to Database.\n\n" + logs.join('\n');
+
+            } catch (e) {
+                output.textContent = `CRITICAL ERROR: ${e.message}\nCheck console for details.`;
+                console.error(e);
+            }
+        }
+
+        async function performUndo() {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            const isPlayoff = gameTypeSelect.value === 'playoff';
+
+            if (!selectedDate) { output.textContent = 'Error: Please select a date to undo.'; return; }
+            if (!confirm(`WARNING: Are you sure you want to UNDO all database writes for ${selectedDate} in Season ${season}?`)) return;
+
+            output.textContent = `Reverting writes for ${selectedDate}...\n`;
+            const batch = writeBatch(db);
+            const logs = [];
+
+            try {
+                // 1. Delete games & revert standings
+                const gameColl = isPlayoff ? `s${season}-playoff-games` : `s${season}-games`;
+                const gamesSnap = await getDocs(query(collection(db, gameColl), where('date', '==', selectedDate)));
+
+                for (const gameDoc of gamesSnap.docs) {
+                    const { winner, team1, team2, team1score, team2score } = gameDoc.data();
+                    const loser = winner === team1 ? team2 : team1;
+
+                    if (!isPlayoff) {
+                        const teamColl = `s${season}-teams`;
+                        const wRef = doc(db, teamColl, winner);
+                        const lRef = doc(db, teamColl, loser);
+                        
+                        const [wD, lD] = await Promise.all([getDoc(wRef), getDoc(lRef)]);
+                        if (wD.exists()) {
+                            batch.set(wRef, { wins: increment(-1), gamesPlayed: increment(-1), pointsFor: increment(-(winner === team1 ? team1score : team2score)), pointsAgainst: increment(-(winner === team1 ? team2score : team1score)) }, { merge: true });
+                        }
+                        if (lD.exists()) {
+                            batch.set(lRef, { losses: increment(-1), gamesPlayed: increment(-1), pointsFor: increment(-(loser === team1 ? team1score : team2score)), pointsAgainst: increment(-(loser === team1 ? team2score : team1score)) }, { merge: true });
+                        }
+                    }
+                    batch.delete(gameDoc.ref);
+                    logs.push(`✓ Reverted game & standings: ${team1} vs ${team2}`);
+                }
+
+                // 2. Delete players
+                const playerColl = isPlayoff ? `s${season}-playoff-players` : `s${season}-players`;
+                const playersSnap = await getDocs(query(collection(db, playerColl), where('date', '==', selectedDate)));
+                playersSnap.forEach(d => batch.delete(d.ref));
+                logs.push(`✓ Deleted ${playersSnap.size} individual player stat records.`);
+
+                // 3. Commit
+                await batch.commit();
+                output.textContent += "SUCCESS! Undo complete.\n\n" + logs.join('\n');
+            } catch (e) {
+                output.textContent = `ERROR during undo: ${e.message}\nCheck console.`;
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>

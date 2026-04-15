@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        /* --- Internal Tab Navigation (Specific to Hub) --- */
+        .internal-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #333;
+            flex-wrap: wrap; 
+        }
+
+        .internal-tab-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.1rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: color 0.3s;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+        }
+
+        .internal-tab-btn:hover { color: #ccc; }
+        .internal-tab-btn.active { color: #fff; border-bottom-color: #4CAF50; }
+
+        .tab-pane { display: none; animation: fadeIn 0.3s ease-out; }
+        .tab-pane.active { display: block; }
+
+        /* Content Sections */
+        .hub-content { max-width: 1200px; margin: 0 auto; padding-bottom: 4rem; }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: #eee;
+            text-align: left;
+            padding-left: 0.5rem;
+            border-left: 4px solid #4CAF50;
+        }
+
+        /* Games Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .game-card {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            display: block; 
+        }
+
+        .game-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-color: #555;
+        }
+
+        .game-date {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .matchup-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .team-logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+        }
+
+        .team-name { font-size: 0.9rem; font-weight: 600; text-align: center; }
+        .vs-badge { font-size: 0.8rem; font-weight: 700; color: #666; padding: 0.5rem; }
+
+        .game-meta {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #222;
+            font-size: 0.85rem;
+            color: #aaa;
+            text-align: center;
+        }
+
+        /* Draft Table Styles */
+        .draft-table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #333;
+            background: #0f0f0f;
+        }
+
+        .draft-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .draft-table th, .draft-table td { padding: 1rem; text-align: left; border-bottom: 1px solid #222; }
+        .draft-table th { background: #1a1a1a; color: #888; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+        .draft-table tr:last-child td { border-bottom: none; }
+        .draft-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+        .draft-pick-number { font-weight: 700; color: #4CAF50; }
+        
+        .draft-team-cell { display: flex; align-items: center; gap: 0.75rem; }
+        .draft-player-cell { font-weight: 500; color: #fff; }
+
+        #loading-message, #draft-loading-message {
+            color: #888; font-style: italic; grid-column: 1 / -1; padding: 2rem; text-align: center;
+        }
+
+        /* --- Historical Styles (Old Bracket) --- */
+        .bracket-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            align-items: start;
+            padding: 2rem;
+            background: #111;
+            border-radius: 12px;
+            border: 1px solid #333;
+            overflow-x: auto;
+        }
+        .bracket-round { display: flex; flex-direction: column; gap: 2rem; }
+        .round-title { text-align: center; color: #888; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; min-height: 1.2em; }
+        .matchup-card { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 0.8rem; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        
+        /* Connector Lines (Old) */
+        @media (min-width: 768px) {
+            .bracket-round:not(:last-child) .matchup-card::after {
+                content: ''; position: absolute; right: -2rem; top: 50%; width: 2rem; height: 1px; background: #333;
+            }
+        }
+        .team-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.95rem; }
+        .team-name-flex { display: flex; align-items: center; gap: 8px; }
+        .team-score { font-weight: bold; color: #666; }
+        .winner .team-name-flex { color: #fff; font-weight: bold; }
+        .winner .team-score { color: #4CAF50; }
+
+
+        /* --- Tree Bracket Styles (Season 4 Full Bracket) --- */
+        .tournament-bracket {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start; /* Ensures scrolling starts from the left edge for oversized brackets */
+            align-items: stretch;
+            gap: 30px; /* Space for 15px out + 15px in */
+            padding: 50px 20px 20px 20px; /* Extra top padding for header and series labels */
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #111;
+            border-radius: 12px;
+            border: 1px solid #333;
+            min-height: 500px;
+        }
+
+        .bracket-side {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            flex: 1;
+        }
+        .bracket-side.right {
+            flex-direction: row-reverse; /* Flips the column order for the West side */
+        }
+
+        .bracket-column {
+            display: flex;
+            flex-direction: column;
+            width: 160px;
+            min-width: 160px;
+            position: relative;
+        }
+
+        .matchup-pair {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around; /* Perfect mathematical centering */
+            flex: 1; /* Takes equal height in column */
+            position: relative;
+        }
+
+        .matchup-pair.single {
+            justify-content: center; /* Center the single match in its column */
+        }
+
+        .bracket-match {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            height: 54px;
+            flex: 0 0 54px; /* Prevent stretching */
+            box-sizing: border-box;
+        }
+
+        .bracket-team {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 26px;
+            padding: 0 8px;
+            font-size: 0.75rem;
+            color: #ccc;
+            border-bottom: 1px solid #222;
+            box-sizing: border-box;
+        }
+        .bracket-team:last-child { border-bottom: none; }
+        .bracket-team .team-name {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;
+        }
+
+        /* Connecting Lines (Left Side / East) */
+        .bracket-side.left .bracket-column:not(:last-child) .matchup-pair:not(.single)::after {
+            content: ''; position: absolute; right: -15px; top: 25%; height: 50%;
+            border-right: 2px solid #555; border-top: 2px solid #555; border-bottom: 2px solid #555;
+            width: 15px; border-radius: 0 4px 4px 0; z-index: 0;
+        }
+        .bracket-side.left .bracket-column:not(:first-child) .bracket-match::before {
+            content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%); width: 15px; border-top: 2px solid #555; z-index: 0;
+        }
+        .bracket-side.left .bracket-column:last-child .matchup-pair.single::after {
+            content: ''; position: absolute; right: -15px; top: 50%; transform: translateY(-50%); width: 15px; border-top: 2px solid #555; z-index: 0;
+        }
+
+        /* Connecting Lines (Right Side / West) */
+        .bracket-side.right .bracket-column:not(:last-child) .matchup-pair:not(.single)::after {
+            content: ''; position: absolute; left: -15px; top: 25%; height: 50%;
+            border-left: 2px solid #555; border-top: 2px solid #555; border-bottom: 2px solid #555;
+            width: 15px; border-radius: 4px 0 0 4px; z-index: 0;
+        }
+        .bracket-side.right .bracket-column:not(:first-child) .bracket-match::before {
+            content: ''; position: absolute; right: -15px; top: 50%; transform: translateY(-50%); width: 15px; border-top: 2px solid #555; z-index: 0;
+        }
+        .bracket-side.right .bracket-column:last-child .matchup-pair.single::after {
+            content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%); width: 15px; border-top: 2px solid #555; z-index: 0;
+        }
+
+        /* Championship Center Area */
+        .bracket-center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            min-width: 180px;
+            position: relative; /* Allows absolute positioning of the 3rd place match below */
+        }
+        .championship-match {
+            position: relative; width: 100%;
+        }
+        .championship-match::before {
+            content: ''; position: absolute; left: -15px; top: 50%; transform: translateY(-50%); width: 15px; border-top: 2px solid #555;
+        }
+        .championship-match::after {
+            content: ''; position: absolute; right: -15px; top: 50%; transform: translateY(-50%); width: 15px; border-top: 2px solid #555;
+        }
+        
+        /* Remove connecting lines for 3rd place matchups */
+        .championship-match.no-lines::before,
+        .championship-match.no-lines::after {
+            display: none !important;
+        }
+
+        /* Conference Header & Series Tags */
+        .conf-header-text {
+            position: absolute;
+            top: -35px;
+            width: 100%;
+            text-align: center;
+            color: var(--gold-mid);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .series-label {
+            position: absolute;
+            top: -15px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.65rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- Responsive Styles (Specific to Hub Components) --- */
+        @media (max-width: 1200px) {
+            .tournament-bracket {
+                justify-content: flex-start; /* Ensures scrolling starts from the left edge */
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+            .game-card {
+                padding: 1rem;
+            }
+            h1 {
+                margin-bottom: 1.5rem;
+            }
+            .internal-tabs {
+                gap: 0.5rem;
+            }
+            .internal-tab-btn {
+                font-size: 0.9rem;
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>RDA Hub</h1>
+    
+    <!-- Navigation (Injected via JS) -->
+    
+    <!-- MAIN CONTAINER -->
+    <div id="main-hub-container" class="hub-content">
+        <!-- Content injected by JS based on season -->
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason, getSeasonData } from './js/app.js';
+        initNav();
+
+        // --- URL PROXIES ---
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const scheduleUrlS4 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv';
+        const scheduleUrlS5 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv';
+        const draftUrlS4 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?output=csv';
+
+        // --- CONFIGURATIONS ---
+        const configs = {
+            '1': { status: 'Complete', champion: 'Manatees', mvp: '@alp' },
+            '2': { status: 'Complete', champion: 'Kings', mvp: '@croze' },
+            '3': { status: 'Complete', champion: 'Kings', mvp: '@bc' },
+            '4': { status: 'Complete', champion: 'Reapers', mvp: '@balt' },
+            '5': { status: 'Upcoming', champion: 'TBD', mvp: 'TBD' }
+        };
+
+        // --- IMAGE HELPER ---
+        function getTeamLogoPath(name) {
+             let cleanName = name.trim().toLowerCase();
+             if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
+             cleanName = cleanName.replace(/\s+/g, '-');
+             
+             // Specific extensions
+             const isPng = ['reapers', 'zombies'].includes(cleanName);
+             return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            const container = document.getElementById('main-hub-container');
+
+            if (currentSeason === '5') {
+                renderSeason5Hub(container);
+            } else if (currentSeason === '4') {
+                renderSeason4Hub(container);
+            } else {
+                renderHistoricalHub(container);
+            }
+        }
+
+        // ==========================================
+        //  SEASON 5 LOGIC (Upcoming State)
+        // ==========================================
+        function renderSeason5Hub(container) {
+            container.innerHTML = `
+                <!-- Internal Tabs -->
+                <div class="internal-tabs">
+                    <button class="internal-tab-btn active" id="btn-games">Upcoming Games</button>
+                    <button class="internal-tab-btn" id="btn-draft">Season 5 Draft</button>
+                    <button class="internal-tab-btn" id="btn-madness">RDA Madness</button>
+                    <button class="internal-tab-btn" id="btn-bracket">Playoff Bracket</button>
+                </div>
+
+                <!-- Tab 1: Upcoming Games -->
+                <div id="tab-games" class="tab-pane active">
+                    <h2 class="section-title">Upcoming Games</h2>
+                    <div class="games-grid" id="upcoming-games-container">
+                        <div id="loading-message">Loading schedule...</div>
+                    </div>
+                    <p style="margin-top: 2rem; color: #666; font-size: 0.9rem;">
+                        Full schedule available in the <a href="schedule.html?season=5" style="color: #4CAF50; text-decoration: none;">Schedule</a> tab.
+                    </p>
+                </div>
+
+                <!-- Tab 2: Draft -->
+                <div id="tab-draft" class="tab-pane">
+                    <h2 class="section-title">Season 5 Draft Results</h2>
+                    <div class="draft-table-container">
+                        <div style="padding: 2rem; color: #888; text-align: center;">The Season 5 Draft is upcoming.</div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Madness -->
+                <div id="tab-madness" class="tab-pane">
+                    <h2 class="section-title">RDA Madness</h2>
+                    <div style="padding: 2rem; color: #888; text-align: center;">Bracket will be revealed during the season.</div>
+                </div>
+
+                <!-- Tab 4: League Playoffs -->
+                <div id="tab-bracket" class="tab-pane">
+                    <h2 class="section-title">League Playoff Bracket</h2>
+                    <div style="padding: 2rem; color: #888; text-align: center;">Playoff matchups will be determined at the end of the regular season.</div>
+                </div>
+            `;
+
+            // Bind Tab Events
+            document.getElementById('btn-games').onclick = () => switchTab('games');
+            document.getElementById('btn-draft').onclick = () => switchTab('draft');
+            document.getElementById('btn-madness').onclick = () => switchTab('madness');
+            document.getElementById('btn-bracket').onclick = () => switchTab('bracket');
+
+            loadUpcomingGames(scheduleUrlS5);
+        }
+
+        // ==========================================
+        //  SEASON 4 LOGIC (Completed Games & Draft)
+        // ==========================================
+        function renderSeason4Hub(container) {
+            container.innerHTML = `
+                <!-- Internal Tabs -->
+                <div class="internal-tabs">
+                    <button class="internal-tab-btn active" id="btn-games">Season Games</button>
+                    <button class="internal-tab-btn" id="btn-draft">Season 4 Draft</button>
+                    <button class="internal-tab-btn" id="btn-madness">RDA Madness</button>
+                    <button class="internal-tab-btn" id="btn-bracket">Playoff Bracket</button>
+                </div>
+
+                <!-- Tab 1: Upcoming Games -->
+                <div id="tab-games" class="tab-pane active">
+                    <h2 class="section-title">Season Games</h2>
+                    <div class="games-grid" id="upcoming-games-container">
+                        <div id="loading-message">Loading schedule...</div>
+                    </div>
+                    <p style="margin-top: 2rem; color: #666; font-size: 0.9rem;">
+                        Full schedule available in the <a href="schedule.html?season=4" style="color: #4CAF50; text-decoration: none;">Schedule</a> tab.
+                    </p>
+                </div>
+
+                <!-- Tab 2: Draft -->
+                <div id="tab-draft" class="tab-pane">
+                    <h2 class="section-title">Season 4 Draft Results</h2>
+                    <div class="draft-table-container">
+                        <table class="draft-table">
+                            <thead>
+                                <tr>
+                                    <th>Pick</th>
+                                    <th>Round</th>
+                                    <th>Team</th>
+                                    <th>Selection</th>
+                                </tr>
+                            </thead>
+                            <tbody id="draft-table-body">
+                                <tr><td colspan="4" id="draft-loading-message">Loading draft data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Madness -->
+                <div id="tab-madness" class="tab-pane">
+                    <h2 class="section-title">RDA Madness</h2>
+                    <div id="s4-madness-container">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Tab 4: League Playoffs -->
+                <div id="tab-bracket" class="tab-pane">
+                    <h2 class="section-title">League Playoff Bracket</h2>
+                    <div id="s4-bracket-container">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            `;
+
+            // Bind Tab Events
+            document.getElementById('btn-games').onclick = () => switchTab('games');
+            document.getElementById('btn-draft').onclick = () => switchTab('draft');
+            document.getElementById('btn-madness').onclick = () => switchTab('madness');
+            document.getElementById('btn-bracket').onclick = () => switchTab('bracket');
+
+            // Load Data
+            loadUpcomingGames(scheduleUrlS4, true); // true flag for historical (Season 4)
+            loadDraftS4();
+            renderS4Madness();
+            renderS4Bracket();
+        }
+
+        // Bracket Renderer Helpers
+        function renderTreeMatch(match) {
+            const t1 = match ? match.team1 : '';
+            const t2 = match ? match.team2 : '';
+            const s1 = match ? match.t1Wins : '';
+            const s2 = match ? match.t2Wins : '';
+            
+            // Add gold highlighting for the winner
+            const c1 = (s1 === 'W' || s1 > s2) ? 'color: var(--gold-mid); font-weight: bold;' : '';
+            const c2 = (s2 === 'W' || s2 > s1) ? 'color: var(--gold-mid); font-weight: bold;' : '';
+            
+            return `
+                <div class="bracket-match">
+                    <div class="bracket-team" style="${c1}">
+                        <span class="team-name" title="${t1}">${t1}</span>
+                        <span class="bracket-score">${s1}</span>
+                    </div>
+                    <div class="bracket-team" style="${c2}">
+                        <span class="team-name" title="${t2}">${t2}</span>
+                        <span class="bracket-score">${s2}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Dedicated helper for the 32-team format (RDA Madness)
+        function generateBracketSide(r1, r2, r3, r4, sideClass, confName) {
+            let html = `<div class="bracket-side ${sideClass}">`;
+            
+            // Round 1 (8 Matches -> 4 Pairs)
+            html += `<div class="bracket-column r1">
+                        <div class="conf-header-text">${confName}</div>`;
+            for(let i=0; i<8; i+=2) {
+                html += `<div class="matchup-pair">${renderTreeMatch(r1[i])}${renderTreeMatch(r1[i+1])}</div>`;
+            }
+            html += `</div>`;
+            
+            // Round 2 (4 Matches -> 2 Pairs)
+            html += `<div class="bracket-column r2">`;
+            for(let i=0; i<4; i+=2) {
+                html += `<div class="matchup-pair">${renderTreeMatch(r2?.[i])}${renderTreeMatch(r2?.[i+1])}</div>`;
+            }
+            html += `</div>`;
+            
+            // Round 3 (2 Matches -> 1 Pair)
+            html += `<div class="bracket-column r3">`;
+            html += `<div class="matchup-pair">${renderTreeMatch(r3?.[0])}${renderTreeMatch(r3?.[1])}</div>`;
+            html += `</div>`;
+            
+            // Round 4 (1 Match -> Single)
+            html += `<div class="bracket-column r4">`;
+            html += `<div class="matchup-pair single">${renderTreeMatch(r4)}</div>`;
+            html += `</div>`;
+            
+            html += `</div>`;
+            return html;
+        }
+
+        // Dedicated helper for the 8-team format (League Playoffs)
+        function generatePlayoffBracketSide(r1, r2, sideClass, confName) {
+            let html = `<div class="bracket-side ${sideClass}">`;
+            
+            // Round 1 (Wild Card - BO3)
+            html += `<div class="bracket-column r1">
+                        <div class="conf-header-text">${confName}</div>
+                        <div class="series-label">Wild Card (BO3)</div>
+                        <div class="matchup-pair">
+                            ${renderTreeMatch(r1[0])}
+                            ${renderTreeMatch(r1[1])}
+                        </div>
+                     </div>`;
+            
+            // Round 2 (Semi-Finals - BO5)
+            html += `<div class="bracket-column r2">
+                        <div class="series-label">Semi-Finals (BO5)</div>
+                        <div class="matchup-pair single">
+                            ${renderTreeMatch(r2[0])}
+                        </div>
+                     </div>`;
+            
+            html += `</div>`;
+            return html;
+        }
+
+        function renderS4Madness() {
+            const container = document.getElementById('s4-madness-container');
+            
+            // East Conference
+            const s4EastR1 = [
+                { team1: '1. sean_03', team2: '16. cdeck24', t1Wins: 'W', t2Wins: '-' },
+                { team1: '8. pcaisthegoat', team2: '9. amonraprops', t1Wins: '-', t2Wins: 'W' },
+                { team1: '4. fourr', team2: '13. victorosimhen', t1Wins: '-', t2Wins: 'W' },
+                { team1: '5. dylan430', team2: '12. ferrari', t1Wins: '-', t2Wins: 'W' },
+                { team1: '2. xxt_kraftpropsxx', team2: '15. bc', t1Wins: '-', t2Wins: 'W' },
+                { team1: '7. chet', team2: '10. braeden42', t1Wins: 'W', t2Wins: '-' },
+                { team1: '3. realkam', team2: '14. chefcurryy', t1Wins: 'W', t2Wins: '-' },
+                { team1: '6. tinosthe2nd', team2: '11. sua', t1Wins: 'W', t2Wins: '-' }
+            ];
+
+            const s4EastR2 = [
+                { team1: '1. sean_03', team2: '9. amonraprops', t1Wins: 'W', t2Wins: '-' },
+                { team1: '13. victorosimhen', team2: '12. ferrari', t1Wins: 'W', t2Wins: '-' },
+                { team1: '15. bc', team2: '7. chet', t1Wins: 'W', t2Wins: '-' },
+                { team1: '3. realkam', team2: '6. tinosthe2nd', t1Wins: '-', t2Wins: 'W' }
+            ];
+
+            const s4EastR3 = [
+                { team1: '1. sean_03', team2: '13. victorosimhen', t1Wins: 'W', t2Wins: '-' },
+                { team1: '15. bc', team2: '6. tinosthe2nd', t1Wins: '-', t2Wins: 'W' }
+            ];
+
+            // West Conference
+            const s4WestR1 = [
+                { team1: '1. dead', team2: '16. gio', t1Wins: 'W', t2Wins: '-' },
+                { team1: '8. jcsuvy', team2: '9. greektime', t1Wins: 'W', t2Wins: '-' },
+                { team1: '4. jabahhh', team2: '13. kninja', t1Wins: '-', t2Wins: 'W' },
+                { team1: '5. psyklone', team2: '12. fowler', t1Wins: 'W', t2Wins: '-' },
+                { team1: '2. kronic1x', team2: '15. r0dmanx', t1Wins: '-', t2Wins: 'W' },
+                { team1: '7. ant2holy', team2: '10. gundy32', t1Wins: 'W', t2Wins: '-' },
+                { team1: '3. nottherealben', team2: '14. alp', t1Wins: '-', t2Wins: 'W' },
+                { team1: '6. florida_sportsfan', team2: '11. cmg', t1Wins: 'W', t2Wins: '-' }
+            ];
+
+            const s4WestR2 = [
+                { team1: '1. dead', team2: '8. jcsuvy', t1Wins: '-', t2Wins: 'W' },
+                { team1: '13. kninja', team2: '5. psyklone', t1Wins: '-', t2Wins: 'W' },
+                { team1: '15. r0dmanx', team2: '7. ant2holy', t1Wins: 'W', t2Wins: '-' },
+                { team1: '14. alp', team2: '6. florida_sportsfan', t1Wins: '-', t2Wins: 'W' }
+            ];
+
+            const s4WestR3 = [
+                { team1: '8. jcsuvy', team2: '5. psyklone', t1Wins: 'W', t2Wins: '-' },
+                { team1: '15. r0dmanx', team2: '6. florida_sportsfan', t1Wins: 'W', t2Wins: '-' }
+            ];
+
+            const s4EastR4 = { team1: '1. sean_03', team2: '6. tinosthe2nd', t1Wins: 'W', t2Wins: '-' };
+            const s4WestR4 = { team1: '8. jcsuvy', team2: '15. r0dmanx', t1Wins: '-', t2Wins: 'W' };
+            const championship = { team1: '1. sean_03', team2: '15. r0dmanx', t1Wins: '-', t2Wins: 'W' };
+
+            let finalHtml = `<div class="tournament-bracket">`;
+            
+            // Build Left Side (East)
+            finalHtml += generateBracketSide(s4EastR1, s4EastR2, s4EastR3, s4EastR4, 'left', 'East');
+            
+            // Build Center (Championship)
+            finalHtml += `
+                <div class="bracket-center">
+                    <h3 style="font-size:0.9rem; color:var(--gold-mid); margin-bottom:10px; text-transform:uppercase;">Championship</h3>
+                    <div class="championship-match">
+                        ${renderTreeMatch(championship)}
+                    </div>
+                </div>
+            `;
+            
+            // Build Right Side (West)
+            finalHtml += generateBracketSide(s4WestR1, s4WestR2, s4WestR3, s4WestR4, 'right', 'West');
+            
+            finalHtml += `</div>`;
+            container.innerHTML = finalHtml;
+        }
+
+        function renderS4Bracket() {
+            const container = document.getElementById('s4-bracket-container');
+            
+            // East Conference
+            const eastR1 = [
+                { team1: '1. Bajas', team2: '4. Kings', t1Wins: '1', t2Wins: '2' },
+                { team1: '2. Underdogs', team2: '3. Dragons', t1Wins: '2', t2Wins: '0' }
+            ];
+            
+            const eastR2 = [
+                { team1: '4. Kings', team2: '2. Underdogs', t1Wins: '0', t2Wins: '3' }
+            ];
+            
+            // West Conference
+            const westR1 = [
+                { team1: '1. Voyagers', team2: '4. Tigers', t1Wins: '0', t2Wins: '2' },
+                { team1: '2. Reapers', team2: '3. Manatees', t1Wins: '2', t2Wins: '1' }
+            ];
+            
+            const westR2 = [
+                { team1: '4. Tigers', team2: '2. Reapers', t1Wins: '1', t2Wins: '3' }
+            ];
+            
+            const championship = { team1: '2. Underdogs', team2: '2. Reapers', t1Wins: '2', t2Wins: '4' };
+            
+            let finalHtml = `<div class="tournament-bracket">`;
+            
+            // Build Left Side (East)
+            finalHtml += generatePlayoffBracketSide(eastR1, eastR2, 'left', 'East');
+            
+            // Build Center (Championship)
+            finalHtml += `
+                <div class="bracket-center">
+                    <div style="width: 100%;">
+                        <h3 style="font-size:0.9rem; color:var(--gold-mid); margin-bottom:10px; text-transform:uppercase; text-align:center;">Championship (BO7)</h3>
+                        <div class="championship-match">
+                            ${renderTreeMatch(championship)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Build Right Side (West)
+            finalHtml += generatePlayoffBracketSide(westR1, westR2, 'right', 'West');
+            
+            finalHtml += `</div>`;
+            container.innerHTML = finalHtml;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.internal-tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            document.getElementById(`btn-${tabName}`).classList.add('active');
+        }
+
+        async function fetchCSV(url) {
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
+                if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
+                const text = await res.text();
+                return text.split('\n').map(line => {
+                    const cleanedLine = line.trim();
+                    if (cleanedLine.length === 0) return [];
+                    const values = [];
+                    let currentVal = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < cleanedLine.length; i++) {
+                        const char = cleanedLine[i];
+                        if (char === '"' && (i === 0 || cleanedLine[i-1] !== '\\')) {
+                            inQuotes = !inQuotes;
+                        } else if (char === ',' && !inQuotes) {
+                            values.push(currentVal.trim());
+                            currentVal = '';
+                        } else {
+                            currentVal += char;
+                        }
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                });
+            } catch (error) {
+                console.error("Error fetching CSV:", error);
+                return [];
+            }
+        }
+
+        function parseGameDate(dateStr) {
+            if (!dateStr) return null;
+            let date = new Date(dateStr);
+            if (!isNaN(date.getTime()) && date.getFullYear() >= 2020) return date;
+
+            const parts = dateStr.split('/');
+            if (parts.length >= 2) {
+                const month = parseInt(parts[0], 10);
+                const day = parseInt(parts[1], 10);
+                const currentYear = new Date().getFullYear();
+                if (!isNaN(month) && !isNaN(day)) {
+                    return new Date(currentYear, month - 1, day);
+                }
+            }
+            return null;
+        }
+
+        async function loadUpcomingGames(url, isHistorical = false) {
+            const container = document.getElementById('upcoming-games-container');
+            const data = await fetchCSV(url);
+            
+            if (!data || data.length < 2) {
+                container.innerHTML = '<div style="grid-column: 1/-1;">No schedule data found.</div>';
+                return;
+            }
+
+            const headers = data[0].map(h => h.toLowerCase().trim());
+            const dateIndex = headers.findIndex(h => h.includes('date'));
+            const team1Index = headers.findIndex(h => h.includes('team 1') || h === 'team1');
+            const team2Index = headers.findIndex(h => h.includes('team 2') || h === 'team2');
+            const gameTypeIndex = headers.findIndex(h => h.includes('game type'));
+
+            if (dateIndex === -1 || team1Index === -1 || team2Index === -1) {
+                container.innerHTML = `<div style="grid-column: 1/-1;">Error: Missing columns.</div>`;
+                return;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let gamesToShow = [];
+
+            if (isHistorical) {
+                // For completed seasons, show all or last games instead of upcoming
+                gamesToShow = data.slice(1, 7).filter(row => row[dateIndex] && row[team1Index] && row[team2Index]);
+            } else {
+                const upcomingGames = data.slice(1).filter(row => {
+                    if (!row[dateIndex] || !row[team1Index] || !row[team2Index]) return false;
+                    const gameDate = parseGameDate(row[dateIndex]);
+                    if (!gameDate) return false;
+                    return gameDate >= today;
+                });
+                upcomingGames.sort((a, b) => parseGameDate(a[dateIndex]) - parseGameDate(b[dateIndex]));
+                gamesToShow = upcomingGames.slice(0, 6);
+            }
+
+            if (gamesToShow.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1/-1;">No games found.</div>';
+                return;
+            }
+
+            container.innerHTML = ''; 
+
+            gamesToShow.forEach(row => {
+                const team1 = row[team1Index].trim();
+                const team2 = row[team2Index].trim();
+                const date = row[dateIndex];
+                const gameType = gameTypeIndex > -1 ? row[gameTypeIndex] : 'Matchup';
+                
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.innerHTML = `
+                    <div class="game-date">${date}</div>
+                    <div class="matchup-display">
+                        <div class="team-info">
+                            <img src="${getTeamLogoPath(team1)}" alt="${team1}" class="team-logo" onerror="this.src='https://placehold.co/60x60/222/fff?text=?'">
+                            <div class="team-name">${team1}</div>
+                        </div>
+                        <div class="vs-badge">VS</div>
+                        <div class="team-info">
+                            <img src="${getTeamLogoPath(team2)}" alt="${team2}" class="team-logo" onerror="this.src='https://placehold.co/60x60/222/fff?text=?'">
+                            <div class="team-name">${team2}</div>
+                        </div>
+                    </div>
+                    <div class="game-meta">${gameType}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function loadDraftS4() {
+            const tbody = document.getElementById('draft-table-body');
+            const data = await fetchCSV(draftUrlS4);
+
+            if (!data || data.length < 2) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">No draft data found.</td></tr>';
+                return;
+            }
+
+            const headers = data[0].map(h => h.toLowerCase().trim());
+            const pickIndex = headers.findIndex(h => h.includes('pick') || h.includes('overall'));
+            const roundIndex = headers.findIndex(h => h.includes('round'));
+            const teamIndex = headers.findIndex(h => h.includes('team'));
+            const selectionIndex = headers.findIndex(h => h.includes('selection') || h.includes('player'));
+
+            tbody.innerHTML = ''; 
+
+            data.slice(1).forEach(row => {
+                if (row.length < 3) return; 
+
+                const round = roundIndex > -1 ? row[roundIndex] : row[0];
+                const pick = pickIndex > -1 ? row[pickIndex] : row[1];
+                const team = teamIndex > -1 ? row[teamIndex] : row[2];
+                const selection = selectionIndex > -1 ? row[selectionIndex] : (row[3] || '-');
+
+                if (!team) return;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="draft-pick-number">#${pick}</td>
+                    <td>${round}</td>
+                    <td>
+                        <div class="draft-team-cell">
+                            <img src="${getTeamLogoPath(team)}" style="width:24px;height:24px;object-fit:contain;">
+                            <span>${team}</span>
+                        </div>
+                    </td>
+                    <td class="draft-player-cell">${selection}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ==========================================
+        //  HISTORICAL LOGIC (Summary & Bracket)
+        // ==========================================
+        async function renderHistoricalHub(container) {
+            const config = configs[currentSeason] || { status: 'Complete', champion: 'Unknown' };
+
+            container.innerHTML = `
+                <div class="game-card" style="text-align: center; margin-bottom: 2rem;">
+                    <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Season ${currentSeason}</h2>
+                    <p style="color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">${config.status}</p>
+                    ${config.status === 'Complete' ? `<h3 style="margin-top: 1rem;">🏆 Champion: ${config.champion}</h3>` : ''}
+                </div>
+                
+                <h2 class="section-title">Playoff Bracket</h2>
+                <div id="bracket-container" class="bracket-wrapper">
+                    <div style="padding: 2rem;">Loading bracket data...</div>
+                </div>
+            `;
+            
+            loadHistoricalBracket();
+        }
+
+        function renderBracketRounds(container, rounds) {
+            container.innerHTML = ''; 
+            for (const [roundName, matches] of Object.entries(rounds)) {
+                if (matches.length === 0) continue;
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'bracket-round';
+                
+                const title = document.createElement('div');
+                title.className = 'round-title';
+                title.innerText = roundName;
+                roundDiv.appendChild(title);
+
+                matches.forEach((m, idx) => {
+                    let label = '';
+                    if (roundName === 'Championship' && matches.length > 1) {
+                        label = idx === 0 ? 'Title Match' : '3rd Place Match';
+                    }
+
+                    const t1Winner = m.t1Wins > m.t2Wins;
+                    const t2Winner = m.t2Wins > m.t1Wins;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'matchup-card';
+                    card.innerHTML = `
+                        ${label ? `<div style="font-size:0.7rem; color:#666; text-align:center; margin-bottom:4px; text-transform:uppercase;">${label}</div>` : ''}
+                        <div class="team-row ${t1Winner ? 'winner' : (t2Winner ? 'loser' : '')}">
+                            <div class="team-name-flex">
+                                <img src="${getTeamLogoPath(m.team1)}" class="team-logo" style="width:20px;height:20px;" onerror="this.style.display='none'">
+                                <span>${m.team1}</span>
+                            </div>
+                            <span class="team-score">${m.t1Wins}</span>
+                        </div>
+                        <div class="team-row ${t2Winner ? 'winner' : (t1Winner ? 'loser' : '')}">
+                            <div class="team-name-flex">
+                                <img src="${getTeamLogoPath(m.team2)}" class="team-logo" style="width:20px;height:20px;" onerror="this.style.display='none'">
+                                <span>${m.team2}</span>
+                            </div>
+                            <span class="team-score">${m.t2Wins}</span>
+                        </div>
+                    `;
+                    roundDiv.appendChild(card);
+                });
+                container.appendChild(roundDiv);
+            }
+        }
+
+        async function loadHistoricalBracket() {
+            const container = document.getElementById('bracket-container');
+
+            if (currentSeason === '3') {
+                const s3Rounds = {
+                    'Quarter-Finals': [
+                        { team1: 'Dragons', team2: 'Underdogs', t1Wins: 2, t2Wins: 1 },
+                        { team1: 'Stars', team2: 'Bajas', t1Wins: 0, t2Wins: 2 },
+                        { team1: 'Reapers', team2: 'Tigers', t1Wins: 2, t2Wins: 0 },
+                        { team1: 'Kings', team2: 'Manatees', t1Wins: 2, t2Wins: 0 }
+                    ],
+                    'Semi-Finals': [
+                        { team1: 'Dragons', team2: 'Bajas', t1Wins: 2, t2Wins: 3 },
+                        { team1: 'Reapers', team2: 'Kings', t1Wins: 2, t2Wins: 3 }
+                    ],
+                    'Championship': [
+                        { team1: 'Bajas', team2: 'Kings', t1Wins: 2, t2Wins: 4 },
+                        { team1: 'Dragons', team2: 'Reapers', t1Wins: 1, t2Wins: 0 }
+                    ]
+                };
+                renderBracketRounds(container, s3Rounds);
+                return;
+            }
+
+            const games = await getSeasonData('playoff-games');
+            
+            if (!games || games.length === 0) {
+                container.innerHTML = '<div style="color:#666; padding:2rem;">Playoff bracket data unavailable.</div>';
+                return;
+            }
+
+            const seriesMap = {};
+            games.forEach(g => {
+                const teams = [g.team1, g.team2].sort();
+                const seriesId = `${teams[0]}-${teams[1]}`;
+                let gameTimestamp = g.date ? new Date(g.date).getTime() : 0;
+
+                if (!seriesMap[seriesId]) {
+                    seriesMap[seriesId] = {
+                        team1: teams[0], team2: teams[1],
+                        t1Wins: 0, t2Wins: 0,
+                        minTimestamp: gameTimestamp || 0
+                    };
+                }
+                
+                if (g.winner === teams[0]) seriesMap[seriesId].t1Wins++;
+                if (g.winner === teams[1]) seriesMap[seriesId].t2Wins++;
+                
+                if (g.team1SeriesWins) {
+                    if(g.team1 === teams[0]) {
+                        seriesMap[seriesId].t1Wins = Math.max(seriesMap[seriesId].t1Wins, g.team1SeriesWins);
+                        seriesMap[seriesId].t2Wins = Math.max(seriesMap[seriesId].t2Wins, g.team2SeriesWins);
+                    } else {
+                        seriesMap[seriesId].t1Wins = Math.max(seriesMap[seriesId].t1Wins, g.team2SeriesWins);
+                        seriesMap[seriesId].t2Wins = Math.max(seriesMap[seriesId].t2Wins, g.team1SeriesWins);
+                    }
+                }
+            });
+
+            const seriesList = Object.values(seriesMap).sort((a, b) => a.minTimestamp - b.minTimestamp);
+            
+            const rounds = {};
+            if (seriesList.length >= 7) {
+                rounds['Quarter-Finals'] = seriesList.slice(0, 4);
+                rounds['Semi-Finals'] = seriesList.slice(4, 6);
+                rounds['Championship'] = seriesList.slice(6);
+            } else if (seriesList.length >= 5) {
+                rounds['Wild Card'] = seriesList.slice(0, 2);
+                rounds['Semi-Finals'] = seriesList.slice(2, 4);
+                rounds['Championship'] = seriesList.slice(4);
+            } else {
+                rounds['Playoffs'] = seriesList;
+            }
+
+            renderBracketRounds(container, rounds);
+        }
+
+        init();
+    </script>
+</body>
+</html>

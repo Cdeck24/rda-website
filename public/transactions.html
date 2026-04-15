@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Transactions</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        .filter-bar {
+            max-width: 1000px;
+            margin: 0 auto 2rem auto;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-navy-light);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--gold-mid);
+        }
+        
+        .transaction-list {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-bottom: 4rem;
+        }
+
+        .trans-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: transform 0.2s, border-color 0.2s;
+            text-align: left;
+        }
+        .trans-card:hover {
+            transform: translateX(5px);
+            border-color: var(--gold-mid);
+        }
+
+        .trans-date {
+            min-width: 80px;
+            color: #888;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .trans-type-badge {
+            display: inline-block;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .badge-trade { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+        .badge-sign { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+        .badge-drop { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+        .team-tag {
+            color: var(--gold-mid);
+            font-weight: 600;
+        }
+
+        .trans-desc {
+            font-size: 1.05rem;
+            line-height: 1.5;
+            color: #eee;
+        }
+
+        @media (max-width: 600px) {
+            .trans-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .trans-date {
+                font-size: 0.8rem;
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>RDA Transactions</h1>
+    
+    <!-- Navigation (Injected via JS) -->
+
+    <div class="filter-bar">
+        <input type="text" id="search" class="search-input" placeholder="Search transactions, teams, players...">
+    </div>
+
+    <div id="transactions-container" class="transaction-list">
+        <div style="text-align: center; color: #666; padding: 2rem;">Loading transactions...</div>
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason } from './js/app.js';
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        
+        // --- TRANSACTIONS CONFIGURATION ---
+        const transactionUrls = {
+            '4': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?output=csv', // Restored S4 Transactions link
+            '5': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=639125657&single=true&output=csv'
+        };
+
+        async function loadTransactions() {
+            const container = document.getElementById('transactions-container');
+            const url = transactionUrls[currentSeason] || transactionUrls['5'];
+            
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
+                if (!res.ok) throw new Error('Fetch failed');
+                const text = await res.text();
+                
+                const rows = text.split('\n').map(line => {
+                    let inQuotes = false;
+                    let currentVal = '';
+                    const values = [];
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                        else currentVal += char;
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                });
+                
+                if (rows.length < 2) {
+                    container.innerHTML = '<div style="text-align: center; color: #666; padding: 2rem;">No transactions recorded yet.</div>';
+                    return;
+                }
+                
+                const headers = rows[0].map(h => h.toLowerCase());
+                const idxDate = headers.findIndex(h => h.includes('date'));
+                const idxType = headers.findIndex(h => h.includes('type'));
+                const idxTeam = headers.findIndex(h => h.includes('team'));
+                const idxDesc = headers.findIndex(h => h.includes('description') || h.includes('details') || h.includes('transaction'));
+
+                const data = rows.slice(1);
+                
+                window.renderList = (list) => {
+                    container.innerHTML = list.map(row => {
+                        const date = row[idxDate] || '';
+                        const type = row[idxType] || 'UPDATE';
+                        const team = idxTeam > -1 ? row[idxTeam] : '';
+                        const desc = row[idxDesc] || '';
+                        
+                        let badgeClass = '';
+                        const typeLower = type.toLowerCase();
+                        if (typeLower.includes('trade')) badgeClass = 'badge-trade';
+                        else if (typeLower.includes('sign') || typeLower.includes('add')) badgeClass = 'badge-sign';
+                        else if (typeLower.includes('drop') || typeLower.includes('release') || typeLower.includes('waive')) badgeClass = 'badge-drop';
+                        
+                        return `
+                        <div class="trans-card">
+                            <div class="trans-date">${date}</div>
+                            <div style="flex: 1;">
+                                <span class="trans-type-badge ${badgeClass}">${type}</span>
+                                <div class="trans-desc">
+                                    ${team ? `<span class="team-tag">${team}:</span> ` : ''}${desc}
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+                };
+
+                // Initial Render (Sort by Date Descending)
+                // Filter out empty rows
+                const cleanData = data.filter(r => r[idxDate] && r[idxDesc]);
+                cleanData.sort((a,b) => new Date(b[idxDate]) - new Date(a[idxDate]));
+                
+                window.renderList(cleanData);
+
+                // Search Logic
+                document.getElementById('search').addEventListener('keyup', (e) => {
+                    const term = e.target.value.toLowerCase();
+                    const filtered = cleanData.filter(row => {
+                        return row.join(' ').toLowerCase().includes(term);
+                    });
+                    window.renderList(filtered);
+                });
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 2rem;">No transactions recorded yet or error loading sheet.</div>';
+            }
+        }
+
+        loadTransactions();
+    </script>
+</body>
+</html>

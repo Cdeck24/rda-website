@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Schedule</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        /* --- Schedule Container --- */
+        .schedule-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: slideIn 0.5s ease-out 0.2s both;
+            text-align: left;
+            padding-bottom: 2rem;
+        }
+
+        /* Month Navigation */
+        .month-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .month-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            min-width: 160px;
+            text-align: center;
+            color: #fff;
+        }
+
+        .nav-arrow {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-arrow:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* Calendar Grid */
+        .calendar-container {
+            background: #0f0f0f;
+            border-radius: 12px;
+            border: 1px solid #333;
+            padding: 0.5rem;
+            overflow-x: auto; 
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #333;
+            border: 1px solid #333;
+            min-width: 700px; 
+        }
+
+        .calendar-day-header {
+            background: #1a1a1a;
+            color: #888;
+            font-weight: 600;
+            text-align: center;
+            padding: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+        }
+
+        .calendar-day {
+            background: #0a0a0a;
+            min-height: 100px;
+            padding: 0.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            position: relative;
+        }
+
+        .calendar-day.empty { background: #0f0f0f; }
+
+        .calendar-date-number {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #666;
+            text-align: right;
+            margin-right: 0.25rem;
+        }
+
+        .calendar-day.today .calendar-date-number { color: #4CAF50; }
+
+        /* Game Indicator Style */
+        .game-indicator {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 0.25rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: auto;
+        }
+
+        .game-indicator:hover { background: #252525; border-color: #555; }
+
+        .game-indicator-count {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .game-indicator-label {
+            font-size: 0.6rem;
+            color: #888;
+            text-transform: uppercase;
+            display: block;
+        }
+
+        /* Text Colors */
+        .text-preseason { color: #d97706 !important; }
+        .text-regular { color: #059669 !important; }
+        .text-postseason { color: #7c3aed !important; }
+
+        /* Modal Styling */
+        body.modal-open { overflow: hidden; }
+
+        .modal-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); display: none;
+            justify-content: center; align-items: center; z-index: 2000;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            padding: 1rem; animation: fadeIn 0.3s;
+        }
+
+        .modal {
+            background: var(--bg-navy-light); border-radius: 16px; padding: 1.5rem;
+            max-width: 800px; width: 100%; max-height: 85vh; overflow-y: auto;
+            position: relative; box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border-gold); animation: popupSlideIn 0.3s ease-out;
+        }
+
+        .close-btn {
+            position: absolute; top: 0.75rem; right: 0.75rem; font-size: 1.5rem;
+            cursor: pointer; color: #888; width: 2.5rem; height: 2.5rem;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .close-btn:hover { color: #fff; background: #222; }
+
+        .modal-header {
+            margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);
+            text-align: left; padding-right: 2rem;
+        }
+        .modal-date { font-size: 1.5rem; font-weight: 700; color: var(--gold-light); }
+        .modal-subtitle { font-size: 0.95rem; color: var(--text-muted); }
+
+        .modal-game-list { display: flex; flex-direction: column; gap: 1rem; }
+
+        /* --- Matchup Dropdown styles --- */
+        .matchup-dropdown {
+            background: var(--bg-navy);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .dropdown-header {
+            display: grid;
+            grid-template-columns: 40px 1fr auto 1fr 40px; 
+            gap: 0.5rem;
+            align-items: center;
+            padding: 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        @media (min-width: 768px) {
+            .dropdown-header {
+                grid-template-columns: 50px 1fr auto 1fr 50px;
+                gap: 1.5rem;
+                padding: 1.25rem 1.5rem;
+            }
+        }
+
+        .dropdown-header:hover { background: rgba(255,255,255,0.05); }
+
+        .header-logo-container { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+        .header-team-logo { width: 100%; height: 100%; object-fit: contain; }
+        
+        .header-team-name { font-size: 0.95rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-team-name.away { text-align: left; }
+        .header-team-name.home { text-align: right; }
+
+        .header-center-block { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 80px; }
+        .header-scores-row { display: flex; justify-content: center; align-items: center; gap: 0.5rem; }
+        .header-series-score { font-size: 1.5rem; font-weight: 800; text-align: center; }
+        .header-series-score.winning-score { color: var(--gold-mid); }
+        .header-dash { color: var(--text-muted); font-weight: 400; }
+
+        .header-record { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.25rem; text-transform: uppercase; }
+
+        .dropdown-content { display: none; background: rgba(0,0,0,0.3); border-top: 1px solid var(--border-subtle); padding: 1rem; }
+        .dropdown-content.open { display: block; }
+
+        /* --- Sport Card Container (Inside Dropdown) --- */
+        .sport-card {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .sport-card:last-child { margin-bottom: 0; }
+
+        .sport-header-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid var(--border-subtle);
+            gap: 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .sport-header-row:hover { background: rgba(255,255,255,0.06); }
+
+        .sport-team-name { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sport-team-name.right { text-align: right; }
+
+        .sport-center-block { display: flex; flex-direction: column; align-items: center; }
+        .sport-scores-row { display: flex; gap: 0.5rem; align-items: center; }
+        .team-score { font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .team-score.winning-score { color: var(--gold-mid); }
+        
+        .sport-game-status { 
+            font-size: 0.65rem; 
+            color: var(--gold-dark); 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            margin-top: 0.1rem; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sport-toggle {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            width: 12px;
+            text-align: center;
+        }
+
+        .box-score-container {
+            display: none; /* Hidden by default */
+            grid-template-columns: 1fr 1fr;
+            padding: 0.75rem;
+            gap: 0.75rem;
+        }
+
+        .sport-card.open .box-score-container {
+            display: grid;
+        }
+
+        .box-team-col { display: flex; flex-direction: column; gap: 0.25rem; }
+        .box-team-col:first-child { border-right: 1px solid var(--border-subtle); padding-right: 0.75rem; }
+        
+        .box-player-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: #ccc; padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .box-player-row:hover { background: rgba(255,255,255,0.05); }
+        .box-player-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .box-player-score { font-weight: 700; color: #fff; }
+
+        .no-data-msg { padding: 1.5rem; text-align: center; color: #888; font-style: italic; font-size: 0.9rem; }
+
+        /* Responsive tweaks */
+        @media (max-width: 600px) {
+            .box-score-container { grid-template-columns: 1fr; gap: 1rem; padding: 0.5rem; }
+            .box-team-col:first-child { border-right: none; padding-right: 0; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; }
+            .header-team-name { font-size: 0.85rem; }
+            .header-series-score { font-size: 1.2rem; }
+            .sport-header-row { padding: 0.5rem; gap: 0.5rem; }
+            .sport-team-name { font-size: 0.75rem; }
+        }
+
+        #loading-message { padding: 3rem; color: var(--text-muted); text-align: center; width: 100%; font-size: 1.1rem; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <h1>RDA Schedule</h1>
+    
+    <!-- Navigation (Injected by JS) -->
+
+    <!-- Main Content Area -->
+    <div class="schedule-content">
+        <div class="month-nav">
+            <button class="nav-arrow" id="prev-month">&lt;</button>
+            <div class="month-title" id="current-month-display">Loading...</div>
+            <button class="nav-arrow" id="next-month">&gt;</button>
+        </div>
+
+        <div class="calendar-container">
+            <div class="calendar-grid" id="calendar-grid">
+                <!-- Days will be injected here -->
+            </div>
+        </div>
+        <div id="loading-message">Loading schedule & historical data...</div>
+    </div>
+
+    <!-- Games Modal -->
+    <div class="modal-bg" id="games-modal">
+        <div class="modal">
+            <span class="close-btn" id="modal-close">&times;</span>
+            <div class="modal-header">
+                <div class="modal-date" id="modal-date-display">Date</div>
+                <div class="modal-subtitle" id="modal-count-display">0 Games</div>
+            </div>
+            <div class="modal-game-list" id="modal-games-list">
+                <!-- Games injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason, getSeasonData } from './js/app.js';
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        
+        const SCHEDULE_URLS = {
+            '1': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?output=csv', 
+            '2': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?output=csv', 
+            '3': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1058716618&single=true&output=csv',
+            '4': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv',
+            '5': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv'
+        };
+
+        let scheduledGames = [];
+        let dbGames = [];
+        let dbPlayers = [];
+        let displayedDate = new Date(); 
+
+        // Modal Elements
+        const modal = document.getElementById('games-modal');
+        const modalClose = document.getElementById('modal-close');
+        
+        modalClose.onclick = () => { modal.style.display = 'none'; document.body.classList.remove('modal-open'); };
+        window.onclick = (e) => { if (e.target == modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); } };
+
+        // --- Fetch & Parse Logic ---
+        async function fetchCSV(url) {
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
+                if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
+                const text = await res.text();
+                return text.split('\n').map(line => {
+                    const cleanedLine = line.trim();
+                    if (cleanedLine.length === 0) return [];
+                    const values = [];
+                    let currentVal = ''; let inQuotes = false;
+                    for (let i = 0; i < cleanedLine.length; i++) {
+                        const char = cleanedLine[i];
+                        if (char === '"' && (i === 0 || cleanedLine[i-1] !== '\\')) { inQuotes = !inQuotes; } 
+                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; } 
+                        else { currentVal += char; }
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                });
+            } catch (error) {
+                console.error("Error fetching CSV:", error);
+                return [];
+            }
+        }
+
+        function getTeamLogo(teamName) {
+             if(!teamName) return '';
+             let cleanName = teamName.trim().toLowerCase();
+             if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
+             cleanName = cleanName.replace(/\s+/g, '-');
+             const isPng = ['reapers', 'zombies', 'free-agents', 'east-all-stars', 'west-all-stars'].includes(cleanName);
+             return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+        }
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            if (parts.length >= 2) {
+                const month = parseInt(parts[0], 10);
+                const day = parseInt(parts[1], 10);
+                let year = new Date().getFullYear();
+                if (parts.length === 3) year = parseInt(parts[2], 10);
+                if (year < 100) year += 2000;
+                return new Date(year, month - 1, day);
+            }
+            return new Date(dateStr); 
+        }
+
+        function openDayModal(dateObj, gamesList) {
+            const modalDate = document.getElementById('modal-date-display');
+            const modalCount = document.getElementById('modal-count-display');
+            const modalList = document.getElementById('modal-games-list');
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            modalDate.textContent = dateObj.toLocaleDateString(undefined, options);
+            
+            modalList.innerHTML = '';
+            
+            // Format search date to M/D to match database records
+            const searchDateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+
+            // Filter historical database collections for this specific day
+            const dailyCompletedGames = dbGames.filter(g => g.date === searchDateStr || gamesList.some(sg => sg.dateStr === g.date));
+            const dailyPlayerStats = dbPlayers.filter(p => p.date === searchDateStr || gamesList.some(sg => sg.dateStr === p.date));
+
+            const finalRenderList = [];
+            const usedDbGames = new Set();
+
+            // 1. Match Scheduled CSV Games with Database results
+            gamesList.forEach(sg => {
+                const dbMatch = dailyCompletedGames.find(dg => 
+                    (dg.team1 === sg.team1 && dg.team2 === sg.team2) || 
+                    (dg.team1 === sg.team2 && dg.team2 === sg.team1)
+                );
+                if (dbMatch) {
+                    usedDbGames.add(dbMatch.id);
+                    finalRenderList.push({ ...sg, dbGame: dbMatch });
+                } else {
+                    finalRenderList.push({ ...sg, dbGame: null });
+                }
+            });
+
+            // 2. Append any extra Database games that weren't in the schedule CSV (e.g., dynamically added playoff rounds)
+            dailyCompletedGames.forEach(dg => {
+                if (!usedDbGames.has(dg.id)) {
+                    finalRenderList.push({
+                        dateObj: dateObj, team1: dg.team1, team2: dg.team2,
+                        type: 'Completed Game', dbGame: dg
+                    });
+                }
+            });
+
+            modalCount.textContent = `${finalRenderList.length} Game${finalRenderList.length !== 1 ? 's' : ''} Recorded`;
+
+            const matchupsHtml = finalRenderList.map(game => {
+                const hasData = !!game.dbGame;
+                let t1Score = '', t2Score = '';
+                let t1Class = '', t2Class = '';
+                let recordText = game.type || 'Matchup';
+                let dropdownContentHtml = '<div class="no-data-msg">Stats pending / Game not yet completed.</div>';
+
+                if (hasData) {
+                    const score1 = parseFloat(game.dbGame.team1score) || 0;
+                    const score2 = parseFloat(game.dbGame.team2score) || 0;
+                    t1Class = score1 > score2 ? 'winning-score' : '';
+                    t2Class = score2 > score1 ? 'winning-score' : '';
+                    t1Score = score1.toFixed(2);
+                    t2Score = score2.toFixed(2);
+                    recordText = 'FINAL';
+
+                    // Build detailed box score using the players database grouped by sport
+                    const p1All = dailyPlayerStats.filter(p => p.team === game.team1);
+                    const p2All = dailyPlayerStats.filter(p => p.team === game.team2);
+
+                    const sportsSet = new Set();
+                    [...p1All, ...p2All].forEach(p => { if (p.sport) sportsSet.add(p.sport); });
+                    const sortedSports = Array.from(sportsSet).sort();
+
+                    if (sortedSports.length > 0) {
+                        dropdownContentHtml = sortedSports.map(sport => {
+                            const p1Sport = p1All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
+                            const p2Sport = p2All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
+
+                            const s1 = p1Sport.reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
+                            const s2 = p2Sport.reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
+
+                            const s1Class = s1 > s2 ? 'winning-score' : '';
+                            const s2Class = s2 > s1 ? 'winning-score' : '';
+
+                            const renderPlayers = (plist) => {
+                                if (plist.length === 0) return `<div class="box-player-row"><span class="box-player-name" style="color:#888;">No Data</span></div>`;
+                                return plist.map(p => `
+                                    <div class="box-player-row">
+                                        <span class="box-player-name">${p.username}</span>
+                                        <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
+                                    </div>
+                                `).join('');
+                            };
+
+                            return `
+                            <div class="sport-card">
+                                <div class="sport-header-row" onclick="this.parentElement.classList.toggle('open'); const t = this.querySelector('.sport-toggle'); t.textContent = this.parentElement.classList.contains('open') ? '-' : '+';">
+                                    <div class="sport-team-name">${game.team1}</div>
+                                    <div class="sport-center-block">
+                                        <div class="sport-scores-row">
+                                            <span class="team-score ${s1Class}">${s1.toFixed(2)}</span>
+                                            <span class="header-dash">-</span>
+                                            <span class="team-score ${s2Class}">${s2.toFixed(2)}</span>
+                                        </div>
+                                        <div class="sport-game-status">${sport} <span class="sport-toggle">+</span></div>
+                                    </div>
+                                    <div class="sport-team-name right">${game.team2}</div>
+                                </div>
+                                <div class="box-score-container">
+                                    <div class="box-team-col">
+                                        ${renderPlayers(p1Sport)}
+                                    </div>
+                                    <div class="box-team-col">
+                                        ${renderPlayers(p2Sport)}
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                        }).join('');
+                    } else {
+                        dropdownContentHtml = `<div class="no-data-msg">Completed but no individual sport data available.</div>`;
+                    }
+                }
+
+                return `
+                <div class="matchup-dropdown">
+                    <div class="dropdown-header" onclick="this.parentElement.querySelector('.dropdown-content').classList.toggle('open')">
+                        <div class="header-logo-container">
+                            <img src="${getTeamLogo(game.team1)}" class="header-team-logo" onerror="this.src='https://placehold.co/50x50/222/fff?text=?'">
+                        </div>
+                        <div class="header-team-name away">${game.team1}</div>
+                        
+                        <div class="header-center-block">
+                            <div class="header-scores-row">
+                                <span class="header-series-score ${t1Class}">${t1Score}</span>
+                                <span class="header-dash">${hasData ? '-' : 'VS'}</span>
+                                <span class="header-series-score ${t2Class}">${t2Score}</span>
+                            </div>
+                            <div class="header-record">${recordText}</div>
+                        </div>
+
+                        <div class="header-team-name home">${game.team2}</div>
+                        <div class="header-logo-container">
+                            <img src="${getTeamLogo(game.team2)}" class="header-team-logo" onerror="this.src='https://placehold.co/50x50/222/fff?text=?'">
+                        </div>
+                    </div>
+                    <div class="dropdown-content">
+                        ${dropdownContentHtml}
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            modalList.innerHTML = matchupsHtml;
+            modal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+        }
+
+        function renderCalendar(date) {
+            const monthDisplay = document.getElementById('current-month-display');
+            const grid = document.getElementById('calendar-grid');
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            monthDisplay.textContent = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+
+            grid.innerHTML = ''; 
+
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            days.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+
+            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const empty = document.createElement('div');
+                empty.className = 'calendar-day empty';
+                grid.appendChild(empty);
+            }
+
+            for (let d = 1; d <= lastDay.getDate(); d++) {
+                const currentDay = new Date(date.getFullYear(), date.getMonth(), d);
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                
+                const today = new Date();
+                if (currentDay.getDate() === today.getDate() && currentDay.getMonth() === today.getMonth() && currentDay.getFullYear() === today.getFullYear()) {
+                    dayEl.classList.add('today');
+                }
+
+                const numEl = document.createElement('div');
+                numEl.className = 'calendar-date-number';
+                numEl.textContent = d;
+                dayEl.appendChild(numEl);
+
+                // Find scheduled games for this day
+                const daysGames = scheduledGames.filter(g => {
+                    return g.dateObj && g.dateObj.getDate() === d && g.dateObj.getMonth() === date.getMonth() && g.dateObj.getFullYear() === date.getFullYear();
+                });
+
+                if (daysGames.length > 0) {
+                    let indicatorLabelClass = '';
+                    let labelText = 'Games';
+                    const firstType = (daysGames[0].type || '').toLowerCase();
+                    
+                    if (firstType.includes('preseason') || firstType.includes('pre-season')) { indicatorLabelClass = 'text-preseason'; labelText = 'Preseason'; } 
+                    else if (firstType.includes('regular')) { indicatorLabelClass = 'text-regular'; labelText = 'Regular'; } 
+                    else if (firstType.includes('playoff') || firstType.includes('postseason') || firstType.includes('final')) { indicatorLabelClass = 'text-postseason'; labelText = 'Postseason'; }
+
+                    const indicator = document.createElement('div');
+                    indicator.className = 'game-indicator';
+                    indicator.onclick = () => openDayModal(currentDay, daysGames);
+                    indicator.innerHTML = `
+                        <div class="game-indicator-count ${indicatorLabelClass}">${daysGames.length} ${labelText}</div>
+                        <div class="game-indicator-label ${indicatorLabelClass}">View Details</div>
+                    `;
+                    dayEl.appendChild(indicator);
+                }
+
+                grid.appendChild(dayEl);
+            }
+        }
+
+        async function loadData() {
+            const loading = document.getElementById('loading-message');
+            
+            // 1. Fetch historical DB arrays concurrently
+            const [g, pg, p, pp] = await Promise.all([
+                getSeasonData('games'), getSeasonData('playoff-games'),
+                getSeasonData('players'), getSeasonData('playoff-players')
+            ]);
+            dbGames = [...g, ...pg];
+            dbPlayers = [...p, ...pp];
+
+            // 2. Fetch standard Schedule CSV to map out the calendar
+            const url = SCHEDULE_URLS[currentSeason] || SCHEDULE_URLS['5'];
+            const data = await fetchCSV(url);
+            
+            if (!data || data.length < 2) {
+                loading.textContent = 'No schedule data found.';
+                return;
+            }
+
+            const headers = data[0].map(h => h.toLowerCase().trim());
+            const dateIndex = headers.findIndex(h => h.includes('date'));
+            const team1Index = headers.findIndex(h => h.includes('team 1') || h === 'team1');
+            const team2Index = headers.findIndex(h => h.includes('team 2') || h === 'team2');
+            const gameTypeIndex = headers.findIndex(h => h.includes('game type'));
+
+            scheduledGames = [];
+            data.slice(1).forEach(row => {
+                if (!row[dateIndex] || !row[team1Index] || !row[team2Index]) return;
+                const dateObj = parseDate(row[dateIndex]);
+                if (dateObj) {
+                    scheduledGames.push({
+                        dateObj: dateObj, dateStr: row[dateIndex].trim(),
+                        team1: row[team1Index].trim(), team2: row[team2Index].trim(),
+                        type: gameTypeIndex > -1 ? row[gameTypeIndex] : ''
+                    });
+                }
+            });
+
+            // Calculate Initial Display Date
+            const today = new Date();
+            const upcoming = scheduledGames.find(g => g.dateObj >= today);
+            
+            if (upcoming) displayedDate = new Date(upcoming.dateObj);
+            else if (scheduledGames.length > 0) displayedDate = new Date(scheduledGames[0].dateObj);
+            else displayedDate = new Date();
+            
+            displayedDate.setDate(1);
+
+            loading.style.display = 'none';
+            renderCalendar(displayedDate);
+        }
+
+        // Nav listeners
+        document.getElementById('prev-month').addEventListener('click', () => { displayedDate.setMonth(displayedDate.getMonth() - 1); renderCalendar(displayedDate); });
+        document.getElementById('next-month').addEventListener('click', () => { displayedDate.setMonth(displayedDate.getMonth() + 1); renderCalendar(displayedDate); });
+
+        loadData();
+    </script>
+</body>
+</html>

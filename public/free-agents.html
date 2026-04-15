@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Free Agents</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <!-- Required for Token Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    <style>
+        .top-filter-container {
+            max-width: 1200px;
+            margin: 0 auto 1.5rem auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .top-filter-dropdown {
+            padding: 0.6rem 1rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4af37%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+            min-width: 200px;
+        }
+
+        .top-filter-dropdown:focus {
+            outline: none;
+            border-color: var(--gold-mid);
+            box-shadow: 0 0 0 1px var(--gold-mid);
+        }
+
+        .top-filter-dropdown option {
+            background: var(--bg-navy);
+            color: var(--text-main);
+        }
+
+        .fa-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .fa-card {
+            background: var(--bg-navy-light);
+            border: 1px solid var(--border-gold);
+            border-radius: 6px;
+            padding: 1.5rem;
+            text-align: left;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .fa-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold-mid);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(212, 175, 55, 0.2);
+            background: linear-gradient(145deg, rgba(51, 65, 85, 0.9), rgba(30, 41, 59, 0.95));
+        }
+
+        .fa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .fa-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            font-family: 'Didot', serif;
+            letter-spacing: 0.05em;
+        }
+
+        .fa-id {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            opacity: 0.5;
+        }
+
+        /* --- Dropdown Styling --- */
+        .sport-selector-container {
+            margin-bottom: 1rem;
+        }
+
+        .sport-dropdown {
+            width: 100%;
+            padding: 0.6rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            appearance: none; /* Remove default arrow */
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4af37%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+        }
+        
+        .sport-dropdown:focus {
+            outline: none;
+            border-color: var(--gold-mid);
+            box-shadow: 0 0 0 1px var(--gold-mid);
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .sport-dropdown option {
+            background: var(--bg-navy);
+            color: var(--text-main);
+        }
+
+        /* --- Stats Views --- */
+        .sport-stats-view {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+            padding-top: 0.5rem;
+            flex-grow: 1;
+        }
+
+        .sport-stats-view.active {
+            display: block;
+        }
+
+        .sport-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            color: var(--gold-mid);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .stats-grid-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+        }
+        
+        .status-msg {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: var(--gold-light);
+        }
+        .status-detail {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Free Agents</h1>
+
+    <!-- Nav injected by JS -->
+
+    <div class="top-filter-container">
+        <select id="top-sport-filter" class="top-filter-dropdown" onchange="filterAndSortGrid()">
+            <option value="ALL">All Sports</option>
+            <!-- Dynamically populated -->
+        </select>
+    </div>
+
+    <div class="fa-grid" id="fa-container">
+        <div class="loading-container">
+            <div class="status-msg">Initializing...</div>
+            <div class="status-detail">Loading modules</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason } from './js/app.js';
+        initNav();
+
+        // --- CONFIGURATION ---
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=334253637&single=true&output=csv';
+        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
+        const REAL_VERSION = '27';
+        const JSON_URL = 'free_agents_data.json';
+
+        // Set to track discovered sports dynamically
+        const globalDiscoveredSports = new Set();
+
+        // --- HASHIDS LOGIC ---
+        function generateRequestToken() {
+            const timestampMs = Date.now();
+            // @ts-ignore
+            const hasher = new Hashids("realwebapp", 16);
+            return hasher.encode(timestampMs);
+        }
+
+        // --- GLOBAL DROPDOWN HANDLER (For inside cards) ---
+        window.switchSport = function(selectElement) {
+            const selectedSport = selectElement.value;
+            // Find parent card
+            const card = selectElement.closest('.fa-card');
+            if (!card) return;
+
+            // Hide all views, show selected
+            const views = card.querySelectorAll('.sport-stats-view');
+            views.forEach(view => {
+                if (view.dataset.sport === selectedSport) {
+                    view.classList.add('active');
+                } else {
+                    view.classList.remove('active');
+                }
+            });
+        };
+
+        // --- FILTER AND SORT HANDLER (For the top dropdown) ---
+        window.filterAndSortGrid = function() {
+            const filterVal = document.getElementById('top-sport-filter').value;
+            const container = document.getElementById('fa-container');
+            const cards = Array.from(container.querySelectorAll('.fa-card'));
+
+            cards.forEach(card => {
+                // Ignore the initial loading placeholder
+                if (card.id === undefined || card.id === '') return;
+
+                if (filterVal === 'ALL') {
+                    card.style.display = 'flex';
+                    
+                    // Switch internal dropdown to the combined ALL_SPORTS view
+                    const sportSelect = card.querySelector('.sport-dropdown');
+                    if (sportSelect) {
+                        sportSelect.value = "ALL_SPORTS";
+                        window.switchSport(sportSelect);
+                    }
+                } else {
+                    // Check if card has a power score specifically for this sport
+                    if (card.dataset[`power${filterVal}`] !== undefined) {
+                        card.style.display = 'flex';
+                        
+                        // Automatically switch the internal dropdown to match the selected sport
+                        const sportSelect = card.querySelector('.sport-dropdown');
+                        if (sportSelect) {
+                            sportSelect.value = filterVal;
+                            window.switchSport(sportSelect);
+                        }
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+
+            // Sort visible cards
+            const visibleCards = cards.filter(c => c.style.display !== 'none');
+            visibleCards.sort((a, b) => {
+                let scoreA, scoreB;
+                if (filterVal === 'ALL') {
+                    scoreA = parseFloat(a.dataset.powerOverall || -1);
+                    scoreB = parseFloat(b.dataset.powerOverall || -1);
+                } else {
+                    scoreA = parseFloat(a.dataset[`power${filterVal}`] || -1);
+                    scoreB = parseFloat(b.dataset[`power${filterVal}`] || -1);
+                }
+                return scoreB - scoreA; // Descending
+            });
+
+            // Re-append to DOM to apply sort
+            visibleCards.forEach(card => container.appendChild(card));
+        };
+
+        function updateFilterDropdown() {
+            const dropdown = document.getElementById('top-sport-filter');
+            const currentVal = dropdown.value;
+            
+            // Keep "All Sports"
+            let html = `<option value="ALL">All Sports</option>`;
+            
+            // Sort sports alphabetically and add to dropdown
+            Array.from(globalDiscoveredSports).sort().forEach(sport => {
+                html += `<option value="${sport}">${sport}</option>`;
+            });
+            
+            dropdown.innerHTML = html;
+            dropdown.value = currentVal; // Maintain selection if options were added dynamically
+        }
+
+        // --- API FETCH LOGIC ---
+        async function fetchRealStats(userId) {
+            const token = generateRequestToken();
+            const deviceUuid = crypto.randomUUID();
+            
+            const headers = {
+                'real-auth-info': REAL_AUTH_TOKEN,
+                'real-device-name': 'Chrome on Web',
+                'real-device-type': 'desktop_web',
+                'real-device-uuid': deviceUuid,
+                'real-request-token': token,
+                'real-version': REAL_VERSION
+            };
+
+            const targetUrl = `https://web.realsports.io/sportbrawluserstats/${userId}`;
+            
+            const res = await fetch(workerProxy + '?url=' + encodeURIComponent(targetUrl), {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!res.ok) throw new Error(`API Error: ${res.status}`);
+            return res.json();
+        }
+
+        // --- BEHIND THE SCENES POWER RANKING ---
+        
+        // Calculates score for a SINGLE sport (or the ALL_SPORTS bucket)
+        function calculateSingleSportPower(stats) {
+            const raw10 = parseFloat(stats["Top 10s"] || stats["Top 10"] || 0);
+            const raw100 = parseFloat(stats["Top 100s"] || stats["Top 100"] || 0);
+            const raw10pct = parseFloat(stats["Top 10%"] || 0);
+            const raw20pct = parseFloat(stats["Top 20%"] || 0);
+            const raw50pct = parseFloat(stats["Top 50%"] || 0);
+            
+            const exc10 = raw10; 
+            const exc100 = Math.max(0, raw100 - raw10);
+            const exc10pct = Math.max(0, raw10pct - raw100);
+            const exc20pct = Math.max(0, raw20pct - raw10pct);
+            const exc50pct = Math.max(0, raw50pct - raw20pct);
+
+            let power = (exc10 * 10) + (exc100 * 7) + (exc10pct * 5) + (exc20pct * 3) + (exc50pct * 1);
+            
+            const highest = parseFloat(stats["Highest Score"] || 0);
+            if (!isNaN(highest)) {
+                power += (highest / 10000); 
+            }
+            return power;
+        }
+
+        // Calculates an overall unified score based on the aggregated ALL_SPORTS bucket
+        function calculateOverallPower(aggregatedStatsObj) {
+            if (aggregatedStatsObj["ALL_SPORTS"]) {
+                return calculateSingleSportPower(aggregatedStatsObj["ALL_SPORTS"]);
+            }
+            return 0;
+        }
+
+        // --- HELPER: Aggregate Stats by Sport & Create Total Bucket ---
+        function aggregateStatsBySport(statsObj) {
+            const aggregated = {};
+            let hasStats = false;
+            
+            // Raw keys for summation
+            const sumFields = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 100s", "Top 10s", "Wins", "Score", "Total Score", "Points"];
+            const maxFields = ["Highest Score"];
+
+            // 1. First Pass: Sum raw values from all seasons AND into an ALL_SPORTS bucket
+            Object.entries(statsObj).forEach(([key, stats]) => {
+                hasStats = true;
+                const lastDashIndex = key.lastIndexOf('-');
+                const sport = (lastDashIndex > -1 ? key.substring(0, lastDashIndex) : key).toUpperCase();
+                
+                if (!aggregated[sport]) aggregated[sport] = {};
+                if (!aggregated["ALL_SPORTS"]) aggregated["ALL_SPORTS"] = {};
+                
+                Object.entries(stats).forEach(([label, value]) => {
+                    let numVal = parseFloat(value);
+                    if (isNaN(numVal)) numVal = 0;
+
+                    const isSumField = sumFields.includes(label) || sumFields.some(f => label.includes(f) && label !== "Highest Score");
+                    
+                    if (isSumField) { 
+                         // Add to specific sport
+                         if (!aggregated[sport][label]) aggregated[sport][label] = 0;
+                         aggregated[sport][label] += numVal;
+                         
+                         // Add to total bucket
+                         if (!aggregated["ALL_SPORTS"][label]) aggregated["ALL_SPORTS"][label] = 0;
+                         aggregated["ALL_SPORTS"][label] += numVal;
+                    } else if (maxFields.includes(label)) {
+                         // Max for specific sport
+                         if (!aggregated[sport][label]) aggregated[sport][label] = 0;
+                         aggregated[sport][label] = Math.max(aggregated[sport][label], numVal);
+                         
+                         // Max across ALL sports
+                         if (!aggregated["ALL_SPORTS"][label]) aggregated["ALL_SPORTS"][label] = 0;
+                         aggregated["ALL_SPORTS"][label] = Math.max(aggregated["ALL_SPORTS"][label], numVal);
+                    } else {
+                        // Keep string/metadata values (mostly ignored later)
+                        aggregated[sport][label] = value; 
+                    }
+                });
+            });
+
+            if (!hasStats) {
+                return {};
+            }
+            
+            // 2. Second Pass: Calculate Exclusive Percentages & Format for ALL buckets
+            Object.values(aggregated).forEach(sportStats => {
+                const allDrafts = sportStats["All Drafts"] || 0;
+                
+                // Get Raw cumulative counts
+                const raw10 = sportStats["Top 10s"] || sportStats["Top 10"] || 0;
+                const raw100 = sportStats["Top 100s"] || sportStats["Top 100"] || 0;
+                const raw10pct = sportStats["Top 10%"] || 0;
+                const raw20pct = sportStats["Top 20%"] || 0;
+                const raw50pct = sportStats["Top 50%"] || 0;
+
+                // --- LOGIC: Exclude Higher Tiers from Lower Tiers ---
+                const exc10 = raw10; 
+                const exc100 = Math.max(0, raw100 - raw10);
+                const exc10pct = Math.max(0, raw10pct - raw100);
+                const exc20pct = Math.max(0, raw20pct - raw10pct);
+                const exc50pct = Math.max(0, raw50pct - raw20pct);
+
+                // Helper to format string
+                const formatStat = (val) => {
+                    if (allDrafts === 0) return `0 (0%)`;
+                    const pct = ((val / allDrafts) * 100).toFixed(0);
+                    return `${val} (${pct}%)`;
+                };
+
+                // Explicitly set the display values for these specific keys
+                sportStats["Top 10"] = formatStat(exc10);
+                sportStats["Top 100"] = formatStat(exc100); 
+                sportStats["Top 10%"] = formatStat(exc10pct);
+                sportStats["Top 20%"] = formatStat(exc20pct);
+                sportStats["Top 50%"] = formatStat(exc50pct);
+
+                // Format decimals for non-percentage scores
+                Object.keys(sportStats).forEach(label => {
+                    if ((label.includes("Score") || label.includes("Points")) && !label.includes("%")) {
+                        if (typeof sportStats[label] === 'number' && sportStats[label] % 1 !== 0) {
+                             sportStats[label] = sportStats[label].toFixed(2);
+                        }
+                    }
+                });
+            });
+
+            return aggregated;
+        }
+
+        // --- MAIN LOAD PROCESS ---
+        async function loadFreeAgents() {
+            const container = document.getElementById('fa-container');
+            const statusMsg = document.querySelector('.status-msg');
+
+            try {
+                // 1. Try JSON first (Static fallback)
+                let jsonData = null;
+                try {
+                    const jsonRes = await fetch(JSON_URL);
+                    if (jsonRes.ok) jsonData = await jsonRes.json();
+                } catch (e) { console.log('No JSON data found'); }
+
+                // 2. Fetch CSV (Live list)
+                statusMsg.textContent = "Reading Player List...";
+                const csvRes = await fetch(workerProxy + '?url=' + encodeURIComponent(CSV_URL));
+                if (!csvRes.ok) throw new Error("Failed to fetch spreadsheet");
+                const csvText = await csvRes.text();
+
+                // 3. Parse CSV
+                const rows = csvText.split('\n').map(r => r.split(','));
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                
+                const idxTeam = headers.indexOf('team');
+                const idxUser = headers.findIndex(h => h.includes('user') || h.includes('username'));
+                const idxId = headers.findIndex(h => h.includes('id') && !h.includes('draft'));
+
+                const agents = rows.slice(1).filter(r => {
+                    if (idxTeam > -1) {
+                        return (r[idxTeam]?.trim().toLowerCase() === 'free agents') && r[idxId];
+                    }
+                    return r.length > 1 && r[idxId];
+                });
+
+                if (agents.length === 0) {
+                    container.innerHTML = '<div class="loading-container">No free agents found in sheet.</div>';
+                    return;
+                }
+
+                statusMsg.textContent = `Found ${agents.length} Agents. Fetching Live Stats...`;
+                container.innerHTML = ''; 
+
+                // 4. Render Loop
+                for (let i = 0; i < agents.length; i++) {
+                    const row = agents[i];
+                    const name = row[idxUser];
+                    const uid = row[idxId]?.trim();
+                    
+                    if (!uid) continue;
+
+                    // JSON Hit
+                    if (jsonData && jsonData[uid]) {
+                        const rawStats = jsonData[uid].stats;
+                        const aggregated = aggregateStatsBySport(rawStats);
+                        const cardHtml = createCardHTML(uid, name, aggregated);
+                        
+                        container.insertAdjacentHTML('beforeend', cardHtml);
+                        const insertedCard = document.getElementById(`card-${uid}`);
+                        
+                        if (insertedCard) {
+                            // Assign power scores for sorting
+                            insertedCard.dataset.powerOverall = calculateOverallPower(aggregated);
+                            for (const [sport, dataObj] of Object.entries(aggregated)) {
+                                if (sport !== "ALL_SPORTS") {
+                                    insertedCard.dataset[`power${sport}`] = calculateSingleSportPower(dataObj);
+                                    globalDiscoveredSports.add(sport);
+                                }
+                            }
+                        }
+                        
+                        continue; 
+                    }
+
+                    // API Skeleton Hit
+                    const cardId = `card-${uid}`;
+                    const skeletonHtml = `
+                        <div class="fa-card" id="${cardId}" data-power-overall="-1">
+                            <div class="fa-header">
+                                <span class="fa-name">${name}</span>
+                                <span class="fa-id">${uid}</span>
+                            </div>
+                            <div class="stats-loading" style="color:var(--text-muted); font-style:italic; font-size:0.9rem; padding: 1rem;">
+                                Syncing stats...
+                            </div>
+                        </div>`;
+                    container.insertAdjacentHTML('beforeend', skeletonHtml);
+
+                    try {
+                        const data = await fetchRealStats(uid);
+                        const normalizedStats = {};
+                        (data.stats || []).forEach(s => {
+                            const key = `${s.sport}-${s.season}`;
+                            normalizedStats[key] = {};
+                            s.displayStats.forEach(ds => {
+                                normalizedStats[key][ds.label] = ds.display;
+                            });
+                        });
+                        
+                        const aggregatedStats = aggregateStatsBySport(normalizedStats);
+                        updateCard(cardId, aggregatedStats);
+                        
+                        const updatedCard = document.getElementById(cardId);
+                        if (updatedCard) {
+                            updatedCard.dataset.powerOverall = calculateOverallPower(aggregatedStats);
+                            for (const [sport, dataObj] of Object.entries(aggregatedStats)) {
+                                if (sport !== "ALL_SPORTS") {
+                                    updatedCard.dataset[`power${sport}`] = calculateSingleSportPower(dataObj);
+                                    globalDiscoveredSports.add(sport);
+                                }
+                            }
+                        }
+
+                        // Update dropdown as new sports are found
+                        updateFilterDropdown();
+
+                        await new Promise(r => setTimeout(r, 200)); 
+                    } catch (err) {
+                        console.error(`Failed for ${name}:`, err);
+                        const card = document.getElementById(cardId);
+                        if (card) {
+                            card.querySelector('.stats-loading').innerHTML = `<span style="color:var(--danger)">Update Failed</span>`;
+                            card.dataset.powerOverall = -1; // Push to bottom
+                        }
+                    }
+                }
+
+                // Final Dropdown sync & Re-sort
+                updateFilterDropdown();
+                window.filterAndSortGrid();
+
+            } catch (e) {
+                container.innerHTML = `<div class="loading-container" style="color:var(--danger)">
+                    <h3>Error</h3>
+                    <p>${e.message}</p>
+                </div>`;
+            }
+        }
+
+        // --- RENDER HELPERS ---
+
+        function createCardHTML(uid, name, statsObj) {
+            let keys = Object.keys(statsObj).sort();
+
+            if (keys.length === 0) {
+                 return `
+                    <div class="fa-card" id="card-${uid}">
+                        <div class="fa-header">
+                            <span class="fa-name">${name}</span>
+                            <span class="fa-id">${uid}</span>
+                        </div>
+                        <div style="text-align:center; font-style:italic; padding:1rem; color:var(--text-muted);">
+                            No active stats found
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Move ALL_SPORTS to the very beginning of the dropdown array
+            const allIndex = keys.indexOf("ALL_SPORTS");
+            if (allIndex > -1) {
+                keys.splice(allIndex, 1);
+                keys.unshift("ALL_SPORTS");
+            }
+
+            let optionsHtml = '';
+            let viewsHtml = '';
+
+            // --- ORDERED STATS ---
+            const targetStats = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 10"];
+            
+            keys.forEach((key, index) => {
+                const details = statsObj[key];
+                
+                // Set Display name for dropdown
+                const displayKey = key === "ALL_SPORTS" ? "All Sports" : key.replace('-', ' ');
+                
+                let headerScore = '-';
+                if (details["Highest Score"] !== undefined) {
+                    headerScore = details["Highest Score"];
+                }
+                
+                optionsHtml += `<option value="${key}">${displayKey}</option>`;
+
+                let gridHtml = '';
+                
+                targetStats.forEach(targetLabel => {
+                    let val = details[targetLabel];
+                    
+                    if (val !== undefined) {
+                        gridHtml += `
+                            <div class="stat-box">
+                                <span class="stat-label">${targetLabel}</span>
+                                <span class="stat-value">${val}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                const activeClass = index === 0 ? 'active' : '';
+
+                viewsHtml += `
+                    <div class="sport-stats-view ${activeClass}" data-sport="${key}">
+                         <div class="sport-title-row">
+                            <span>Highest Score</span>
+                            <span>${headerScore}</span>
+                        </div>
+                        <div class="stats-grid-row">
+                            ${gridHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="fa-card" id="card-${uid}">
+                    <div class="fa-header">
+                        <span class="fa-name">${name}</span>
+                        <span class="fa-id">${uid}</span>
+                    </div>
+                    
+                    <div class="sport-selector-container">
+                        <select class="sport-dropdown" onchange="switchSport(this)">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+
+                    <div class="stats-container">
+                        ${viewsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateCard(cardId, statsObj) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            
+            const name = card.querySelector('.fa-name').innerText;
+            const uid = card.querySelector('.fa-id').innerText;
+            
+            const newHtml = createCardHTML(uid, name, statsObj);
+            
+            const temp = document.createElement('div');
+            temp.innerHTML = newHtml;
+            card.innerHTML = temp.firstElementChild.innerHTML;
+        }
+
+        loadFreeAgents();
+    </script>
+</body>
+</html>

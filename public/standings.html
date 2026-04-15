@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Standings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        .conf-header {
+            font-size: 2rem;
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+            color: #fff;
+            border-bottom: 2px solid #333;
+            padding-bottom: 0.5rem;
+            text-align: left;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .div-header {
+            font-size: 1.2rem;
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+            color: #888;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 0.5rem;
+            border-left: 4px solid var(--primary);
+        }
+        .standings-table {
+            margin-bottom: 2rem;
+        }
+        
+        /* FIX: Table Wrapper for scrolling without breaking alignment */
+        .table-wrapper {
+            overflow-x: auto;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+        }
+        
+        /* Force table to behave like a table to fix column alignment */
+        .data-table {
+            display: table !important; 
+            width: 100%;
+            border-collapse: collapse;
+            border: none; /* Border moved to wrapper */
+            background: transparent;
+            white-space: nowrap; /* Prevent wrapping in cells */
+        }
+        
+        /* Enforce table structure elements to ensure alignment */
+        .data-table thead { display: table-header-group !important; }
+        .data-table tbody { display: table-row-group !important; }
+        .data-table tr { display: table-row !important; }
+        .data-table th, .data-table td { display: table-cell !important; }
+
+        /* Navigation Tabs for Views */
+        .standings-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #333;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.3s, border-bottom-color 0.3s;
+        }
+        .tab-btn:hover { color: #ccc; }
+        .tab-btn.active { color: #fff; border-bottom-color: var(--primary); }
+    </style>
+</head>
+<body>
+    <h1>RDA Standings</h1>
+    
+    <!-- View Toggles (Hidden by default, shown if divisions exist) -->
+    <div id="view-tabs" class="standings-tabs" style="display: none;">
+        <button class="tab-btn active" data-view="conference">Conference</button>
+        <button class="tab-btn" data-view="division">Division</button>
+    </div>
+
+    <!-- Container for dynamic content -->
+    <div id="standings-container">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">Loading...</div>
+    </div>
+
+    <script type="module">
+        import { initNav, getSeasonData, currentSeason } from './js/app.js';
+        initNav();
+
+        // --- CONFIGURATION: Define your Divisions here ---
+        const seasonConfigs = {
+            '3': {
+                'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Underdogs': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Stars': { conf: 'East Conference', div: 'Metro Division' },
+                'Buffaloes': { conf: 'East Conference', div: 'Metro Division' },
+                'Zombies': { conf: 'East Conference', div: 'Metro Division' },
+                'Reapers': { conf: 'West Conference', div: 'Central Division' },
+                'Kings': { conf: 'West Conference', div: 'Central Division' },
+                'Voyagers': { conf: 'West Conference', div: 'Central Division' },
+                'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
+                'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
+                'Knights': { conf: 'West Conference', div: 'Pacific Division' }
+            },
+            '4': {
+                // East Conference
+                'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Buffaloes': { conf: 'East Conference', div: 'Atlantic Division' },
+                
+                'Kings': { conf: 'East Conference', div: 'Metro Division' },
+                'Underdogs': { conf: 'East Conference', div: 'Metro Division' },
+                'Knights': { conf: 'East Conference', div: 'Metro Division' },
+
+                // West Conference
+                'Reapers': { conf: 'West Conference', div: 'Central Division' },
+                'Stars': { conf: 'West Conference', div: 'Central Division' },
+                'Zombies': { conf: 'West Conference', div: 'Central Division' },
+
+                'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
+                'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
+                'Voyagers': { conf: 'West Conference', div: 'Pacific Division' }
+            },
+            '5': {
+                // Duplicate of S4 for now until new Season 5 alignments are provided
+                'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Buffaloes': { conf: 'East Conference', div: 'Atlantic Division' },
+                
+                'Kings': { conf: 'East Conference', div: 'Metro Division' },
+                'Underdogs': { conf: 'East Conference', div: 'Metro Division' },
+                'Knights': { conf: 'East Conference', div: 'Metro Division' },
+
+                'Reapers': { conf: 'West Conference', div: 'Central Division' },
+                'Stars': { conf: 'West Conference', div: 'Central Division' },
+                'Zombies': { conf: 'West Conference', div: 'Central Division' },
+
+                'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
+                'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
+                'Voyagers': { conf: 'West Conference', div: 'Pacific Division' }
+            }
+        };
+
+        let globalTeams = [];
+        let globalConfig = null;
+        let currentView = 'conference';
+
+        function processTeamStats(team) {
+            team.pct = team.gamesPlayed ? (team.wins / team.gamesPlayed) : 0;
+            team.diff = (team.pointsFor || 0) - (team.pointsAgainst || 0);
+            return team;
+        }
+
+        // Dedicated sorting function to strictly enforce the hierarchy
+        const sortTeams = (a, b) => {
+            // 1. Record (Win Percentage)
+            if (b.pct !== a.pct) return b.pct - a.pct;
+            // 2. Total Wins
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            // 3. Point Differential Tiebreaker
+            if (b.diff !== a.diff) return b.diff - a.diff;
+            // 4. Points For Final Tiebreaker
+            return (b.pointsFor || 0) - (a.pointsFor || 0);
+        };
+
+        async function load() {
+            const container = document.getElementById('standings-container');
+            const teamsRaw = await getSeasonData('teams');
+            
+            if (!teamsRaw.length) {
+                container.innerHTML = '<div class="card" style="text-align: center;">No data available for this season yet.</div>';
+                return;
+            }
+
+            globalTeams = teamsRaw.map(processTeamStats);
+            globalConfig = seasonConfigs[currentSeason];
+
+            if (globalConfig) {
+                document.getElementById('view-tabs').style.display = 'flex';
+                renderCurrentView();
+            } else {
+                document.getElementById('view-tabs').style.display = 'none';
+                renderSingleTable(globalTeams);
+            }
+        }
+
+        function renderCurrentView() {
+            if (currentView === 'conference') {
+                renderConferenceStandings(globalTeams, globalConfig);
+            } else {
+                renderGroupedStandings(globalTeams, globalConfig);
+            }
+        }
+
+        // Tab Listeners
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentView = e.target.dataset.view;
+                renderCurrentView();
+            });
+        });
+
+        function renderSingleTable(teams) {
+            teams.sort(sortTeams);
+            
+            const html = `
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th style="width: 50px; text-align: center;">Rank</th><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>Diff</th></tr>
+                        </thead>
+                        <tbody>
+                            ${teams.map((t, i) => createRow(t, i + 1)).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('standings-container').innerHTML = html;
+        }
+
+        function renderConferenceStandings(teams, config) {
+            const container = document.getElementById('standings-container');
+            container.innerHTML = ''; 
+            
+            const structure = {};
+            
+            // Build Conference -> Division -> Teams structure
+            teams.forEach(t => {
+                const map = config[t.name];
+                if (!map) return; 
+
+                if (!structure[map.conf]) structure[map.conf] = {};
+                if (!structure[map.conf][map.div]) structure[map.conf][map.div] = [];
+                
+                structure[map.conf][map.div].push(t);
+            });
+
+            const conferences = Object.keys(structure).sort();
+
+            conferences.forEach(confName => {
+                container.innerHTML += `<div class="conf-header">${confName}</div>`;
+                
+                const divObj = structure[confName];
+                let divisionWinners = [];
+                let wildcards = [];
+
+                // Find the winner of each division
+                Object.keys(divObj).forEach(divName => {
+                    let divTeams = [...divObj[divName]];
+                    divTeams.sort(sortTeams); 
+                    
+                    if (divTeams.length > 0) {
+                        divisionWinners.push(divTeams[0]); // Best team in the division
+                        wildcards.push(...divTeams.slice(1)); // Everyone else
+                    }
+                });
+
+                // Sort the division winners against each other (Seeds 1 & 2)
+                divisionWinners.sort(sortTeams);
+                
+                // Sort all the remaining non-winners (Seeds 3+)
+                wildcards.sort(sortTeams);
+
+                // Combine them into the final seeded conference order
+                const confTeams = [...divisionWinners, ...wildcards];
+
+                container.innerHTML += `
+                    <div class="table-wrapper">
+                        <table class="data-table standings-table">
+                            <thead>
+                                <tr><th style="width: 50px; text-align: center;">Rank</th><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>Diff</th></tr>
+                            </thead>
+                            <tbody>
+                                ${confTeams.map((t, i) => createRow(t, i + 1)).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+        }
+
+        function renderGroupedStandings(teams, config) {
+            const container = document.getElementById('standings-container');
+            container.innerHTML = ''; 
+            
+            const structure = {};
+            
+            teams.forEach(t => {
+                const map = config[t.name];
+                if (!map) return; 
+
+                if (!structure[map.conf]) structure[map.conf] = {};
+                if (!structure[map.conf][map.div]) structure[map.conf][map.div] = [];
+                
+                structure[map.conf][map.div].push(t);
+            });
+
+            const conferences = Object.keys(structure).sort();
+
+            conferences.forEach(confName => {
+                container.innerHTML += `<div class="conf-header">${confName}</div>`;
+                
+                const divisions = Object.keys(structure[confName]).sort();
+                
+                divisions.forEach(divName => {
+                    container.innerHTML += `<div class="div-header">${divName}</div>`;
+                    
+                    const divTeams = structure[confName][divName];
+                    divTeams.sort(sortTeams); // Apply robust tiebreaker logic
+
+                    // Division view typically doesn't need explicit ranking numbers, just order
+                    container.innerHTML += `
+                        <div class="table-wrapper">
+                            <table class="data-table standings-table">
+                                <thead>
+                                    <tr><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>Diff</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${divTeams.map(t => createRow(t)).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function createRow(t, rank = null) {
+            return `
+                <tr>
+                    ${rank ? `<td style="text-align: center; color: #888; font-weight: bold; font-size: 1.1rem;">${rank}</td>` : ''}
+                    <td style="font-weight:bold; color:white; display:flex; align-items:center; gap:10px;">
+                        <img src="images/teams/${t.name.toLowerCase().replace(/\s/g, '')}.png" 
+                             style="width:24px; height:24px; object-fit:contain;" 
+                             onerror="this.style.display='none'">
+                        ${t.name}
+                    </td>
+                    <td class="win">${t.wins}</td>
+                    <td class="loss">${t.losses}</td>
+                    <td>${t.pct.toFixed(3)}</td>
+                    <td style="color: ${t.diff > 0 ? '#4CAF50' : '#F44336'}">
+                        ${t.diff > 0 ? '+' : ''}${t.diff.toFixed(0)}
+                    </td>
+                </tr>
+            `;
+        }
+
+        load();
+    </script>
+</body>
+</html>

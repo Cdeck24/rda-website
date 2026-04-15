@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real Draft Association</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        /* Local layout overrides for Landing Page */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100vh;
+            height: auto; 
+            padding-top: 4rem;
+            padding-bottom: 2rem;
+        }
+
+        /* Admin Link */
+        .admin-link {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            text-decoration: none; 
+        }
+        .admin-link:hover {
+            border-color: var(--gold-mid);
+            color: var(--gold-mid);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .subtitle {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 1.2rem;
+            color: var(--gold-mid);
+            opacity: 0.9;
+            margin-bottom: 3rem;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        /* League Selection Buttons */
+        .league-prompt-container {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            max-width: 800px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+            padding: 0 1rem;
+            animation: fadeIn 0.5s ease-out;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .league-btn {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 260px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .league-btn:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold-mid);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        .league-btn h1 {
+            margin: 0;
+            color: #fff;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Back Button */
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2rem;
+            display: inline-block;
+        }
+
+        .back-btn:hover {
+            color: var(--gold-mid);
+            border-color: var(--gold-mid);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .league-seasons-view {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Season List (Horizontal Cards) */
+        .season-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 800px; 
+            margin: 0 auto;
+            perspective: 1000px;
+            padding: 0 1rem;
+            box-sizing: border-box;
+        }
+
+        .season-card {
+            /* Lighter blue for visibility */
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 2rem 2.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: row; 
+            align-items: center;
+            justify-content: space-between;
+            min-height: 120px;
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .season-card:hover {
+            transform: translateX(10px); 
+            border-color: var(--gold-mid);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        .season-number {
+            font-family: 'Times New Roman', serif;
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            color: rgba(255,255,255,0.05);
+            position: absolute;
+            left: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .season-card:hover .season-number {
+            color: rgba(212, 175, 55, 0.2); /* Brighter gold on hover */
+            transform: translateY(-50%) scale(1.1);
+            left: 2rem;
+        }
+
+        .season-content {
+            z-index: 1;
+            position: relative;
+            margin-left: 4rem; 
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .season-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .season-status {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-muted);
+            display: inline-block;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.4);
+            white-space: nowrap;
+        }
+
+        /* Active Season Highlight */
+        .season-card.active {
+            border-color: var(--gold-mid);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.15);
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+        }
+        
+        .season-card.active .season-status {
+            background: var(--gold-mid);
+            color: #0f172a;
+            border-color: var(--gold-mid);
+            font-weight: 700;
+        }
+
+        /* Mobile Adjustments for Index */
+        @media (max-width: 600px) {
+            .league-btn {
+                padding: 2rem 1.5rem;
+                min-height: 120px;
+            }
+            .league-btn h1 {
+                font-size: 1.8rem;
+            }
+            
+            .season-card {
+                padding: 1.5rem;
+                min-height: 100px;
+            }
+            
+            .season-number {
+                font-size: 3rem;
+                left: 1rem;
+            }
+
+            .season-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+                margin-left: 3rem; /* Less margin on mobile */
+            }
+            
+            .season-title {
+                font-size: 1.1rem;
+            }
+            
+            .season-status {
+                margin-top: 0.2rem;
+                font-size: 0.65rem;
+                padding: 4px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="admin.html" class="admin-link">Admin Access</a>
+    
+    <!-- View 1: League Selection Prompt -->
+    <div id="league-selection-view">
+        <div class="subtitle" style="margin-bottom: 2rem;">Select a League</div>
+        <div class="league-prompt-container">
+            <div class="league-btn" onclick="showLeague('rda')">
+                <h1>Real Draft Association</h1>
+            </div>
+            <div class="league-btn" onclick="showLeague('drafters')">
+                <h1>Drafters 1v1</h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 2: RDA Seasons -->
+    <div id="rda-seasons-view" class="league-seasons-view" style="display: none;">
+        <button class="back-btn" onclick="showLeagueSelection()">&#8592; Back to Leagues</button>
+        <div class="subtitle">Real Draft Association - Select a Season</div>
+
+        <div class="season-grid">
+            <!-- Season 1 -->
+            <div class="season-card" onclick="window.location.href='hub.html?season=1'">
+                <div class="season-number">I</div>
+                <div class="season-content">
+                    <div class="season-title">Season One</div>
+                    <div class="season-status">Completed</div>
+                </div>
+            </div>
+
+            <!-- Season 2 -->
+            <div class="season-card" onclick="window.location.href='hub.html?season=2'">
+                <div class="season-number">II</div>
+                <div class="season-content">
+                    <div class="season-title">Season Two</div>
+                    <div class="season-status">Completed</div>
+                </div>
+            </div>
+
+            <!-- Season 3 -->
+            <div class="season-card" onclick="window.location.href='hub.html?season=3'">
+                <div class="season-number">III</div>
+                <div class="season-content">
+                    <div class="season-title">Season Three</div>
+                    <div class="season-status">Completed</div>
+                </div>
+            </div>
+
+            <!-- Season 4 -->
+            <div class="season-card" onclick="window.location.href='hub.html?season=4'">
+                <div class="season-number">IV</div>
+                <div class="season-content">
+                    <div class="season-title">Season Four</div>
+                    <div class="season-status">Completed</div>
+                </div>
+            </div>
+
+            <!-- Season 5 (Upcoming) -->
+            <div class="season-card active" onclick="window.location.href='hub.html?season=5'">
+                <div class="season-number">V</div>
+                <div class="season-content">
+                    <div class="season-title">Season Five</div>
+                    <div class="season-status">Upcoming</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View 3: Drafters 1v1 Seasons -->
+    <div id="drafters-seasons-view" class="league-seasons-view" style="display: none;">
+        <button class="back-btn" onclick="showLeagueSelection()">&#8592; Back to Leagues</button>
+        <div class="subtitle">Drafters 1v1 - Select a Season</div>
+
+        <div class="season-grid">
+            <!-- Drafters Season 0 -->
+            <div class="season-card active" onclick="window.location.href='drafters-matchups.html?season=0'">
+                <div class="season-number">0</div>
+                <div class="season-content">
+                    <div class="season-title">Season Zero</div>
+                    <div class="season-status">Live Now</div>
+                </div>
+            </div>
+
+            <!-- Drafters Season 1 -->
+            <div class="season-card" onclick="window.location.href='drafters-matchups.html?season=1'">
+                <div class="season-number">I</div>
+                <div class="season-content">
+                    <div class="season-title">Season One</div>
+                    <div class="season-status">Upcoming</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script to handle view switching -->
+    <script>
+        function showLeague(leagueId) {
+            document.getElementById('league-selection-view').style.display = 'none';
+            document.getElementById('rda-seasons-view').style.display = 'none';
+            document.getElementById('drafters-seasons-view').style.display = 'none';
+            
+            if (leagueId === 'rda') {
+                document.getElementById('rda-seasons-view').style.display = 'flex';
+            } else if (leagueId === 'drafters') {
+                document.getElementById('drafters-seasons-view').style.display = 'flex';
+            }
+        }
+
+        function showLeagueSelection() {
+            document.getElementById('rda-seasons-view').style.display = 'none';
+            document.getElementById('drafters-seasons-view').style.display = 'none';
+            document.getElementById('league-selection-view').style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>

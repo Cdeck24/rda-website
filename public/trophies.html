@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Trophy Case</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        /* --- Podium Styles --- */
+        .podium-section {
+            margin: 2rem auto;
+            max-width: 800px;
+            animation: fadeIn 0.8s ease-out;
+            padding: 0 1rem;
+        }
+
+        .podium-title {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            color: #ffd700; /* Goldish text */
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .podium-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 1rem;
+            height: 350px;
+            padding-bottom: 2rem;
+        }
+
+        .podium-place {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .team-logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            border: 2px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #555;
+            transition: transform 0.3s ease;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .team-logo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .podium-place:hover .team-logo-placeholder {
+            transform: scale(1.1);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .podium-bar {
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 1rem;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* 1st Place - Gold */
+        .podium-place.first { order: 2; z-index: 3; }
+        .podium-place.first .podium-bar {
+            height: 200px;
+            background: linear-gradient(135deg, #FFD700, #FDB931);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+        .podium-place.first .team-logo-placeholder {
+            border-color: #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+
+        /* 2nd Place - Silver */
+        .podium-place.second { order: 1; z-index: 2; }
+        .podium-place.second .podium-bar {
+            height: 140px;
+            background: linear-gradient(135deg, #E0E0E0, #BDBDBD);
+        }
+        .podium-place.second .team-logo-placeholder { border-color: #E0E0E0; }
+
+        /* 3rd Place - Bronze */
+        .podium-place.third { order: 3; z-index: 1; }
+        .podium-place.third .podium-bar {
+            height: 100px;
+            background: linear-gradient(135deg, #CD7F32, #A0522D);
+        }
+        .podium-place.third .team-logo-placeholder { border-color: #CD7F32; }
+
+        .team-name {
+            margin-top: 1rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        /* --- Awards Grid --- */
+        .awards-section {
+            max-width: 1000px;
+            margin: 4rem auto;
+            padding: 0 1rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.5rem;
+            display: inline-block;
+            color: #eee;
+        }
+
+        .awards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .award-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .award-card:hover {
+            transform: translateY(-5px);
+            border-color: #444;
+        }
+
+        .award-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .award-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #aaa;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .award-winner {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .tbd-text {
+            color: #555;
+            font-style: italic;
+        }
+
+        /* --- Responsive Styles --- */
+        @media (max-width: 768px) {
+            .podium-container {
+                align-items: center;
+                flex-direction: column;
+                height: auto;
+                gap: 1.5rem;
+            }
+            .podium-place {
+                width: 100%;
+                max-width: 100%;
+                flex-direction: row;
+                justify-content: flex-start;
+                background: #111;
+                padding: 1rem;
+                border-radius: 8px;
+                border: 1px solid #333;
+                align-items: center;
+            }
+            .podium-place.first { order: 1; border-color: #FFD700; }
+            .podium-place.second { order: 2; border-color: #E0E0E0; }
+            .podium-place.third { order: 3; border-color: #CD7F32; }
+
+            .podium-bar { display: none; }
+            
+            .team-logo-placeholder {
+                margin-bottom: 0;
+                margin-right: 1rem;
+                width: 50px;
+                height: 50px;
+                font-size: 1rem;
+                padding: 5px;
+            }
+            .team-name { margin-top: 0; text-align: left; }
+            
+            /* Add rank number for mobile */
+            .podium-place::before {
+                content: attr(data-rank);
+                font-size: 1.5rem;
+                font-weight: bold;
+                margin-right: 1rem;
+                width: 30px;
+                text-align: center;
+            }
+            .podium-place.first::before { color: #FFD700; }
+            .podium-place.second::before { color: #E0E0E0; }
+            .podium-place.third::before { color: #CD7F32; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>RDA Trophy Case</h1>
+    
+    <!-- Podium Section -->
+    <div id="podium-container" class="podium-section">
+        <h2 class="podium-title">Season Podium</h2>
+        <div class="podium-container">
+            <!-- 2nd Place -->
+            <div class="podium-place second" data-rank="2">
+                <div class="team-logo-placeholder">
+                    <img id="img-2nd" src="" alt="2nd" onerror="this.style.display='none'">
+                </div>
+                <div class="team-name" id="name-2nd">TBD</div>
+                <div class="podium-bar">2nd</div>
+            </div>
+            <!-- 1st Place -->
+            <div class="podium-place first" data-rank="1">
+                <div class="team-logo-placeholder">
+                    <img id="img-1st" src="" alt="1st" onerror="this.style.display='none'">
+                </div>
+                <div class="team-name" id="name-1st">TBD</div>
+                <div class="podium-bar">1st</div>
+            </div>
+            <!-- 3rd Place -->
+            <div class="podium-place third" data-rank="3">
+                <div class="team-logo-placeholder">
+                    <img id="img-3rd" src="" alt="3rd" onerror="this.style.display='none'">
+                </div>
+                <div class="team-name" id="name-3rd">TBD</div>
+                <div class="podium-bar">3rd</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Awards Section -->
+    <div class="awards-section">
+        <h2 class="section-title">Season Awards</h2>
+        <div id="awards-grid" class="awards-grid">
+            <!-- Filled dynamically -->
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason } from './js/app.js';
+        initNav();
+
+        // Image helper (reused from Hub logic)
+        function getTeamLogoPath(name) {
+             if (!name || name === 'TBD') return '';
+             let cleanName = name.trim().toLowerCase();
+             if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
+             cleanName = cleanName.replace(/\s+/g, '-');
+             
+             const isPng = ['reapers', 'zombies', 'free-agents'].includes(cleanName);
+             return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+        }
+
+        // --- TROPHY DATA CONFIGURATION ---
+        const trophyData = {
+            '1': {
+                podium: { first: 'Manatees', second: 'Stars', third: 'Kings' },
+                awards: [
+                    { icon: '🏆', title: 'League MVP', winner: '@alp' },
+                    { icon: '🏅', title: 'Finals MVP', winner: '@alp' },
+                    { icon: '🕴🏻', title: 'GM of the Year', winner: '@vortexed' }
+                ]
+            },
+            '2': {
+                podium: { first: 'Kings', second: 'Stars', third: 'Underdogs' },
+                awards: [
+                    { icon: '🏆', title: 'League MVP', winner: '@croze' },
+                    { icon: '👶', title: 'Rookie of the Year', winner: '@bc' },
+                    { icon: '🕴🏻', title: 'GM of the Year', winner: '@cdeck24' },
+                    { icon: '📈', title: 'Most Improved', winner: '@fourr' }
+                ]
+            },
+            '3': {
+                podium: { first: 'Kings', second: 'Bajas', third: 'Dragons' },
+                awards: [
+                    { icon: '🏆', title: 'League MVP', winner: '@bc' },
+                    { icon: '🏅', title: 'Finals MVP', winner: '@bc' },
+                    { icon: '🤝', title: 'FA Pickup of Year', winner: '@thegreekfreak31' },
+                    { icon: '👶', title: 'Rookie of the Year', winner: '@ant2holy' },
+                    { icon: '🧠', title: 'GM of the Year', winner: '@r0dmanx' },
+                    { icon: '📈', title: 'Most Improved', winner: '@florida_sportsfan' }
+                ]
+            },
+            '4': {
+                podium: { first: 'Reapers', second: 'Underdogs', third: 'Kings' },
+                awards: [
+                    { icon: '🏆', title: 'League MVP', winner: '@balt' },
+                    { icon: '🏅', title: 'Finals MVP', winner: '@nottherealben' },
+                    { icon: '🤝', title: 'FA Pickup of Year', winner: '@chuiso' },
+                    { icon: '👶', title: 'Rookie of the Year', winner: '@psyklone' },
+                    { icon: '🧠', title: 'GM of the Year', winner: '@jabahhh' },
+                    { icon: '📈', title: 'Most Improved Player', winner: '@tinosthe2nd' }
+                ]
+            },
+            '5': {
+                podium: { first: 'TBD', second: 'TBD', third: 'TBD' },
+                awards: [
+                    { icon: '🏆', title: 'League MVP', winner: 'TBD' },
+                    { icon: '🏅', title: 'Finals MVP', winner: 'TBD' },
+                    { icon: '🤝', title: 'FA Pickup of Year', winner: 'TBD' },
+                    { icon: '👶', title: 'Rookie of the Year', winner: 'TBD' },
+                    { icon: '🧠', title: 'GM of the Year', winner: 'TBD' },
+                    { icon: '📈', title: 'Most Improved Player', winner: 'TBD' }
+                ]
+            }
+        };
+
+        function renderTrophies() {
+            // Updated to fall back to '5' instead of '4' for missing future seasons
+            const data = trophyData[currentSeason] || trophyData['5'];
+
+            // 1. Render Podium
+            const p = data.podium;
+            
+            // 1st
+            document.getElementById('name-1st').innerText = p.first;
+            document.getElementById('img-1st').src = getTeamLogoPath(p.first);
+            if(p.first === 'TBD') document.getElementById('img-1st').style.display = 'none';
+            else document.getElementById('img-1st').style.display = 'block';
+
+            // 2nd
+            document.getElementById('name-2nd').innerText = p.second;
+            document.getElementById('img-2nd').src = getTeamLogoPath(p.second);
+            if(p.second === 'TBD') document.getElementById('img-2nd').style.display = 'none';
+            else document.getElementById('img-2nd').style.display = 'block';
+
+            // 3rd
+            document.getElementById('name-3rd').innerText = p.third;
+            document.getElementById('img-3rd').src = getTeamLogoPath(p.third);
+            if(p.third === 'TBD') document.getElementById('img-3rd').style.display = 'none';
+            else document.getElementById('img-3rd').style.display = 'block';
+
+            // 2. Render Awards Grid
+            const grid = document.getElementById('awards-grid');
+            grid.innerHTML = data.awards.map(a => `
+                <div class="award-card">
+                    <span class="award-icon">${a.icon}</span>
+                    <div class="award-title">${a.title}</div>
+                    <div class="award-winner ${a.winner === 'TBD' ? 'tbd-text' : ''}">${a.winner}</div>
+                </div>
+            `).join('');
+        }
+
+        renderTrophies();
+    </script>
+</body>
+</html>
