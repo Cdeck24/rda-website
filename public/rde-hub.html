@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDE - Champions Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="styles/drafters.css">
+    <style>
+        /* RDE Layout */
+        html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+        .nav-container:not(.drafters-nav) { display: none !important; }
+
+        h1 {
+            text-align: center; margin-top: 2rem; font-size: 2.5rem;
+            text-transform: uppercase; letter-spacing: 2px; color: var(--gold-mid);
+        }
+
+        .hub-content { 
+            width: 100%; max-width: 1200px; margin: 0 auto; 
+            padding: 1rem 1rem 4rem 1rem; animation: fadeIn 0.5s ease-out; box-sizing: border-box;
+        }
+
+        .section-title {
+            font-size: 1.2rem; font-weight: 600; color: var(--text-main);
+            margin: 0 0 1.5rem 0; padding-left: 0.5rem; border-left: 4px solid var(--gold-mid);
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        /* Championship Belt Cards */
+        .champions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .champ-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .champ-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(212, 175, 55, 0.15); }
+
+        .champ-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--gold-light), var(--gold-dark));
+        }
+
+        /* Specific Brand Colors for Belts */
+        .champ-card.prime::before { background: linear-gradient(90deg, #ef4444, #991b1b); }
+        .champ-card.clash::before { background: linear-gradient(90deg, #3b82f6, #1e3a8a); }
+        .champ-card.ascent::before { background: linear-gradient(90deg, #10b981, #064e3b); }
+
+        .belt-title {
+            font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px;
+            color: var(--gold-mid); margin-bottom: 0.5rem; font-weight: 700;
+        }
+
+        .champ-card.prime .belt-title { color: #ef4444; }
+        .champ-card.clash .belt-title { color: #3b82f6; }
+        .champ-card.ascent .belt-title { color: #10b981; }
+
+        .champ-name {
+            font-size: 1.8rem; font-weight: 800; color: #fff;
+            margin-bottom: 1rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .champ-stats {
+            display: flex; justify-content: center; gap: 1rem;
+            font-size: 0.8rem; color: var(--text-muted);
+            border-top: 1px solid var(--border-subtle); padding-top: 1rem;
+        }
+
+        @media (max-width: 768px) { h1 { font-size: 1.8rem; margin-top: 1rem; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    
+    <h1 id="main-header">RDE</h1>
+
+    <!-- Custom RDE Navigation Bar -->
+    <div class="nav-container drafters-nav">
+        <div class="nav-bar">
+            <a href="drafters-home.html" class="nav-button">Seasons</a>
+            <a href="rde-hub.html" class="nav-button active">Hub</a>
+            <a href="rde-brands.html" class="nav-button">Brands</a>
+            <a href="rde-events.html" class="nav-button">Events</a>
+            <a href="rde-players.html" class="nav-button">Players</a>
+        </div>
+    </div>
+
+    <div class="hub-content">
+        <h2 class="section-title">Current Champions</h2>
+        
+        <div class="champions-grid" id="champions-container">
+            <!-- Undisputed Champ -->
+            <div class="champ-card" style="grid-column: 1 / -1; border-width: 2px;">
+                <div class="belt-title" style="font-size: 1.1rem; color: var(--gold-light);">Undisputed RDE Champion</div>
+                <div class="champ-name">@rafael</div>
+                <div class="champ-stats">
+                    <span>Days Held: <strong>42</strong></span>
+                    <span>Defenses: <strong>3</strong></span>
+                </div>
+            </div>
+
+            <!-- Brand Champs -->
+            <div class="champ-card prime">
+                <div class="belt-title">PRIME Champion</div>
+                <div class="champ-name">@gmoney676</div>
+                <div class="champ-stats">
+                    <span>Days Held: <strong>14</strong></span>
+                    <span>Defenses: <strong>1</strong></span>
+                </div>
+            </div>
+
+            <div class="champ-card clash">
+                <div class="belt-title">CLASH Champion</div>
+                <div class="champ-name">@alpunc</div>
+                <div class="champ-stats">
+                    <span>Days Held: <strong>28</strong></span>
+                    <span>Defenses: <strong>2</strong></span>
+                </div>
+            </div>
+
+            <div class="champ-card ascent">
+                <div class="belt-title">ASCENT Champion</div>
+                <div class="champ-name">@bixz</div>
+                <div class="champ-stats">
+                    <span>Days Held: <strong>7</strong></span>
+                    <span>Defenses: <strong>0</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">League Announcements</h2>
+        <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle); padding: 2rem; border-radius: 12px; text-align: center; color: var(--text-muted);">
+            <p><strong>Commissioner's Note:</strong> The next major PPV, <em>DraftMania</em>, is officially scheduled for the end of this show cycle. General Managers must lock in their contenders by Friday.</p>
+        </div>
+
+    </div>
+</body>
+</html>

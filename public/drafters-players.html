@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Drafters 1v1 - Players</title>
+    <title>RDE - Players</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="styles/drafters.css">
     <style>
-        /* --- Drafters 1v1 Layout Overrides --- */
+        /* --- RDE Layout Overrides --- */
         html, body {
             overflow-x: hidden; 
             width: 100%;
@@ -214,7 +214,7 @@
             .breakdown-section { padding: 1rem; }
             .extended-stats { grid-template-columns: 1fr; }
             
-            /* Table Mobile Fixes: Forces the columns to fit on screen */
+            /* Table Mobile Fixes */
             .data-table-container {
                 width: 100%;
                 max-width: 100vw;
@@ -223,13 +223,8 @@
                 border-left: none;
                 border-right: none;
             }
-            .data-table {
-                min-width: 100%; 
-            }
-            .data-table th, .data-table td { 
-                padding: 0.75rem 0.25rem; 
-                font-size: 0.8rem; 
-            }
+            .data-table { min-width: 100%; }
+            .data-table th, .data-table td { padding: 0.75rem 0.25rem; font-size: 0.8rem; }
             .rank-number { width: 30px; }
             .player-name {
                 max-width: 110px; 
@@ -242,9 +237,9 @@
 </head>
 <body>
     
-    <h1 id="main-header">Drafters 1v1</h1>
+    <h1 id="main-header">RDE</h1>
 
-    <!-- Custom Drafters Navigation Bar -->
+    <!-- Custom RDE Navigation Bar -->
     <div class="nav-container drafters-nav">
         <div class="nav-bar">
             <a href="drafters-home.html" class="nav-button">Home</a>
@@ -393,8 +388,16 @@
         const params = new URLSearchParams(window.location.search);
         const draftersSeason = params.get('season') || '0';
         
-        // Update header dynamically
-        document.getElementById('main-header').textContent = `Drafters 1v1 Season ${draftersSeason}`;
+        // Update header dynamically based on the requested season mapping
+        let headerTitle = `RDE Season ${draftersSeason}`;
+        if (draftersSeason === '0') {
+            headerTitle = 'Drafters 1v1';
+        } else if (draftersSeason === '1') {
+            headerTitle = 'Real Draft Entertainment';
+        }
+        
+        document.getElementById('main-header').textContent = headerTitle;
+        document.title = `${headerTitle} - Players`;
         
         document.getElementById('nav-matchups').href = `drafters-matchups.html?season=${draftersSeason}`;
         document.getElementById('nav-players').href = `drafters-players.html?season=${draftersSeason}`;
@@ -406,7 +409,6 @@
         // =======================================================
         const overallCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRB0V7m71K5ORGJbUt_kA67nTH6aVbMFn40ilYot30yuOqUed7eHCdSAK3ft3cgcfN4atDynZqaOvQw/pub?gid=1947950051&single=true&output=csv'; 
         
-        // PASTE THE LINK TO YOUR NEW SPORT-SPECIFIC CSV BELOW
         const sportsCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRB0V7m71K5ORGJbUt_kA67nTH6aVbMFn40ilYot30yuOqUed7eHCdSAK3ft3cgcfN4atDynZqaOvQw/pub?gid=909551293&single=true&output=csv'; 
         
         // State variables
@@ -453,7 +455,7 @@
             document.getElementById('modal-avgscore-label').textContent = filter === 'ALL' ? 'Overall Avg Score' : `${filter} Avg Score`;
             document.getElementById('modal-avgscore').textContent = displayStats.adj.toFixed(2);
 
-            // "Overall" Stats (These don't change because they are player-level attributes)
+            // "Overall" Stats
             let streakStyle = '';
             if (fullPlayer.overall.streak.includes('W')) streakStyle = 'color: #4ade80;'; 
             else if (fullPlayer.overall.streak.includes('L')) streakStyle = 'color: #f87171;'; 
@@ -478,9 +480,8 @@
             if (formString === '-' || formString.trim() === '') {
                 chartContainer.innerHTML = '<div class="form-bar-container"><div class="form-bar none">-</div></div>';
             } else {
-                // Strip out commas, spaces, or line breaks to guarantee horizontal alignment
                 const cleanForm = formString.toUpperCase().replace(/[^WL]/g, '');
-                const results = cleanForm.split('').slice(-5); // Cap at 5 matches
+                const results = cleanForm.split('').slice(-5); 
                 
                 let html = '';
                 if (results.length === 0) {
@@ -497,7 +498,7 @@
                 chartContainer.innerHTML = html;
             }
 
-            // Populate the Performance by Sport detailed breakdown
+            // Sport breakdown
             const tbody = document.getElementById('modal-sport-breakdown');
             let rowsHtml = '';
             
@@ -533,11 +534,7 @@
         // Extracts the relevant stats based on the selected sport filter
         function extractStats(player) {
             const filter = currentSportFilter.toUpperCase();
-            
-            // Get stats for specific sport, or overall if 'All' is selected
             let stats = filter === 'ALL' ? player.overall : player.sports[filter];
-            
-            // If they don't have stats for the selected sport, filter them out entirely
             if (!stats) return null;
 
             return {
@@ -555,17 +552,14 @@
         function renderTable() {
             const tbody = document.getElementById('players-container');
             
-            // 1. Map raw data to specific sport filter and remove nulls (players who didn't play that sport)
             let processedPlayers = allPlayersData
                 .map(p => extractStats(p))
                 .filter(p => p !== null);
 
-            // Filter by search query
             if (searchQuery) {
                 processedPlayers = processedPlayers.filter(p => p.username.toLowerCase().includes(searchQuery));
             }
 
-            // 2. Sort the array based on total matches, then overall win percentage
             processedPlayers.sort((a, b) => {
                 if (b.matches !== a.matches) return b.matches - a.matches;
                 
@@ -573,13 +567,11 @@
                 const bWinPct = parseFloat(b.winRate) || 0;
                 if (bWinPct !== aWinPct) return bWinPct - aWinPct;
                 
-                return b.avg_score - a.avg_score; // Tiebreaker
+                return b.avg_score - a.avg_score; 
             });
 
-            // Save globally for the modal click handler
             currentRenderedPlayers = processedPlayers;
 
-            // 3. Generate HTML
             if (processedPlayers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">No players found matching your criteria.</td></tr>';
                 return;
@@ -605,7 +597,6 @@
             }).join('');
         }
 
-        // Helper to parse CSV strings reliably
         function parseCSV(text) {
             const rows = text.split('\n').map(line => {
                 const values = [];
@@ -627,10 +618,8 @@
             return idx > -1 ? row[idx] : '';
         }
 
-        // Fetch & Parse both CSVs
         async function loadDraftersData() {
             try {
-                // Fetch both sheets simultaneously
                 const [overallRes, sportsRes] = await Promise.all([
                     fetch(workerProxy + '?url=' + encodeURIComponent(overallCsvUrl)),
                     sportsCsvUrl ? fetch(workerProxy + '?url=' + encodeURIComponent(sportsCsvUrl)) : Promise.resolve(null)
@@ -644,27 +633,10 @@
                 if (sportsRes && sportsRes.ok) {
                     sportsText = await sportsRes.text();
                 } else if (!sportsCsvUrl) {
-                    // Fallback sample data so you can test dropdown immediately
-                    sportsText = `Username,Merged Usernames,Sport,Total Matches,Wins,Losses,Win Rate %,Raw Average,Adjusted Average
-@rafael,@rafael,CBB,1,1,0,100.0%,68.04,34.02
-@rafael,@rafael,FC,5,4,1,80.0%,42.36,42.36
-@rafael,@rafael,MAIN EVENT,2,1,1,50.0%,132.75,38.49
-@rafael,@rafael,NBA,2,1,1,50.0%,74.61,47.52
-@alpunc,"@alpunc, @laketfan",FC,3,3,0,100.0%,43.31,43.31
-@alpunc,"@alpunc, @laketfan",MAIN EVENT,3,0,3,0.0%,121.53,28.55
-@alpunc,"@alpunc, @laketfan",MLB,1,0,1,0.0%,21.59,21.59
-@alpunc,"@alpunc, @laketfan",NBA,1,1,0,100.0%,101.25,50.62
-@alpunc,"@alpunc, @laketfan",NHL,2,2,0,100.0%,29.09,29.09
-@ok124,@ok124,CBB,1,0,1,0.0%,69.01,34.51
-@ok124,@ok124,MAIN EVENT,4,2,2,50.0%,114.76,44.36
-@ok124,@ok124,MLB,2,0,2,0.0%,9.86,9.86
-@ok124,@ok124,NBA,2,1,1,50.0%,69.49,47.37
-@ok124,@ok124,NHL,1,1,0,100.0%,46.88,46.88
-@warner3,"@warner, @warner3",CBB,3,2,1,66.7%,44.45,30.37
-@warner3,"@warner, @warner3",FC,1,0,1,0.0%,24.83,24.83`;
+                    sportsText = ``; // Failsafe
                 }
 
-                // 1. Process Overall Data First
+                // 1. Process Overall Data
                 const rowsOverall = parseCSV(overallText);
                 if (rowsOverall.length < 2) throw new Error('Primary CSV is empty');
                 const headersOverall = rowsOverall[0].map(h => h.toLowerCase().trim());
@@ -703,32 +675,34 @@
                 // 2. Process Sport Specific Data
                 if (sportsText) {
                     const rowsSports = parseCSV(sportsText);
-                    const headersSports = rowsSports[0].map(h => h.toLowerCase().trim());
-                    
-                    rowsSports.slice(1).forEach(row => {
-                        const username = getVal(row, headersSports, 'username');
-                        if (!username || !playersMap[username]) return; // Skip if they aren't in the overall sheet
+                    if(rowsSports.length >= 2) {
+                        const headersSports = rowsSports[0].map(h => h.toLowerCase().trim());
                         
-                        const sport = getVal(row, headersSports, 'sport').toUpperCase();
-                        const rawVal = parseFloat(getVal(row, headersSports, 'raw average')) || 0;
-                        const adjVal = parseFloat(getVal(row, headersSports, 'adjusted average'));
+                        rowsSports.slice(1).forEach(row => {
+                            const username = getVal(row, headersSports, 'username');
+                            if (!username || !playersMap[username]) return; 
+                            
+                            const sport = getVal(row, headersSports, 'sport').toUpperCase();
+                            const rawVal = parseFloat(getVal(row, headersSports, 'raw average')) || 0;
+                            const adjVal = parseFloat(getVal(row, headersSports, 'adjusted average'));
 
-                        playersMap[username].sports[sport] = {
-                            matches: parseInt(getVal(row, headersSports, 'total matches')) || 0,
-                            wins: parseInt(getVal(row, headersSports, 'wins')) || 0,
-                            losses: parseInt(getVal(row, headersSports, 'losses')) || 0,
-                            winRate: getVal(row, headersSports, 'win rate %') || '0%',
-                            raw: rawVal,
-                            adj: !isNaN(adjVal) ? adjVal : rawVal
-                        };
-                    });
+                            playersMap[username].sports[sport] = {
+                                matches: parseInt(getVal(row, headersSports, 'total matches')) || 0,
+                                wins: parseInt(getVal(row, headersSports, 'wins')) || 0,
+                                losses: parseInt(getVal(row, headersSports, 'losses')) || 0,
+                                winRate: getVal(row, headersSports, 'win rate %') || '0%',
+                                raw: rawVal,
+                                adj: !isNaN(adjVal) ? adjVal : rawVal
+                            };
+                        });
+                    }
                 }
 
                 allPlayersData = Object.values(playersMap);
                 renderTable();
 
             } catch (error) {
-                console.error("Error loading Drafters CSVs:", error);
+                console.error("Error loading RDE CSVs:", error);
                 document.getElementById('players-container').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 3rem; color: #f44336;">Error loading data. Ensure the CSVs are published to the web.</td></tr>';
             }
         }

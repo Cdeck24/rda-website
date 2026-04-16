@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Drafters 1v1</title>
+    <title>Real Draft Entertainment</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles/global.css">
     <style>
@@ -85,31 +85,9 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(212, 175, 55, 0.05);
         }
 
-        .season-number {
-            font-family: 'Times New Roman', serif;
-            font-size: 4rem;
-            font-weight: 700;
-            line-height: 1;
-            color: rgba(255,255,255,0.05);
-            position: absolute;
-            left: 1.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 0;
-            pointer-events: none;
-            transition: all 0.3s ease;
-        }
-
-        .season-card:hover .season-number {
-            color: rgba(212, 175, 55, 0.2);
-            transform: translateY(-50%) scale(1.1);
-            left: 2rem;
-        }
-
         .season-content {
             z-index: 1;
             position: relative;
-            margin-left: 4rem; 
             display: flex;
             flex-direction: row;
             align-items: center;
@@ -155,8 +133,7 @@
 
         @media (max-width: 600px) {
             .season-card { padding: 1.5rem; min-height: 100px; }
-            .season-number { font-size: 3rem; left: 1rem; }
-            .season-content { flex-direction: column; align-items: flex-start; gap: 0.5rem; margin-left: 3rem; }
+            .season-content { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .season-title { font-size: 1.1rem; }
             .season-status { margin-top: 0.2rem; font-size: 0.65rem; padding: 4px 10px; }
         }
@@ -168,23 +145,23 @@
 
     <a href="index.html" class="top-left-link">&#8592; Leagues</a>
     
-    <h1 style="text-align: center; margin-top: 1rem; font-size: 3rem; text-transform: uppercase; letter-spacing: 2px; animation: fadeIn 1s ease-out;">Drafters 1v1</h1>
+    <h1 style="text-align: center; margin-top: 1rem; font-size: 3rem; text-transform: uppercase; letter-spacing: 2px; animation: fadeIn 1s ease-out;">Real Draft Entertainment</h1>
     <div class="subtitle">Select a Season</div>
 
     <div class="season-grid">
-        <div class="season-card active" onclick="window.location.href='drafters-matchups.html?season=0'">
-            <div class="season-number">0</div>
+        <!-- RDE uses the new RDE suite of pages -->
+        <div class="season-card active" onclick="window.location.href='rde-hub.html'">
             <div class="season-content">
-                <div class="season-title">Season Zero</div>
+                <div class="season-title">Real Draft Entertainment</div>
                 <div class="season-status">Live Now</div>
             </div>
         </div>
-
-        <div class="season-card" onclick="window.location.href='drafters-matchups.html?season=1'">
-            <div class="season-number">I</div>
+        
+        <!-- Legacy Season 0 uses the old drafters files -->
+        <div class="season-card" onclick="window.location.href='drafters-matchups.html?season=0'">
             <div class="season-content">
-                <div class="season-title">Season One</div>
-                <div class="season-status">Upcoming</div>
+                <div class="season-title">Drafters 1v1</div>
+                <div class="season-status">Completed</div>
             </div>
         </div>
     </div>

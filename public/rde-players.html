@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDE - Players</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="styles/drafters.css">
+    <style>
+        html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+        .nav-container:not(.drafters-nav) { display: none !important; }
+
+        h1 { text-align: center; margin-top: 2rem; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold-mid); }
+        .hub-content { width: 100%; max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 4rem 1rem; animation: fadeIn 0.5s ease-out; box-sizing: border-box; }
+
+        .header-controls-wrapper { display: flex; flex-direction: column; margin: 0 auto 1.5rem auto; width: calc(100% - 2rem); gap: 1rem; box-sizing: border-box; }
+        .section-title { font-size: 1.2rem; font-weight: 600; color: var(--text-main); margin: 0; padding-left: 0.5rem; border-left: 4px solid var(--gold-mid); text-transform: uppercase; letter-spacing: 2px; }
+        
+        .controls-container { display: flex; gap: 1rem; flex-wrap: wrap; background: rgba(0,0,0,0.2); padding: 1rem 1.5rem; border-radius: 8px; border: 1px solid var(--border-subtle); box-sizing: border-box; justify-content: space-between; }
+        .search-input { width: 100%; max-width: 300px; background: rgba(15, 23, 42, 0.6); color: white; border: 1px solid var(--border-subtle); padding: 0.6rem 1rem; border-radius: 6px; font-family: inherit; outline: none;}
+        .search-input:focus { border-color: var(--gold-mid); }
+
+        .data-table-container { width: calc(100% - 2rem); max-width: 100%; margin: 0 auto; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-card, rgba(15, 23, 42, 0.4)); box-shadow: 0 4px 15px rgba(0,0,0,0.2); box-sizing: border-box; display: block; }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 650px; white-space: nowrap; }
+        .data-table th, .data-table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-subtle); }
+        .data-table th { background: transparent; color: var(--gold-mid); font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+        .data-table tr:last-child td { border-bottom: none; }
+        
+        .clickable-row { cursor: pointer; transition: all 0.2s ease; }
+        .clickable-row:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .rank-number { font-weight: 600; color: var(--text-muted); width: 40px; }
+        .player-name { font-weight: 500; color: var(--text-main); }
+        .stat-highlight { color: var(--gold-mid); font-weight: 600; }
+
+        /* RDE Specific Badges */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .badge.prime { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+        .badge.clash { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+        .badge.ascent { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+        
+        .badge.hot { color: #ef4444; }
+        .badge.cold { color: #3b82f6; }
+
+        /* Modal Styles */
+        body.modal-open { overflow: hidden; }
+        .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(8px); padding: 1rem; animation: fadeIn 0.3s; }
+        .modal { background: var(--bg-navy-light); border-radius: 16px; padding: 2rem; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8); border: 1px solid var(--border-gold); animation: popupSlideIn 0.3s ease-out; box-sizing: border-box; }
+        .close-btn { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; background: rgba(255, 255, 255, 0.05); }
+        .close-btn:hover { color: #ffffff; background: var(--bg-navy); }
+
+        .modal-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); text-align: center;}
+        .modal-name { font-size: 2rem; margin: 0 0 0.5rem 0; color: #fff; font-weight: 800;}
+        .modal-brand { font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; text-align: center; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 1px; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: #fff; }
+
+        .rivalry-section { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 1.5rem; text-align: center; }
+        .rivalry-section h3 { margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px; }
+        .rivalry-name { font-size: 1.2rem; font-weight: 700; color: #fff; }
+
+        @media (max-width: 768px) { h1 { font-size: 1.8rem; margin-top: 1rem; } .header-controls-wrapper { width: 100%; padding: 0 1rem; } .data-table-container { width: 100%; border-radius: 0; border-left: none; border-right: none; } .data-table th, .data-table td { padding: 0.75rem 0.5rem; font-size: 0.8rem; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    </style>
+</head>
+<body>
+    
+    <h1 id="main-header">RDE</h1>
+
+    <div class="nav-container drafters-nav">
+        <div class="nav-bar">
+            <a href="drafters-home.html" class="nav-button">Seasons</a>
+            <a href="rde-hub.html" class="nav-button">Hub</a>
+            <a href="rde-brands.html" class="nav-button">Brands</a>
+            <a href="rde-events.html" class="nav-button">Events</a>
+            <a href="rde-players.html" class="nav-button active">Players</a>
+        </div>
+    </div>
+
+    <div class="hub-content">
+        <div class="header-controls-wrapper">
+            <h2 class="section-title">League Roster</h2>
+            <div class="controls-container">
+                <input type="text" id="search-player" class="search-input" placeholder="Search Roster...">
+            </div>
+        </div>
+
+        <div class="data-table-container">
+            <table class="data-table" id="players-table">
+                <thead>
+                    <tr>
+                        <th>RK</th>
+                        <th>Player</th>
+                        <th style="text-align: center;">Brand</th>
+                        <th style="text-align: center;">Momentum</th>
+                        <th style="text-align: center;">Record</th>
+                        <th style="text-align: right; padding-right: 1rem;">Avg Score</th>
+                    </tr>
+                </thead>
+                <tbody id="players-container">
+                    <!-- Javascript Data Injected Here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Player Details Modal -->
+    <div class="modal-bg" id="player-modal">
+        <div class="modal">
+            <span class="close-btn" id="close-modal">&times;</span>
+            
+            <div class="modal-header">
+                <h2 class="modal-name" id="modal-name">PlayerName</h2>
+                <div class="modal-brand badge prime" id="modal-brand">PRIME</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">League Rank</div>
+                    <div class="stat-value" id="modal-rank" style="color: var(--gold-mid);">#1</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Momentum</div>
+                    <div class="stat-value" id="modal-momentum" style="font-size: 1.1rem; margin-top: 0.3rem;">🔥 Hot</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Record</div>
+                    <div class="stat-value" id="modal-record">0-0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Avg Score</div>
+                    <div class="stat-value" id="modal-avgscore">0.00</div>
+                </div>
+            </div>
+
+            <div class="rivalry-section">
+                <h3>Active Rivalry</h3>
+                <div class="rivalry-name" id="modal-rivalry">None</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- MOCK RDE DATA (Replace with Google Sheets Fetcher later) ---
+        const rdePlayers = [
+            { username: '@gmoney676', brand: 'PRIME', momentum: 'Hot', wins: 7, losses: 2, avg: 42.40, rivalry: '@ok124' },
+            { username: '@rafael', brand: 'PRIME', momentum: 'Steady', wins: 7, losses: 3, avg: 41.78, rivalry: 'None' },
+            { username: '@ok124', brand: 'PRIME', momentum: 'Cold', wins: 4, losses: 6, avg: 37.33, rivalry: '@gmoney676' },
+            { username: '@alpunc', brand: 'CLASH', momentum: 'Steady', wins: 6, losses: 4, avg: 34.60, rivalry: '@realkam' },
+            { username: '@realkam', brand: 'CLASH', momentum: 'Hot', wins: 7, losses: 2, avg: 32.15, rivalry: '@alpunc' },
+            { username: '@warner3', brand: 'CLASH', momentum: 'Cold', wins: 2, losses: 8, avg: 27.87, rivalry: 'None' },
+            { username: '@bixz', brand: 'ASCENT', momentum: 'Hot', wins: 5, losses: 4, avg: 33.26, rivalry: '@som.jr' },
+            { username: '@som.jr', brand: 'ASCENT', momentum: 'Steady', wins: 4, losses: 4, avg: 31.10, rivalry: '@bixz' }
+        ];
+
+        let searchQuery = '';
+
+        // --- Modal Logic ---
+        const modal = document.getElementById('player-modal');
+        document.getElementById('close-modal').onclick = () => { modal.style.display = "none"; document.body.classList.remove('modal-open'); }
+        window.onclick = (e) => { if (e.target == modal) { modal.style.display = "none"; document.body.classList.remove('modal-open'); } }
+
+        window.openPlayerModal = function(username, rankIndex) {
+            const p = rdePlayers.find(player => player.username === username);
+            if (!p) return;
+
+            document.getElementById('modal-name').textContent = p.username;
+            document.getElementById('modal-brand').textContent = p.brand;
+            document.getElementById('modal-brand').className = `modal-brand badge ${p.brand.toLowerCase()}`;
+            
+            document.getElementById('modal-rank').textContent = `#${rankIndex + 1}`;
+            
+            let momText = p.momentum === 'Hot' ? '🔥 Hot' : (p.momentum === 'Cold' ? '❄️ Cold' : 'Steady');
+            document.getElementById('modal-momentum').textContent = momText;
+            
+            document.getElementById('modal-record').textContent = `${p.wins}-${p.losses}`;
+            document.getElementById('modal-avgscore').textContent = p.avg.toFixed(2);
+            document.getElementById('modal-rivalry').textContent = p.rivalry;
+
+            modal.style.display = "flex";
+            document.body.classList.add('modal-open');
+        };
+
+        document.getElementById('search-player').addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase();
+            renderTable();
+        });
+
+        function renderTable() {
+            const tbody = document.getElementById('players-container');
+            
+            let filtered = rdePlayers.filter(p => p.username.toLowerCase().includes(searchQuery));
+            
+            // Sort by Avg Score
+            filtered.sort((a, b) => b.avg - a.avg);
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">No players found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((p, index) => {
+                let brandBadge = `<span class="badge ${p.brand.toLowerCase()}">${p.brand}</span>`;
+                let momBadge = p.momentum === 'Hot' ? '<span class="badge hot">🔥</span>' : (p.momentum === 'Cold' ? '<span class="badge cold">❄️</span>' : '<span style="color: #666;">-</span>');
+                
+                return `
+                <tr class="clickable-row" onclick="openPlayerModal('${p.username}', ${index})">
+                    <td class="rank-number">${index + 1}</td>
+                    <td class="player-name">${p.username}</td>
+                    <td style="text-align: center;">${brandBadge}</td>
+                    <td style="text-align: center; font-size: 1.2rem;">${momBadge}</td>
+                    <td style="text-align: center;">${p.wins}-${p.losses}</td>
+                    <td class="stat-highlight" style="text-align: right; padding-right: 1rem;">${p.avg.toFixed(2)}</td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // Init
+        renderTable();
+    </script>
+</body>
+</html>

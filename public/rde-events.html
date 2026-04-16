@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDE - Events</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="styles/drafters.css">
+    
+    <!-- Required for Real API Hashids Token Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    
+    <style>
+        html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+        .nav-container:not(.drafters-nav) { display: none !important; }
+
+        h1 { text-align: center; margin-top: 2rem; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold-mid); }
+        .hub-content { width: 100%; max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 4rem 1rem; animation: fadeIn 0.5s ease-out; box-sizing: border-box; }
+
+        .section-title {
+            font-size: 1.2rem; font-weight: 600; color: var(--text-main);
+            margin: 2rem 0 1.5rem 0; padding-left: 0.5rem; border-left: 4px solid var(--gold-mid);
+            text-transform: uppercase; letter-spacing: 2px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .booked-by { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+        /* Match Cards */
+        .match-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
+        
+        .match-card {
+            background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle);
+            border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;
+            display: flex; flex-direction: column; justify-content: center;
+            cursor: pointer;
+        }
+        .match-card:hover { transform: translateY(-3px); border-color: var(--gold-mid); }
+
+        .match-badge {
+            position: absolute; top: 0; right: 0; background: var(--gold-dark); color: #fff;
+            font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            padding: 4px 12px; border-bottom-left-radius: 8px;
+        }
+        .match-badge.title { background: #ef4444; }
+        .match-badge.rivalry { background: #3b82f6; }
+
+        /* Competitors & Live Scores */
+        .match-competitors { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
+        .competitor-block { display: flex; flex-direction: column; align-items: center; width: 42%; }
+        
+        .competitor { text-align: center; width: 100%; font-size: 1.1rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        
+        .live-score { font-size: 1.3rem; font-weight: 800; color: #fff; margin-top: 0.25rem; transition: color 0.3s ease; }
+        .live-score.loading { color: var(--text-muted); font-size: 1rem; animation: pulse 1.5s infinite alternate; }
+        .live-score.winning-score { color: var(--gold-mid); }
+        
+        .vs { font-size: 0.8rem; color: var(--gold-mid); font-weight: 800; }
+        
+        .multi-sport-label {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--gold-mid);
+            margin-top: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 0.8rem;
+        }
+
+        /* Loading / Error text */
+        .loading-text { text-align: center; padding: 3rem; color: #888; font-style: italic; font-size: 1.1rem; }
+
+        /* --- Modal Styles (Lineups) --- */
+        body.modal-open { overflow: hidden; }
+        .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(8px); padding: 1rem; animation: fadeIn 0.3s; }
+        .modal { background: var(--bg-navy-light); border-radius: 16px; padding: 1.5rem; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6); border: 1px solid var(--border-gold); animation: popupSlideIn 0.3s ease-out; }
+        .close-btn { position: absolute; top: 0.75rem; right: 0.75rem; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; background: rgba(255, 255, 255, 0.05); }
+        .close-btn:hover { color: #ffffff; background: var(--bg-navy); }
+        .modal h2 { font-size: 1.3rem; margin-bottom: 1.5rem; font-weight: 400; color: var(--gold-light); text-align: center; }
+        
+        .lineup-container { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .lineup-team { background: var(--bg-navy); border-radius: 12px; padding: 1rem; border: 1px solid var(--border-subtle); }
+        .lineup-team h3 { font-size: 1.1rem; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle); font-weight: 500; color: var(--text-main); text-align: center;}
+        
+        .sport-lineup-display { display: flex; justify-content: flex-start; align-items: flex-start; gap: 0.75rem; overflow-x: auto; padding: 0.75rem 0; }
+        .sport-lineup-player { display: flex; flex-direction: column; align-items: center; text-align: center; width: 50px; flex-shrink: 0; }
+        .sport-player-avatar-container { position: relative; width: 40px; height: 40px; margin-bottom: 0.3rem; }
+        .sport-player-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-subtle); background-color: #000; }
+        .sport-player-multiplier { position: absolute; top: -3px; left: -3px; background: var(--bg-navy); color: #fff; border-radius: 50%; padding: 0.1rem 0.25rem; font-size: 0.6rem; font-weight: bold; border: 1px solid var(--border-subtle); line-height: 1; }
+        .sport-player-info { font-size: 0.7rem; line-height: 1.2; }
+        .sport-player-display-name { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; color: var(--text-main); }
+
+        @media (max-width: 768px) { h1 { font-size: 1.8rem; margin-top: 1rem; } .section-title { flex-direction: column; align-items: flex-start; gap: 0.5rem; } }
+        @media (max-width: 600px) { .lineup-container { grid-template-columns: 1fr; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0% { opacity: 0.6; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    
+    <h1 id="main-header">RDE</h1>
+
+    <div class="nav-container drafters-nav">
+        <div class="nav-bar">
+            <a href="drafters-home.html" class="nav-button">Seasons</a>
+            <a href="rde-hub.html" class="nav-button">Hub</a>
+            <a href="rde-brands.html" class="nav-button">Brands</a>
+            <a href="rde-events.html" class="nav-button active">Events</a>
+            <a href="rde-players.html" class="nav-button">Players</a>
+        </div>
+    </div>
+
+    <!-- Data is injected dynamically into this container -->
+    <div class="hub-content" id="events-container">
+        <div class="loading-text" id="status-indicator">Loading live event data...</div>
+    </div>
+
+    <!-- Lineup Modal -->
+    <div class="modal-bg" id="lineup-modal">
+        <div class="modal">
+            <span class="close-btn" id="close-lineup-modal">&times;</span>
+            <h2 id="modal-title">Matchup Lineups</h2>
+            <div class="lineup-container" id="modal-body">
+                <!-- Team lineups injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        
+        // =======================================================
+        // GOOGLE SHEET CSV URL FOR EVENTS:
+        // =======================================================
+        const scheduleCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSSnu1PqxLdJblb-eMURiJYSNqqdPMuDIEavZEj0ZuY8wBcLR9LHLFBB7yhMzWigEQ8PIvOBnS6h9h6/pub?gid=0&single=true&output=csv';
+
+        // --- REAL API CONSTANTS & HELPERS ---
+        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
+        const REAL_VERSION = '27';
+        const DEVICE_UUID = crypto.randomUUID();
+
+        function generateRequestToken() {
+            const timestampMs = Date.now();
+            // @ts-ignore
+            const hasher = new Hashids("realwebapp", 16);
+            return hasher.encode(timestampMs);
+        }
+
+        function base64ToText(base64String) {
+            if (!base64String) return '';
+            try {
+                const binStr = atob(base64String);
+                const bytes = new Uint8Array(binStr.length);
+                for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+                return new TextDecoder().decode(bytes);
+            } catch (e) { return ''; }
+        }
+
+        async function fetchBatchViaWorker(urls) {
+            const queryParams = new URLSearchParams();
+            for (const url of urls) queryParams.append('url', url);
+            
+            const urlString = workerProxy.endsWith('?') ? workerProxy + queryParams.toString() : workerProxy + '?' + queryParams.toString();
+            
+            const fetchOptions = {
+                headers: {
+                    'real-auth-info': REAL_AUTH_TOKEN,
+                    'real-device-name': 'Chrome on Web',
+                    'real-device-type': 'desktop_web',
+                    'real-device-uuid': DEVICE_UUID,
+                    'real-request-token': generateRequestToken(),
+                    'real-version': REAL_VERSION
+                }
+            };
+            
+            const res = await fetch(urlString, fetchOptions);
+            if (!res.ok) throw new Error(`Worker returned HTTP ${res.status}`);
+            return res.json();
+        }
+
+        // Central state for tracking match scores and lineups
+        let matchScores = {};
+
+        // UI Update Function
+        function updateMatchScoreUI(matchId) {
+            const scores = matchScores[matchId];
+            const p1El = document.getElementById(`score-p1-${matchId}`);
+            const p2El = document.getElementById(`score-p2-${matchId}`);
+            
+            if (!p1El || !p2El) return;
+
+            // Update P1
+            if (scores.p1Pending > 0) {
+                p1El.textContent = '...';
+                p1El.classList.add('loading');
+            } else {
+                p1El.textContent = scores.p1HasId ? scores.p1Score.toFixed(2) : '-';
+                p1El.classList.remove('loading');
+            }
+
+            // Update P2
+            if (scores.p2Pending > 0) {
+                p2El.textContent = '...';
+                p2El.classList.add('loading');
+            } else {
+                p2El.textContent = scores.p2HasId ? scores.p2Score.toFixed(2) : '-';
+                p2El.classList.remove('loading');
+            }
+
+            // Apply Winning Color if fully loaded
+            if (scores.p1Pending === 0 && scores.p2Pending === 0 && scores.p1HasId && scores.p2HasId) {
+                if (scores.p1Score > scores.p2Score) {
+                    p1El.classList.add('winning-score');
+                    p2El.classList.remove('winning-score');
+                } else if (scores.p2Score > scores.p1Score) {
+                    p2El.classList.add('winning-score');
+                    p1El.classList.remove('winning-score');
+                }
+            }
+        }
+
+        // --- Modal Setup ---
+        const modal = document.getElementById('lineup-modal');
+        const closeBtn = document.getElementById('close-lineup-modal');
+        
+        closeBtn.onclick = () => { modal.style.display = 'none'; document.body.classList.remove('modal-open'); };
+        window.onclick = (e) => { if (e.target == modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); } };
+
+        window.openLineupModal = function(matchId) {
+            const matchData = matchScores[matchId];
+            if (!matchData) return;
+
+            document.getElementById('modal-title').textContent = `${matchData.p1Name} vs ${matchData.p2Name}`;
+            
+            const renderLineupsForPlayer = (playerKey) => {
+                let html = '';
+                const drafts = Object.keys(matchData.lineups);
+                
+                if (drafts.length === 0) {
+                    return '<p style="color:#888; font-size:0.9rem; text-align:center; padding:1rem;">No lineups loaded.</p>';
+                }
+
+                let hasValidLineups = false;
+                let renderedCount = 0;
+
+                drafts.forEach(draftId => {
+                    const lineup = matchData.lineups[draftId][playerKey] || [];
+                    if (lineup.length > 0) {
+                        hasValidLineups = true;
+                        
+                        // Add dashed separator if there's more than one lineup (e.g. Main Event multi-sports)
+                        if (renderedCount > 0) {
+                            html += `<div style="margin-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.5rem;"></div>`;
+                        }
+
+                        html += `<div class="sport-lineup-display">`;
+                        html += lineup.map(item => {
+                            const lp = item.player || item;
+                            const avatar = lp.avatar || item.avatar || '';
+                            const displayName = lp.displayName || item.displayName || lp.name || item.name || '';
+                            const multiplier = item.multiplierDisplay || lp.multiplierDisplay || item.multiplier || lp.multiplier || '1x';
+                            
+                            return `
+                                <div class="sport-lineup-player">
+                                    <div class="sport-player-avatar-container">
+                                        <img src="${avatar ? `https://media.realapp.link/assets/players/default/large/${avatar}.webp` : 'https://placehold.co/40x40/222/fff?text=?'}" class="sport-player-avatar" onerror="this.src='https://placehold.co/40x40/222/fff?text=?';">
+                                        <div class="sport-player-multiplier">${multiplier}</div>
+                                    </div>
+                                    <div class="sport-player-info">
+                                        <span class="sport-player-display-name" title="${displayName}">${displayName}</span>
+                                    </div>
+                                </div>`;
+                        }).join('');
+                        html += `</div>`;
+                        
+                        renderedCount++;
+                    }
+                });
+                
+                if (!hasValidLineups) html = '<p style="color:#888; font-size:0.9rem; text-align:center; padding:1rem;">No active lineup found.</p>';
+                return html;
+            };
+
+            const p1Html = renderLineupsForPlayer('p1');
+            const p2Html = renderLineupsForPlayer('p2');
+
+            document.getElementById('modal-body').innerHTML = `
+                <div class="lineup-team">
+                    <h3>${matchData.p1Name}</h3>
+                    <div style="font-size: 1.8rem; color: var(--gold-mid); font-weight: bold; text-align: center; margin-bottom: 1rem;">${matchData.p1Score.toFixed(2)}</div>
+                    ${p1Html}
+                </div>
+                <div class="lineup-team">
+                    <h3>${matchData.p2Name}</h3>
+                    <div style="font-size: 1.8rem; color: var(--gold-mid); font-weight: bold; text-align: center; margin-bottom: 1rem;">${matchData.p2Score.toFixed(2)}</div>
+                    ${p2Html}
+                </div>
+            `;
+
+            modal.style.display = "flex";
+            document.body.classList.add('modal-open');
+        }
+
+        async function loadEvents() {
+            const container = document.getElementById('events-container');
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(scheduleCsvUrl));
+                if (!res.ok) throw new Error('Network response was not ok');
+                const text = await res.text();
+
+                // CSV Parser
+                const rows = text.split('\n').map(line => {
+                    const values = [];
+                    let currentVal = '', inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                        else currentVal += char;
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+
+                if (rows.length < 2) {
+                    container.innerHTML = '<div class="loading-text">No upcoming events are scheduled at this time.</div>';
+                    return;
+                }
+
+                // Extract headers to dynamically match column positions
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                
+                const getVal = (row, colName) => {
+                    const idx = headers.findIndex(h => h === colName);
+                    return idx > -1 ? row[idx] : '';
+                };
+
+                // Group Matches by Date
+                const eventsByDate = new Map();
+                
+                rows.slice(1).forEach((row, index) => {
+                    const date = getVal(row, 'date') || 'TBD';
+                    if (!eventsByDate.has(date)) {
+                        eventsByDate.set(date, []);
+                    }
+                    
+                    const rawId = getVal(row, 'fight id');
+                    const matchId = (rawId ? rawId.replace(/\s+/g, '-') : `match-${index}-${Math.random().toString(36).substr(2,6)}`);
+
+                    const p1 = getVal(row, 'player1') || 'TBD';
+                    const p1Id = getVal(row, 'player1 id');
+                    const p2 = getVal(row, 'player2') || 'TBD';
+                    const p2Id = getVal(row, 'player2 id');
+                    const sport = getVal(row, 'sport') || 'Match';
+                    const sportIdStr = getVal(row, 'sport id');
+
+                    // Support comma-separated OR space-separated IDs within a single cell
+                    const sportIds = sportIdStr ? sportIdStr.split(/[\s,]+/).map(id => id.trim()).filter(id => id) : [];
+
+                    const dayMatches = eventsByDate.get(date);
+                    
+                    // Check if this row is an addition to an existing match (e.g. user added multiple rows for the same fight ID)
+                    let existingMatch = rawId ? dayMatches.find(m => m.id === matchId) : null;
+
+                    if (existingMatch) {
+                        // Merge the newly found IDs into the existing match
+                        sportIds.forEach(id => {
+                            if (!existingMatch.sportIds.includes(id)) {
+                                existingMatch.sportIds.push(id);
+                            }
+                        });
+                        // Ensure it triggers main event formatting if any row indicates it
+                        const sportLower = sport.toLowerCase();
+                        if (sportLower.includes('main event') || sportLower.includes('title')) {
+                            existingMatch.isTitleOrMain = true;
+                            existingMatch.sport = 'Main Event'; // Normalize title
+                            if (sportLower.includes('main event')) existingMatch.isMainEvent = true;
+                        }
+                    } else {
+                        const sportLower = sport.toLowerCase();
+                        dayMatches.push({
+                            id: matchId,
+                            p1: p1,
+                            p1Id: p1Id,
+                            p2: p2,
+                            p2Id: p2Id,
+                            sport: sport,
+                            sportIds: sportIds,
+                            isTitleOrMain: sportLower.includes('main event') || sportLower.includes('title'),
+                            isMainEvent: sportLower.includes('main event'),
+                            isRivalry: sportLower.includes('feud') || sportLower.includes('rivalry')
+                        });
+                    }
+                });
+
+                // Generate HTML
+                let html = '';
+                let fetchQueue = [];
+                
+                for (const [date, matches] of eventsByDate.entries()) {
+                    
+                    // SORTING LOGIC: Push "Main Event" matches to the top of the day's card grid
+                    matches.sort((a, b) => {
+                        if (a.isMainEvent && !b.isMainEvent) return -1;
+                        if (!a.isMainEvent && b.isMainEvent) return 1;
+                        return 0; 
+                    });
+
+                    html += `
+                        <h2 class="section-title">
+                            ${date}
+                            <span class="booked-by">Scheduled Matches</span>
+                        </h2>
+                        <div class="match-grid">
+                    `;
+
+                    matches.forEach(match => {
+                        // Setup tracking state for this match
+                        matchScores[match.id] = { 
+                            p1Score: 0, p2Score: 0, 
+                            p1Pending: 0, p2Pending: 0,
+                            p1HasId: !!match.p1Id && match.sportIds.length > 0,
+                            p2HasId: !!match.p2Id && match.sportIds.length > 0,
+                            p1Name: match.p1,
+                            p2Name: match.p2,
+                            lineups: {} // Store lineups retrieved from API
+                        };
+
+                        // Build Fetch Queue 
+                        match.sportIds.forEach(draftId => {
+                            if (match.p1Id) {
+                                matchScores[match.id].p1Pending++;
+                                fetchQueue.push({ url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${match.p1Id}?contestType=sport&source=home`, matchId: match.id, player: 'p1', retries: 0, draftId: draftId });
+                            }
+                            if (match.p2Id) {
+                                matchScores[match.id].p2Pending++;
+                                fetchQueue.push({ url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${match.p2Id}?contestType=sport&source=home`, matchId: match.id, player: 'p2', retries: 0, draftId: draftId });
+                            }
+                        });
+
+                        // Assign Badges
+                        let badgeClass = '';
+                        if (match.isTitleOrMain) badgeClass = 'title'; 
+                        else if (match.isRivalry) badgeClass = 'rivalry'; 
+
+                        let activeSportsLabel = '';
+                        if (match.isMainEvent) {
+                            activeSportsLabel = `<div class="multi-sport-label">All Active Sports</div>`;
+                        }
+
+                        // Match Card HTML with onClick modal trigger
+                        html += `
+                            <div class="match-card" onclick="openLineupModal('${match.id}')">
+                                <div class="match-badge ${badgeClass}">${match.sport}</div>
+                                <div class="match-competitors">
+                                    <div class="competitor-block">
+                                        <div class="competitor" title="${match.p1}">${match.p1}</div>
+                                        <div class="live-score loading" id="score-p1-${match.id}">...</div>
+                                    </div>
+                                    <div class="vs">VS</div>
+                                    <div class="competitor-block">
+                                        <div class="competitor" title="${match.p2}">${match.p2}</div>
+                                        <div class="live-score loading" id="score-p2-${match.id}">...</div>
+                                    </div>
+                                </div>
+                                ${activeSportsLabel}
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`; // Close match-grid
+                }
+
+                // Render the structure to the DOM
+                container.innerHTML = html;
+
+                // Force immediate render for items with missing IDs (removes infinite loading dots for "TBD" players)
+                for (const matchId in matchScores) {
+                    updateMatchScoreUI(matchId);
+                }
+
+                // --- PROCESS FETCH QUEUE ---
+                // Using a safer chunk size of 2 to guarantee the worker doesn't throw a 524 Timeout when processing 5+ sports for Main Events
+                const chunkSize = 2; 
+                let loaded = 0;
+
+                while (fetchQueue.length > 0) {
+                    const chunk = fetchQueue.splice(0, chunkSize);
+                    
+                    try {
+                        const results = await fetchBatchViaWorker(chunk.map(c => c.url));
+                        let hitRateLimit = false;
+
+                        results.forEach((res, idx) => {
+                            const req = chunk[idx];
+                            
+                            if (res.status === 200) {
+                                try {
+                                    const data = JSON.parse(base64ToText(res.body));
+                                    let score = 0;
+                                    
+                                    // Extract score safely
+                                    if (data.info?.rankDisplayInfos?.length > 0) score = parseFloat(data.info.rankDisplayInfos[0].scoreDisplay) || 0;
+                                    else if (data.rankDisplayInfos?.length > 0) score = parseFloat(data.rankDisplayInfos[0].scoreDisplay) || 0;
+                                    else if (data.scoreDisplay) score = parseFloat(data.scoreDisplay) || 0;
+
+                                    // Extract Lineup safely
+                                    let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
+                                    if (!Array.isArray(extractedLineup)) {
+                                        if (extractedLineup.players) extractedLineup = extractedLineup.players;
+                                        else if (extractedLineup.items) extractedLineup = extractedLineup.items;
+                                        else extractedLineup = [];
+                                    }
+
+                                    // Save Lineup to State
+                                    if (!matchScores[req.matchId].lineups[req.draftId]) {
+                                        matchScores[req.matchId].lineups[req.draftId] = { p1: [], p2: [] };
+                                    }
+                                    matchScores[req.matchId].lineups[req.draftId][req.player] = extractedLineup;
+
+                                    // Save Score to State
+                                    matchScores[req.matchId][req.player + 'Score'] += score;
+                                    matchScores[req.matchId][req.player + 'Pending']--;
+                                    loaded++;
+                                } catch(e) { 
+                                    console.error(e); 
+                                    matchScores[req.matchId][req.player + 'Pending']--;
+                                    loaded++;
+                                }
+                            } else if (res.status === 429 && req.retries < 3) {
+                                req.retries++;
+                                fetchQueue.push(req);
+                                hitRateLimit = true;
+                                return; // Do NOT update UI or loaded count yet
+                            } else {
+                                // Hard failure
+                                matchScores[req.matchId][req.player + 'Pending']--;
+                                loaded++;
+                            }
+
+                            // Trigger UI update for the specific match
+                            updateMatchScoreUI(req.matchId);
+                        });
+
+                        // Dynamic pacing to prevent getting instantly banned by API limits
+                        if (hitRateLimit) {
+                            await new Promise(r => setTimeout(r, 3000));
+                        } else if (fetchQueue.length > 0) {
+                            await new Promise(r => setTimeout(r, 300));
+                        }
+
+                    } catch (e) {
+                        console.error("Fetch Chunk Failed", e);
+                        // Force clearance of pending states for this chunk on critical error
+                        chunk.forEach(req => {
+                            matchScores[req.matchId][req.player + 'Pending']--;
+                            updateMatchScoreUI(req.matchId);
+                        });
+                    }
+                }
+
+            } catch (error) {
+                console.error("Error loading RDE Events CSV:", error);
+                statusIndicator.innerHTML = '<span style="color: #f44336;">Error loading schedule data. Please ensure the CSV is published to the web.</span>';
+            }
+        }
+
+        // Initialize Application Flow
+        loadEvents();
+    </script>
+</body>
+</html>
