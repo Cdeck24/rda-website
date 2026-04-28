@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDE - Draft Stats</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="styles/drafters.css">
+    <!-- Required for Token Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    <style>
+        /* --- RDE Layout Overrides --- */
+        html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+        .nav-container:not(.drafters-nav) { display: none !important; }
+
+        h1 { text-align: center; margin-top: 2rem; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold-mid); }
+        .hub-content { width: 100%; max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 4rem 1rem; animation: fadeIn 0.5s ease-out; box-sizing: border-box; }
+
+        /* --- Brand Tabs --- */
+        .brand-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .brand-tab {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .brand-tab:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        
+        .brand-tab.zone0.active { border-color: #1d4ed8; color: #93c5fd; background: rgba(29, 78, 216, 0.15); box-shadow: 0 0 15px rgba(29, 78, 216, 0.3); }
+        .brand-tab.nitro.active { border-color: #38bdf8; color: #38bdf8; background: rgba(56, 189, 248, 0.15); box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+        .brand-tab.minor.active { border-color: #f97316; color: #f97316; background: rgba(249, 115, 22, 0.15); box-shadow: 0 0 15px rgba(249, 115, 22, 0.3); }
+
+        /* --- Top Sport Filter --- */
+        .top-filter-container {
+            max-width: 1200px;
+            margin: 0 auto 2rem auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .top-filter-dropdown {
+            padding: 0.6rem 1rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4af37%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+            min-width: 250px;
+        }
+
+        .top-filter-dropdown:focus {
+            outline: none;
+            border-color: var(--gold-mid);
+            box-shadow: 0 0 0 1px var(--gold-mid);
+        }
+
+        .top-filter-dropdown option {
+            background: var(--bg-navy);
+            color: var(--text-main);
+        }
+
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .player-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: left;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .player-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold-mid);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(212, 175, 55, 0.2);
+            background: linear-gradient(145deg, rgba(51, 65, 85, 0.9), rgba(30, 41, 59, 0.95));
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .player-name-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .player-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            font-family: 'Didot', serif;
+            letter-spacing: 0.05em;
+        }
+
+        /* Brand Badges */
+        .brand-badge {
+            align-self: flex-start;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .brand-badge.zone0 { background: rgba(29, 78, 216, 0.15); color: #93c5fd; border: 1px solid rgba(29, 78, 216, 0.5); }
+        .brand-badge.nitro { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); }
+        .brand-badge.minor { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.5); }
+        .brand-badge.unknown { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.5); }
+
+        .player-id {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            opacity: 0.5;
+            margin-top: 0.2rem;
+        }
+
+        /* --- Dropdown Styling --- */
+        .sport-selector-container {
+            margin-bottom: 1rem;
+        }
+
+        .sport-dropdown {
+            width: 100%;
+            padding: 0.6rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4af37%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+        }
+        
+        .sport-dropdown:focus {
+            outline: none;
+            border-color: var(--gold-mid);
+            box-shadow: 0 0 0 1px var(--gold-mid);
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .sport-dropdown option {
+            background: var(--bg-navy);
+            color: var(--text-main);
+        }
+
+        /* --- Stats Views --- */
+        .sport-stats-view {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+            padding-top: 0.5rem;
+            flex-grow: 1;
+        }
+
+        .sport-stats-view.active {
+            display: block;
+        }
+
+        .sport-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            color: var(--gold-mid);
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .stats-grid-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            display: block;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+        }
+        
+        .status-msg {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: var(--gold-light);
+        }
+        .status-detail {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 600px) {
+            .top-filter-dropdown { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="main-header">RDE</h1>
+
+    <!-- Custom RDE Navigation Bar -->
+    <div class="nav-container drafters-nav">
+        <div class="nav-bar">
+            <a href="drafters-home.html" class="nav-button">Seasons</a>
+            <a href="rde-hub.html" class="nav-button">Hub</a>
+            <a href="rde-brands.html" class="nav-button">Brands</a>
+            <a href="rde-events.html" class="nav-button">Events</a>
+            <a href="rde-players.html" class="nav-button">Players</a>
+            <a href="rde-draft-stats.html" class="nav-button active">Draft Stats</a>
+        </div>
+    </div>
+
+    <div class="hub-content">
+        <h2 class="section-title" style="margin-left: 1rem; margin-top: 0;">League Draft Performance</h2>
+        
+        <!-- Brand Tabs -->
+        <div class="brand-tabs">
+            <button class="brand-tab zone0 active" id="tab-brand-ZONE0" onclick="switchBrand('tab-brand-ZONE0', 'ZONE 0')">Zone 0</button>
+            <button class="brand-tab nitro" id="tab-brand-NITRO" onclick="switchBrand('tab-brand-NITRO', 'NITRO')">Nitro</button>
+            <button class="brand-tab minor" id="tab-brand-MINOR" onclick="switchBrand('tab-brand-MINOR', 'MINOR')">Minor</button>
+        </div>
+
+        <!-- Sport Filter -->
+        <div class="top-filter-container">
+            <select id="top-sport-filter" class="top-filter-dropdown" onchange="filterAndSortGrid()">
+                <option value="ALL">All Sports</option>
+                <!-- Dynamically populated -->
+            </select>
+        </div>
+
+        <div class="player-grid" id="players-container">
+            <div class="loading-container">
+                <div class="status-msg">Initializing Data...</div>
+                <div class="status-detail">Loading RDE rosters and preparing stat sync</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- CONFIGURATION ---
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        // RDE Roster List CSV
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTvGj0pSmJxr_ylOG7TOpgqkgFcLnorp5gLv9zoBQrvETJF7tSABn4dPtl4_jQLWAadJRsVslzHRYyI/pub?gid=0&single=true&output=csv';
+        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
+        const REAL_VERSION = '27';
+
+        // Set to track discovered sports dynamically
+        const globalDiscoveredSports = new Set();
+        let currentBrandFilter = 'ZONE 0'; // Default active tab
+        
+        // --- LAZY LOADING STATE ---
+        let fullRosterData = [];
+        const fetchedUids = new Set();
+        let globalFetchQueue = [];
+        let isProcessingQueue = false;
+
+        // --- HASHIDS LOGIC ---
+        function generateRequestToken() {
+            const timestampMs = Date.now();
+            // @ts-ignore
+            const hasher = new Hashids("realwebapp", 16);
+            return hasher.encode(timestampMs);
+        }
+
+        // --- BRAND TAB HANDLER ---
+        window.switchBrand = function(tabId, brandVal) {
+            currentBrandFilter = brandVal;
+            
+            // Update active states on the buttons
+            document.querySelectorAll('.brand-tab').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            // Trigger the lazy load for the selected brand
+            loadBrand(brandVal);
+        };
+
+        // --- GLOBAL DROPDOWN HANDLER (For inside cards) ---
+        window.switchSport = function(selectElement) {
+            const selectedSport = selectElement.value;
+            const card = selectElement.closest('.player-card');
+            if (!card) return;
+
+            const views = card.querySelectorAll('.sport-stats-view');
+            views.forEach(view => {
+                if (view.dataset.sport === selectedSport) {
+                    view.classList.add('active');
+                } else {
+                    view.classList.remove('active');
+                }
+            });
+        };
+
+        // --- FILTER AND SORT HANDLER (For the top dropdowns) ---
+        window.filterAndSortGrid = function() {
+            const sportVal = document.getElementById('top-sport-filter').value;
+            
+            const container = document.getElementById('players-container');
+            const cards = Array.from(container.querySelectorAll('.player-card'));
+
+            cards.forEach(card => {
+                if (!card.id) return;
+
+                // Match against the currently selected Brand Tab and Sport Dropdown
+                const matchesBrand = card.dataset.brand === currentBrandFilter;
+                const matchesSport = sportVal === 'ALL' || card.dataset[`power${sportVal}`] !== undefined;
+
+                if (matchesBrand && matchesSport) {
+                    card.style.display = 'flex';
+                    
+                    // Switch internal dropdown to match sport
+                    const sportSelect = card.querySelector('.sport-dropdown');
+                    if (sportSelect) {
+                        sportSelect.value = sportVal === 'ALL' ? 'ALL_SPORTS' : sportVal;
+                        window.switchSport(sportSelect);
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Sort visible cards
+            const visibleCards = cards.filter(c => c.style.display !== 'none');
+            visibleCards.sort((a, b) => {
+                let scoreA, scoreB;
+                if (sportVal === 'ALL') {
+                    scoreA = parseFloat(a.dataset.powerOverall || -1);
+                    scoreB = parseFloat(b.dataset.powerOverall || -1);
+                } else {
+                    scoreA = parseFloat(a.dataset[`power${sportVal}`] || -1);
+                    scoreB = parseFloat(b.dataset[`power${sportVal}`] || -1);
+                }
+                return scoreB - scoreA; // Descending
+            });
+
+            // Reattach to DOM in correct order
+            visibleCards.forEach(card => container.appendChild(card));
+        };
+
+        function updateFilterDropdown() {
+            const dropdown = document.getElementById('top-sport-filter');
+            const currentVal = dropdown.value;
+            
+            let html = `<option value="ALL">All Sports</option>`;
+            Array.from(globalDiscoveredSports).sort().forEach(sport => {
+                html += `<option value="${sport}">${sport}</option>`;
+            });
+            
+            dropdown.innerHTML = html;
+            dropdown.value = currentVal;
+        }
+
+        // --- API FETCH LOGIC ---
+        async function fetchRealStats(userId) {
+            const token = generateRequestToken();
+            const deviceUuid = crypto.randomUUID();
+            
+            const headers = {
+                'real-auth-info': REAL_AUTH_TOKEN,
+                'real-device-name': 'Chrome on Web',
+                'real-device-type': 'desktop_web',
+                'real-device-uuid': deviceUuid,
+                'real-request-token': token,
+                'real-version': REAL_VERSION
+            };
+
+            const targetUrl = `https://web.realsports.io/sportbrawluserstats/${userId}`;
+            
+            const res = await fetch(workerProxy + '?url=' + encodeURIComponent(targetUrl), {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!res.ok) throw new Error(`API Error: ${res.status}`);
+            return res.json();
+        }
+
+        // --- BEHIND THE SCENES POWER RANKING ---
+        function calculateSingleSportPower(stats) {
+            const raw10 = parseFloat(stats["Top 10s"] || stats["Top 10"] || 0);
+            const raw100 = parseFloat(stats["Top 100s"] || stats["Top 100"] || 0);
+            const raw10pct = parseFloat(stats["Top 10%"] || 0);
+            const raw20pct = parseFloat(stats["Top 20%"] || 0);
+            const raw50pct = parseFloat(stats["Top 50%"] || 0);
+            
+            const exc10 = raw10; 
+            const exc100 = Math.max(0, raw100 - raw10);
+            const exc10pct = Math.max(0, raw10pct - raw100);
+            const exc20pct = Math.max(0, raw20pct - raw10pct);
+            const exc50pct = Math.max(0, raw50pct - raw20pct);
+
+            let power = (exc10 * 10) + (exc100 * 7) + (exc10pct * 5) + (exc20pct * 3) + (exc50pct * 1);
+            
+            const highest = parseFloat(stats["Highest Score"] || 0);
+            if (!isNaN(highest)) {
+                power += (highest / 10000); 
+            }
+            return power;
+        }
+
+        function calculateOverallPower(aggregatedStatsObj) {
+            if (aggregatedStatsObj["ALL_SPORTS"]) {
+                return calculateSingleSportPower(aggregatedStatsObj["ALL_SPORTS"]);
+            }
+            return 0;
+        }
+
+        // --- HELPER: Aggregate Stats by Sport ---
+        function aggregateStatsBySport(statsObj) {
+            const aggregated = {};
+            let hasStats = false;
+            
+            const sumFields = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 100s", "Top 10s", "Wins", "Score", "Total Score", "Points"];
+            const maxFields = ["Highest Score"];
+
+            Object.entries(statsObj).forEach(([key, stats]) => {
+                hasStats = true;
+                const lastDashIndex = key.lastIndexOf('-');
+                const sport = (lastDashIndex > -1 ? key.substring(0, lastDashIndex) : key).toUpperCase();
+                
+                if (!aggregated[sport]) aggregated[sport] = {};
+                if (!aggregated["ALL_SPORTS"]) aggregated["ALL_SPORTS"] = {};
+                
+                Object.entries(stats).forEach(([label, value]) => {
+                    let numVal = parseFloat(value);
+                    if (isNaN(numVal)) numVal = 0;
+
+                    const isSumField = sumFields.includes(label) || sumFields.some(f => label.includes(f) && label !== "Highest Score");
+                    
+                    if (isSumField) { 
+                         if (!aggregated[sport][label]) aggregated[sport][label] = 0;
+                         aggregated[sport][label] += numVal;
+                         
+                         if (!aggregated["ALL_SPORTS"][label]) aggregated["ALL_SPORTS"][label] = 0;
+                         aggregated["ALL_SPORTS"][label] += numVal;
+                    } else if (maxFields.includes(label)) {
+                         if (!aggregated[sport][label]) aggregated[sport][label] = 0;
+                         aggregated[sport][label] = Math.max(aggregated[sport][label], numVal);
+                         
+                         if (!aggregated["ALL_SPORTS"][label]) aggregated["ALL_SPORTS"][label] = 0;
+                         aggregated["ALL_SPORTS"][label] = Math.max(aggregated["ALL_SPORTS"][label], numVal);
+                    } else {
+                        aggregated[sport][label] = value; 
+                    }
+                });
+            });
+
+            if (!hasStats) return {};
+            
+            Object.values(aggregated).forEach(sportStats => {
+                const allDrafts = sportStats["All Drafts"] || 0;
+                
+                const raw10 = sportStats["Top 10s"] || sportStats["Top 10"] || 0;
+                const raw100 = sportStats["Top 100s"] || sportStats["Top 100"] || 0;
+                const raw10pct = sportStats["Top 10%"] || 0;
+                const raw20pct = sportStats["Top 20%"] || 0;
+                const raw50pct = sportStats["Top 50%"] || 0;
+
+                const exc10 = raw10; 
+                const exc100 = Math.max(0, raw100 - raw10);
+                const exc10pct = Math.max(0, raw10pct - raw100);
+                const exc20pct = Math.max(0, raw20pct - raw10pct);
+                const exc50pct = Math.max(0, raw50pct - raw20pct);
+
+                const formatStat = (val) => {
+                    if (allDrafts === 0) return `0 (0%)`;
+                    const pct = ((val / allDrafts) * 100).toFixed(0);
+                    return `${val} (${pct}%)`;
+                };
+
+                sportStats["Top 10"] = formatStat(exc10);
+                sportStats["Top 100"] = formatStat(exc100); 
+                sportStats["Top 10%"] = formatStat(exc10pct);
+                sportStats["Top 20%"] = formatStat(exc20pct);
+                sportStats["Top 50%"] = formatStat(exc50pct);
+
+                Object.keys(sportStats).forEach(label => {
+                    if ((label.includes("Score") || label.includes("Points")) && !label.includes("%")) {
+                        if (typeof sportStats[label] === 'number' && sportStats[label] % 1 !== 0) {
+                             sportStats[label] = sportStats[label].toFixed(2);
+                        }
+                    }
+                });
+            });
+
+            return aggregated;
+        }
+
+        // --- INITIALIZE ROSTER (Runs Once) ---
+        async function initializeDraftStats() {
+            const container = document.getElementById('players-container');
+            const statusMsg = document.querySelector('.status-msg');
+
+            try {
+                // Fetch CSV (RDE Roster)
+                statusMsg.textContent = "Reading RDE Roster...";
+                const csvRes = await fetch(workerProxy + '?url=' + encodeURIComponent(CSV_URL));
+                if (!csvRes.ok) throw new Error("Failed to fetch spreadsheet");
+                const csvText = await csvRes.text();
+
+                // Parse CSV
+                const rows = csvText.split('\n').map(r => r.split(','));
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                
+                const idxUser = headers.findIndex(h => h === 'username');
+                const idxId = headers.findIndex(h => h === 'user id' || h === 'userid');
+                const idxBrand = headers.findIndex(h => h === 'division' || h === 'brand');
+
+                const roster = rows.slice(1).filter(r => r.length > 1 && r[idxId]);
+
+                if (roster.length === 0) {
+                    container.innerHTML = '<div class="loading-container">No players found in Roster sheet.</div>';
+                    return;
+                }
+
+                // Map clean objects into the global roster array
+                fullRosterData = roster.map(row => {
+                    const name = row[idxUser] || 'Unknown';
+                    const uid = row[idxId]?.trim();
+                    const brandRaw = idxBrand > -1 ? row[idxBrand]?.trim().toUpperCase() : 'UNKNOWN';
+                    
+                    let badgeClass = 'unknown';
+                    let displayBrand = brandRaw;
+                    if (brandRaw === 'ZONE 0') { badgeClass = 'zone0'; displayBrand = 'Zone 0'; }
+                    else if (brandRaw === 'NITRO') { badgeClass = 'nitro'; displayBrand = 'Nitro'; }
+                    else if (brandRaw === 'MINOR') { badgeClass = 'minor'; displayBrand = 'Minor'; }
+                    
+                    return { name, uid, brandRaw, badgeClass, displayBrand };
+                }).filter(p => p.uid);
+
+                // Clear the loading message completely
+                container.innerHTML = '';
+                
+                // Trigger the load for the default selected brand
+                loadBrand(currentBrandFilter);
+
+            } catch (e) {
+                container.innerHTML = `<div class="loading-container" style="color:var(--danger)">
+                    <h3>Error</h3>
+                    <p>${e.message}</p>
+                </div>`;
+            }
+        }
+
+        // --- BRAND SPECIFIC LAZY LOADER ---
+        function loadBrand(brandToLoad) {
+            const container = document.getElementById('players-container');
+            
+            // Hide all existing cards
+            const allCards = container.querySelectorAll('.player-card');
+            allCards.forEach(card => card.style.display = 'none');
+
+            // Find players in the requested brand
+            const brandPlayers = fullRosterData.filter(p => p.brandRaw === brandToLoad);
+            
+            if (brandPlayers.length === 0) {
+                 if (!document.getElementById(`no-players-${brandToLoad}`)) {
+                     container.insertAdjacentHTML('beforeend', `<div id="no-players-${brandToLoad}" class="loading-container" style="display:block;">No players found for ${brandToLoad}.</div>`);
+                 }
+            } else {
+                 const noPlayersMsg = document.getElementById(`no-players-${brandToLoad}`);
+                 if (noPlayersMsg) noPlayersMsg.style.display = 'none';
+            }
+
+            brandPlayers.forEach(player => {
+                const cardId = `card-${player.uid}`;
+                const existingCard = document.getElementById(cardId);
+                
+                if (!existingCard) {
+                    // Inject API Skeleton Hit
+                    const isVisible = player.brandRaw === currentBrandFilter ? 'flex' : 'none';
+                    const skeletonHtml = `
+                        <div class="player-card" id="${cardId}" data-power-overall="-1" data-brand="${player.brandRaw}" style="display: ${isVisible};">
+                            <div class="player-header">
+                                <div class="player-name-block">
+                                    <span class="player-name">${player.name}</span>
+                                    <span class="brand-badge ${player.badgeClass}">${player.displayBrand}</span>
+                                </div>
+                                <span class="player-id">${player.uid}</span>
+                            </div>
+                            <div class="stats-loading" style="color:var(--text-muted); font-style:italic; font-size:0.9rem; padding: 1rem;">
+                                Syncing stats...
+                            </div>
+                        </div>`;
+                    container.insertAdjacentHTML('beforeend', skeletonHtml);
+                    
+                    // Trigger the API fetch if it hasn't been started yet
+                    if (!fetchedUids.has(player.uid)) {
+                        fetchedUids.add(player.uid);
+                        globalFetchQueue.push({ player, cardId, retries: 0 });
+                    }
+                } else {
+                    existingCard.style.display = 'flex';
+                }
+            });
+
+            // Run initial sort to organize skeletons or previously cached cards
+            window.filterAndSortGrid();
+
+            // Kick off the background queue processor
+            processFetchQueue();
+        }
+
+        // --- BACKGROUND QUEUE PROCESSOR ---
+        async function processFetchQueue() {
+            if (isProcessingQueue) return;
+            isProcessingQueue = true;
+
+            while (globalFetchQueue.length > 0) {
+                // Process 3 players at a time to prevent rate limits
+                const chunk = globalFetchQueue.splice(0, 3);
+                
+                await Promise.all(chunk.map(async (item) => {
+                    await fetchAndRenderPlayer(item.player, item.cardId, item.retries);
+                }));
+
+                // Dynamic pacing
+                await new Promise(r => setTimeout(r, 800)); 
+            }
+
+            isProcessingQueue = false;
+        }
+
+        // --- INDIVIDUAL PLAYER FETCH ---
+        async function fetchAndRenderPlayer(player, cardId, retries = 0) {
+            try {
+                const data = await fetchRealStats(player.uid);
+                const normalizedStats = {};
+                (data.stats || []).forEach(s => {
+                    const key = `${s.sport}-${s.season}`;
+                    normalizedStats[key] = {};
+                    s.displayStats.forEach(ds => {
+                        normalizedStats[key][ds.label] = ds.display;
+                    });
+                });
+                
+                const aggregatedStats = aggregateStatsBySport(normalizedStats);
+                updateCard(cardId, player.name, player.uid, player.displayBrand, player.badgeClass, aggregatedStats);
+                
+                const updatedCard = document.getElementById(cardId);
+                if (updatedCard) {
+                    updatedCard.dataset.powerOverall = calculateOverallPower(aggregatedStats);
+                    for (const [sport, dataObj] of Object.entries(aggregatedStats)) {
+                        if (sport !== "ALL_SPORTS") {
+                            updatedCard.dataset[`power${sport}`] = calculateSingleSportPower(dataObj);
+                            globalDiscoveredSports.add(sport);
+                        }
+                    }
+                }
+
+                updateFilterDropdown();
+                
+                // Only trigger UI re-sort if the user is still looking at this player's brand
+                if (currentBrandFilter === player.brandRaw) {
+                    window.filterAndSortGrid();
+                }
+
+            } catch (err) {
+                if (err.message.includes('429') && retries < 3) {
+                    console.warn(`Rate limit hit for ${player.name}, retrying...`);
+                    // Put back in queue to retry
+                    globalFetchQueue.push({ player, cardId, retries: retries + 1 });
+                    return;
+                }
+
+                console.error(`Failed for ${player.name}:`, err);
+                const card = document.getElementById(cardId);
+                if (card) {
+                    card.querySelector('.stats-loading').innerHTML = `<span style="color:var(--danger)">Update Failed</span>`;
+                    card.dataset.powerOverall = -1;
+                }
+                if (currentBrandFilter === player.brandRaw) window.filterAndSortGrid();
+            }
+        }
+
+        // --- RENDER HELPERS ---
+        function createCardHTML(uid, name, brandText, badgeClass, statsObj) {
+            let keys = Object.keys(statsObj).sort();
+
+            if (keys.length === 0) {
+                 return `
+                    <div class="player-header">
+                        <div class="player-name-block">
+                            <span class="player-name">${name}</span>
+                            <span class="brand-badge ${badgeClass}">${brandText}</span>
+                        </div>
+                        <span class="player-id">${uid}</span>
+                    </div>
+                    <div style="text-align:center; font-style:italic; padding:1rem; color:var(--text-muted);">
+                        No active draft stats found
+                    </div>
+                `;
+            }
+
+            const allIndex = keys.indexOf("ALL_SPORTS");
+            if (allIndex > -1) {
+                keys.splice(allIndex, 1);
+                keys.unshift("ALL_SPORTS");
+            }
+
+            let optionsHtml = '';
+            let viewsHtml = '';
+
+            const targetStats = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 10"];
+            
+            keys.forEach((key, index) => {
+                const details = statsObj[key];
+                const displayKey = key === "ALL_SPORTS" ? "All Sports" : key.replace('-', ' ');
+                
+                let headerScore = '-';
+                if (details["Highest Score"] !== undefined) {
+                    headerScore = details["Highest Score"];
+                }
+                
+                optionsHtml += `<option value="${key}">${displayKey}</option>`;
+
+                let gridHtml = '';
+                targetStats.forEach(targetLabel => {
+                    let val = details[targetLabel];
+                    if (val !== undefined) {
+                        gridHtml += `
+                            <div class="stat-box">
+                                <span class="stat-label">${targetLabel}</span>
+                                <span class="stat-value">${val}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                const activeClass = index === 0 ? 'active' : '';
+
+                viewsHtml += `
+                    <div class="sport-stats-view ${activeClass}" data-sport="${key}">
+                         <div class="sport-title-row">
+                            <span>Highest Score</span>
+                            <span>${headerScore}</span>
+                        </div>
+                        <div class="stats-grid-row">
+                            ${gridHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="player-header">
+                    <div class="player-name-block">
+                        <span class="player-name">${name}</span>
+                        <span class="brand-badge ${badgeClass}">${brandText}</span>
+                    </div>
+                    <span class="player-id">${uid}</span>
+                </div>
+                
+                <div class="sport-selector-container">
+                    <select class="sport-dropdown" onchange="switchSport(this)">
+                        ${optionsHtml}
+                    </select>
+                </div>
+
+                <div class="stats-container">
+                    ${viewsHtml}
+                </div>
+            `;
+        }
+
+        function updateCard(cardId, name, uid, brandText, badgeClass, statsObj) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            card.innerHTML = createCardHTML(uid, name, brandText, badgeClass, statsObj);
+        }
+
+        // Initialize
+        initializeDraftStats();
+    </script>
+</body>
+</html>

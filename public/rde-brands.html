@@ -73,9 +73,9 @@
         }
 
         /* Brand Specific Top Borders */
-        .brand-link.prime-link { border-top: 4px solid #ef4444; }
-        .brand-link.clash-link { border-top: 4px solid #3b82f6; }
-        .brand-link.ascent-link { border-top: 4px solid #10b981; }
+        .brand-link.zone-0-link { border-top: 4px solid #1d4ed8; } /* Dark Blue */
+        .brand-link.nitro-link { border-top: 4px solid #38bdf8; } /* Light Blue */
+        .brand-link.minor-link { border-top: 4px solid #f97316; } /* Orange */
 
         .brand-link:hover {
             transform: translateY(-5px);
@@ -84,48 +84,66 @@
             border-color: var(--gold-mid);
         }
 
-        /* Logo Containers (White backdrops for visibility) */
+        /* Logo Containers (Transparent with dynamic brand glow and white spotlight) */
         .brand-logo-wrapper {
-            background: #f8fafc;
-            width: 130px;
-            height: 130px;
-            border-radius: 50%;
+            width: 100%;
+            height: 140px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1.5rem;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            transition: transform 0.3s ease;
-            padding: 1.2rem;
+            transition: transform 0.3s ease, background 0.3s ease;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
         }
 
         .brand-link:hover .brand-logo-wrapper { 
             transform: scale(1.1); 
-            box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 65%);
+        }
+
+        /* Specifically boost the white spotlight for Zone 0 since its logo is so dark */
+        .brand-link.zone-0-link .brand-logo-wrapper {
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.35) 0%, transparent 65%);
+        }
+        .brand-link:hover.zone-0-link .brand-logo-wrapper { 
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.45) 0%, transparent 70%);
         }
 
         .brand-logo-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            transition: filter 0.3s ease;
         }
 
+        /* Custom Drop Shadows: Adds a white backlight silhouette + the specific brand color glow */
+        .brand-link.zone-0-link img { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5)) drop-shadow(0 8px 15px rgba(29, 78, 216, 0.8)); }
+        .brand-link.nitro-link img { filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2)) drop-shadow(0 8px 15px rgba(56, 189, 248, 0.5)); }
+        .brand-link.minor-link img { filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2)) drop-shadow(0 8px 15px rgba(249, 115, 22, 0.5)); }
+
+        .brand-link:hover.zone-0-link img { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.7)) drop-shadow(0 12px 20px rgba(29, 78, 216, 1)); }
+        .brand-link:hover.nitro-link img { filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4)) drop-shadow(0 12px 20px rgba(56, 189, 248, 0.8)); }
+        .brand-link:hover.minor-link img { filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.4)) drop-shadow(0 12px 20px rgba(249, 115, 22, 0.8)); }
+
         .detail-logo-wrapper {
-            background: #f8fafc;
-            width: 80px;
             height: 80px;
-            border-radius: 50%;
+            width: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0.8rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
         }
         
+        .zone-0-detail-logo {
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.35) 0%, transparent 70%) !important;
+        }
+
         .detail-logo-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3)) drop-shadow(0 4px 10px rgba(0,0,0,0.5));
         }
 
         .brand-link span {
@@ -201,7 +219,7 @@
             h1 { font-size: 1.8rem; margin-top: 1rem; } 
             h2.page-title { font-size: 1.5rem; }
             .brand-detail-header { font-size: 1.8rem; flex-direction: column; text-align: center; }
-            .detail-logo-wrapper { width: 60px; height: 60px; padding: 0.5rem; }
+            .detail-logo-wrapper { width: 60px; height: 60px; }
             .data-table th, .data-table td { padding: 0.75rem 1rem; font-size: 0.85rem; }
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -220,6 +238,7 @@
             <a href="rde-brands.html" class="nav-button active">Brands</a>
             <a href="rde-events.html" class="nav-button">Events</a>
             <a href="rde-players.html" class="nav-button">Players</a>
+	    <a href="rde-draft-stats.html" class="nav-button">Draft Stats</a>
         </div>
     </div>
 
@@ -232,28 +251,31 @@
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
         const rosterCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTvGj0pSmJxr_ylOG7TOpgqkgFcLnorp5gLv9zoBQrvETJF7tSABn4dPtl4_jQLWAadJRsVslzHRYyI/pub?gid=0&single=true&output=csv';
 
-        // --- DATA DEFINITIONS (Derived from Real Draft Entertainment PDF) ---
+        // --- DATA DEFINITIONS ---
         const brandConfig = {
-            'PRIME': {
-                name: 'PRIME',
-                color: '#ef4444', // Red
+            'ZONE 0': {
+                name: 'Zone 0',
+                color: '#1d4ed8', // Dark Blue for shadows/borders
+                textColor: '#93c5fd', // Bright Ice Blue for readable text on dark background
                 desc: 'Main Roster — Flagship Division',
-                gm: 'TBD', // Placeholder for Commissioner/GM dashboard assignment
-                logo: 'images/RDE/prime-logo.png'
+                gm: '@ozone',
+                logo: 'images/RDE/zone0-logo.png'
             },
-            'CLASH': {
-                name: 'CLASH',
-                color: '#3b82f6', // Blue
+            'NITRO': {
+                name: 'Nitro',
+                color: '#38bdf8', // Light Blue
+                textColor: '#38bdf8', // Light Blue
                 desc: 'Main Roster — Secondary Division',
-                gm: 'TBD',
-                logo: 'images/RDE/clash-logo.png'
+                gm: '@kronic1x',
+                logo: 'images/RDE/nitro-logo.png'
             },
-            'ASCENT': {
-                name: 'ASCENT',
-                color: '#10b981', // Green
+            'MINOR': {
+                name: 'Minor',
+                color: '#f97316', // Orange
+                textColor: '#f97316', // Orange
                 desc: 'Developmental Division',
-                gm: 'TBD',
-                logo: 'images/RDE/ascent-logo.png'
+                gm: '@mmf',
+                logo: 'images/RDE/minor-logo.png'
             }
         };
 
@@ -293,7 +315,11 @@
                     return values;
                 }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
 
-                if (rows.length < 2) return;
+                if (rows.length < 2) {
+                    // Fallback to mock data if the CSV doesn't have the new brand assignments yet
+                    loadMockData();
+                    return;
+                }
 
                 const headers = rows[0].map(h => h.toLowerCase().trim());
                 
@@ -303,10 +329,10 @@
                 };
 
                 globalRosterData = rows.slice(1).map(row => {
-                    const brandRaw = getVal(row, 'brand');
+                    // Using 'division' per the updated headers provided
+                    const brandRaw = getVal(row, 'division') || getVal(row, 'brand');
                     const brand = brandRaw ? brandRaw.toUpperCase() : 'UNKNOWN';
                     
-                    // Defaults/Fallbacks in case you add these columns to your CSV later
                     const momentum = getVal(row, 'momentum') || 'Steady';
                     const wins = parseInt(getVal(row, 'wins')) || 0;
                     const losses = parseInt(getVal(row, 'losses')) || 0;
@@ -316,7 +342,7 @@
 
                     return {
                         username: getVal(row, 'username') || 'Unknown',
-                        userId: getVal(row, 'user id') || '',
+                        userId: getVal(row, 'user id') || getVal(row, 'userid') || '',
                         brand: brand,
                         momentum: momentum, 
                         wins: wins, 
@@ -328,7 +354,100 @@
                 });
             } catch (error) {
                 console.error("Error loading Roster CSV:", error);
+                loadMockData();
             }
+        }
+        
+        function loadMockData() {
+            globalRosterData = [
+                // ZONE 0
+                { username: '@_jake', userId: 'LJ5A16NJ', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@altuve', userId: 'rneWmzyv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@bixz', userId: '9JmQMzBJ', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@bubcarringtonn', userId: 'kvMbXVw3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@calebownsgb', userId: 'rnGMdpyv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@cmc', userId: 'eJ9BOQkv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@emxka', userId: '5nxqqeyJ', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@fbb77', userId: 'PJPExX9v', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@gmoney676', userId: 'Y3KlrWln', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@gp2_', userId: '53jwGr0n', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@klaytond', userId: '9vY5mKmv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@kninja', userId: 'kvMzoZw3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@lamarishim8', userId: '9vYLBo9J', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@levandro', userId: '5nxNGLpv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@lotto12', userId: 'qvRjaebv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@ozone', userId: 'jvbDzLPn', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@pigskin808', userId: 'R37MQYyJ', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@realkam', userId: '4JZ281PJ', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@saintdezzy', userId: 'xnalbyX3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@seahawksszn12', userId: 'DJ4z1yq3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@smokedope', userId: 'gv8eRQ03', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@stankss', userId: 'jvb99PkJ', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@stefan1234567', userId: 'KnAxKaa3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@stormttruper', userId: 'xnapMBa3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@superduck', userId: 'gv8papYv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@tetairoa.mcmillan.4', userId: 'kvMrgLV3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@tracemcsorley9', userId: 'gv8P5yYv', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@warner3', userId: 'kJw1y7p3', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@wembyx', userId: 'xnrW4GxJ', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@xxt_kraftpropsxx', userId: 'QvDrW7gn', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@yankeesontop28', userId: 'V3yBP92n', brand: 'ZONE 0', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                
+                // MINOR
+                { username: '@bazoukisss', userId: '9vY1z7Dv', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@bigmoneyherk', userId: 'qnBrbZWn', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@breens', userId: 'BJ0qgVpv', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@brysssson', userId: '53jlPyZJ', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@clayton666', userId: '43QOWApJ', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@davidpunchnatty', userId: 'xna27KyJ', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@drab101', userId: 'dnWxX51J', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@dwinner', userId: 'AnzG5YWJ', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@galaxyopal', userId: 'X3o2g6Av', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@gaspa7', userId: 'BJ0MdGYv', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@gfkmoney', userId: 'BJ0x1moJ', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@jabahhh', userId: 'Y3KbN2Zv', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@markbassoul', userId: 'gnVooelJ', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@mmf', userId: 'Y3KdBmLn', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@nickeii', userId: 'Y3OebodJ', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@rome', userId: 'rJNykEyn', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@scottiebarnesfsu', userId: 'lnEQAEan', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@stephskid', userId: 'mvgo7MOv', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@vgoat26', userId: 'kJwpRqYv', brand: 'MINOR', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                
+                // NITRO
+                { username: '@alpunc', userId: 'gnVer0Q3', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@barngoat', userId: '7JkwBdPJ', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@bc', userId: 'PJPlXgwJ', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@bignysportsfan', userId: 'jvb0g76n', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@cdeck24', userId: 'xnr5VpW3', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@chars1', userId: 'dnW5q9Dv', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@chourio', userId: 'jvbe6P6J', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@danielwest', userId: 'rnG8ozmJ', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@duolingo', userId: '7Jkqwl83', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@gmoneytb', userId: 'qnBmomW3', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@greektime', userId: 'Gv1YrA6v', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@jackc2', userId: 'gnVp2ZBv', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@jakemccarthy', userId: '7J61Eagn', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@jaxon', userId: 'eJ9zaVjv', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@jcsuvy', userId: 'KnAZdbgJ', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@jdclapz17', userId: 'V3ywjbNJ', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@jjettasbets', userId: 'QvDr19gn', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@kayvt', userId: 'eJ9NGw9v', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@kermitnfl', userId: '7JkRw5kn', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@kiviranta', userId: 'lnEWrD8v', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@kronic1x', userId: 'QvDd0Vgv', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@localbreadman4', userId: '53jAKqev', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@lukatop2oat', userId: 'Y3KmAmyJ', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@mailman41', userId: 'kJwmkGe3', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@malikwillis', userId: 'dvdKdVaJ', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@osboti', userId: 'qvRwgQ63', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@psyklone', userId: 'mvg0jzm3', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@tadabrot', userId: 'Y3KX9jln', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@trxy142', userId: 'Gv1MdGgv', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@tymitt', userId: 'LJ5or8r3', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@upvotefarmer', userId: '9JmXRKDn', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false },
+                { username: '@victorosimhen', userId: '4JZlkNz3', brand: 'NITRO', momentum: 'Steady', wins: 0, losses: 0, avg: 0.00, rivalry: 'None', isChamp: false }
+            ];
         }
 
         // 1. GRID VIEW
@@ -339,12 +458,13 @@
             html += `<div class="brand-grid">`;
             
             Object.values(brandConfig).forEach(brand => {
+                // Ensure spaces in the URL parameter are safely encoded, and cleanly formatting the CSS class
                 html += `
-                    <a href="rde-brands.html?brand=${brand.name}" class="brand-link ${brand.name.toLowerCase()}-link">
+                    <a href="rde-brands.html?brand=${encodeURIComponent(brand.name)}" class="brand-link ${brand.name.toLowerCase().replace(/\s+/g, '-')}-link">
                         <div class="brand-logo-wrapper">
                             <img src="${brand.logo}" alt="${brand.name} Logo" onerror="this.parentElement.style.display='none'">
                         </div>
-                        <span style="color: ${brand.color};">${brand.name}</span>
+                        <span style="color: ${brand.textColor};">${brand.name}</span>
                     </a>
                 `;
             });
@@ -369,17 +489,17 @@
                 
                 <div style="text-align: center;">
                     <div class="brand-detail-header" style="border-bottom-color: ${brand.color};">
-                        <div class="detail-logo-wrapper">
+                        <div class="detail-logo-wrapper ${brand.name === 'Zone 0' ? 'zone-0-detail-logo' : ''}">
                             <img src="${brand.logo}" alt="${brand.name} Logo" onerror="this.parentElement.style.display='none'">
                         </div>
-                        ${brand.name}
+                        <span style="color: ${brand.textColor};">${brand.name}</span>
                     </div>
                 </div>
 
                 <div class="brand-info-grid">
                     <div class="info-card">
                         <div class="label">Division Type</div>
-                        <div class="value" style="color: ${brand.color}; font-size: 1.1rem;">${brand.desc}</div>
+                        <div class="value" style="color: ${brand.textColor}; font-size: 1.1rem;">${brand.desc}</div>
                     </div>
                     <div class="info-card">
                         <div class="label">General Manager</div>
@@ -391,7 +511,7 @@
                     </div>
                 </div>
 
-                <h2 class="section-heading" style="color: ${brand.color}; border-bottom-color: rgba(255,255,255,0.1);">Active Roster & Rankings</h2>
+                <h2 class="section-heading" style="color: ${brand.textColor}; border-bottom-color: rgba(255,255,255,0.1);">Active Roster & Rankings</h2>
                 <div class="data-table-container">
                     <table class="data-table">
                         <thead>

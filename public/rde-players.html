@@ -32,14 +32,16 @@
         .player-name { font-weight: 500; color: var(--text-main); }
         .stat-highlight { color: var(--gold-mid); font-weight: 600; }
 
-        /* RDE Specific Badges */
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-        .badge.prime { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-        .badge.clash { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
-        .badge.ascent { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+        /* RDE Specific Brand Badges */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .badge.zone0 { background: rgba(29, 78, 216, 0.15); color: #93c5fd; border: 1px solid rgba(29, 78, 216, 0.5); }
+        .badge.nitro { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); }
+        .badge.minor { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.5); }
+        .badge.unknown { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.5); }
         
-        .badge.hot { color: #ef4444; }
-        .badge.cold { color: #3b82f6; }
+        /* Momentum Badges */
+        .badge.hot { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+        .badge.cold { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
 
         /* Modal Styles */
         body.modal-open { overflow: hidden; }
@@ -77,6 +79,7 @@
             <a href="rde-brands.html" class="nav-button">Brands</a>
             <a href="rde-events.html" class="nav-button">Events</a>
             <a href="rde-players.html" class="nav-button active">Players</a>
+            <a href="rde-draft-stats.html" class="nav-button">Draft Stats</a>
         </div>
     </div>
 
@@ -101,7 +104,7 @@
                     </tr>
                 </thead>
                 <tbody id="players-container">
-                    <!-- Javascript Data Injected Here -->
+                    <tr><td colspan="6" style="text-align: center; padding: 3rem; color: #888; font-style: italic;">Loading roster data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -114,7 +117,7 @@
             
             <div class="modal-header">
                 <h2 class="modal-name" id="modal-name">PlayerName</h2>
-                <div class="modal-brand badge prime" id="modal-brand">PRIME</div>
+                <div class="modal-brand badge zone0" id="modal-brand">ZONE 0</div>
             </div>
 
             <div class="stats-grid">
@@ -144,20 +147,80 @@
         </div>
     </div>
 
-    <script>
-        // --- MOCK RDE DATA (Replace with Google Sheets Fetcher later) ---
-        const rdePlayers = [
-            { username: '@gmoney676', brand: 'PRIME', momentum: 'Hot', wins: 7, losses: 2, avg: 42.40, rivalry: '@ok124' },
-            { username: '@rafael', brand: 'PRIME', momentum: 'Steady', wins: 7, losses: 3, avg: 41.78, rivalry: 'None' },
-            { username: '@ok124', brand: 'PRIME', momentum: 'Cold', wins: 4, losses: 6, avg: 37.33, rivalry: '@gmoney676' },
-            { username: '@alpunc', brand: 'CLASH', momentum: 'Steady', wins: 6, losses: 4, avg: 34.60, rivalry: '@realkam' },
-            { username: '@realkam', brand: 'CLASH', momentum: 'Hot', wins: 7, losses: 2, avg: 32.15, rivalry: '@alpunc' },
-            { username: '@warner3', brand: 'CLASH', momentum: 'Cold', wins: 2, losses: 8, avg: 27.87, rivalry: 'None' },
-            { username: '@bixz', brand: 'ASCENT', momentum: 'Hot', wins: 5, losses: 4, avg: 33.26, rivalry: '@som.jr' },
-            { username: '@som.jr', brand: 'ASCENT', momentum: 'Steady', wins: 4, losses: 4, avg: 31.10, rivalry: '@bixz' }
-        ];
+    <script type="module">
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const rosterCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTvGj0pSmJxr_ylOG7TOpgqkgFcLnorp5gLv9zoBQrvETJF7tSABn4dPtl4_jQLWAadJRsVslzHRYyI/pub?gid=0&single=true&output=csv';
 
+        let globalRosterData = [];
         let searchQuery = '';
+
+        // --- Load Data from RDE Roster CSV ---
+        async function loadRosterData() {
+            try {
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(rosterCsvUrl));
+                if (!res.ok) throw new Error('Network response was not ok');
+                const text = await res.text();
+
+                const rows = text.split('\n').map(line => {
+                    const values = [];
+                    let currentVal = '', inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                        else currentVal += char;
+                    }
+                    values.push(currentVal.trim());
+                    return values;
+                }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+
+                if (rows.length < 2) return;
+
+                const headers = rows[0].map(h => h.toLowerCase().trim());
+                
+                const getVal = (row, colName) => {
+                    const idx = headers.findIndex(h => h === colName);
+                    return idx > -1 ? row[idx] : '';
+                };
+
+                globalRosterData = rows.slice(1).map(row => {
+                    const brandRaw = getVal(row, 'division') || getVal(row, 'brand');
+                    const brand = brandRaw ? brandRaw.toUpperCase() : 'UNKNOWN';
+                    
+                    const momentum = getVal(row, 'momentum') || 'Steady';
+                    const wins = parseInt(getVal(row, 'wins')) || 0;
+                    const losses = parseInt(getVal(row, 'losses')) || 0;
+                    const avg = parseFloat(getVal(row, 'avg score')) || parseFloat(getVal(row, 'avg')) || 0.00;
+                    const rivalry = getVal(row, 'rivalry') || getVal(row, 'active rivalry') || 'None';
+                    const isChamp = getVal(row, 'champion')?.toLowerCase() === 'yes' || getVal(row, 'is champ')?.toLowerCase() === 'true';
+
+                    let displayBrand = brand;
+                    let badgeClass = 'unknown';
+                    if (brand === 'ZONE 0') { badgeClass = 'zone0'; displayBrand = 'Zone 0'; }
+                    else if (brand === 'NITRO') { badgeClass = 'nitro'; displayBrand = 'Nitro'; }
+                    else if (brand === 'MINOR') { badgeClass = 'minor'; displayBrand = 'Minor'; }
+
+                    return {
+                        username: getVal(row, 'username') || 'Unknown',
+                        userId: getVal(row, 'user id') || getVal(row, 'userid') || '',
+                        brand: displayBrand,
+                        badgeClass: badgeClass,
+                        momentum: momentum, 
+                        wins: wins, 
+                        losses: losses, 
+                        avg: avg, 
+                        rivalry: rivalry, 
+                        isChamp: isChamp 
+                    };
+                }).filter(p => p.userId !== '');
+                
+                renderTable();
+
+            } catch (error) {
+                console.error("Error loading Roster CSV:", error);
+                document.getElementById('players-container').innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 3rem; color: #f44336; font-style: italic;">Error loading roster data.</td></tr>';
+            }
+        }
 
         // --- Modal Logic ---
         const modal = document.getElementById('player-modal');
@@ -165,21 +228,23 @@
         window.onclick = (e) => { if (e.target == modal) { modal.style.display = "none"; document.body.classList.remove('modal-open'); } }
 
         window.openPlayerModal = function(username, rankIndex) {
-            const p = rdePlayers.find(player => player.username === username);
+            const p = globalRosterData.find(player => player.username === username);
             if (!p) return;
 
             document.getElementById('modal-name').textContent = p.username;
             document.getElementById('modal-brand').textContent = p.brand;
-            document.getElementById('modal-brand').className = `modal-brand badge ${p.brand.toLowerCase()}`;
+            document.getElementById('modal-brand').className = `modal-brand badge ${p.badgeClass}`;
             
             document.getElementById('modal-rank').textContent = `#${rankIndex + 1}`;
             
-            let momText = p.momentum === 'Hot' ? '🔥 Hot' : (p.momentum === 'Cold' ? '❄️ Cold' : 'Steady');
+            let momText = 'Steady';
+            if (p.momentum === 'Hot') momText = '🔥 Hot';
+            else if (p.momentum === 'Cold') momText = '❄️ Cold';
             document.getElementById('modal-momentum').textContent = momText;
             
             document.getElementById('modal-record').textContent = `${p.wins}-${p.losses}`;
             document.getElementById('modal-avgscore').textContent = p.avg.toFixed(2);
-            document.getElementById('modal-rivalry').textContent = p.rivalry;
+            document.getElementById('modal-rivalry').textContent = (p.rivalry && p.rivalry !== 'None') ? p.rivalry : 'None';
 
             modal.style.display = "flex";
             document.body.classList.add('modal-open');
@@ -193,22 +258,34 @@
         function renderTable() {
             const tbody = document.getElementById('players-container');
             
-            let filtered = rdePlayers.filter(p => p.username.toLowerCase().includes(searchQuery));
+            let filtered = globalRosterData.filter(p => p.username.toLowerCase().includes(searchQuery));
             
-            // Sort by Avg Score
-            filtered.sort((a, b) => b.avg - a.avg);
+            // Sort Global Leaderboard by Record: Win % -> Wins -> Avg Score
+            filtered.sort((a, b) => {
+                const totalA = a.wins + a.losses;
+                const totalB = b.wins + b.losses;
+                const pctA = totalA > 0 ? a.wins / totalA : 0;
+                const pctB = totalB > 0 ? b.wins / totalB : 0;
+
+                if (pctB !== pctA) return pctB - pctA;
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return b.avg - a.avg;
+            });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">No players found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 3rem; color: #666; font-style: italic;">No players found matching your search.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = filtered.map((p, index) => {
-                let brandBadge = `<span class="badge ${p.brand.toLowerCase()}">${p.brand}</span>`;
-                let momBadge = p.momentum === 'Hot' ? '<span class="badge hot">🔥</span>' : (p.momentum === 'Cold' ? '<span class="badge cold">❄️</span>' : '<span style="color: #666;">-</span>');
+                let brandBadge = `<span class="badge ${p.badgeClass}">${p.brand}</span>`;
+                
+                let momBadge = '<span style="color: #666;">-</span>';
+                if (p.momentum === 'Hot') momBadge = '<span class="badge hot">🔥</span>';
+                else if (p.momentum === 'Cold') momBadge = '<span class="badge cold">❄️</span>';
                 
                 return `
-                <tr class="clickable-row" onclick="openPlayerModal('${p.username}', ${index})">
+                <tr class="clickable-row" onclick="openPlayerModal('${p.username.replace(/'/g, "\\'")}', ${index})">
                     <td class="rank-number">${index + 1}</td>
                     <td class="player-name">${p.username}</td>
                     <td style="text-align: center;">${brandBadge}</td>
@@ -221,7 +298,7 @@
         }
 
         // Init
-        renderTable();
+        loadRosterData();
     </script>
 </body>
 </html>

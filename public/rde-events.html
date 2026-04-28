@@ -16,6 +16,65 @@
         h1 { text-align: center; margin-top: 2rem; font-size: 2.5rem; text-transform: uppercase; letter-spacing: 2px; color: var(--gold-mid); }
         .hub-content { width: 100%; max-width: 1200px; margin: 0 auto; padding: 1rem 1rem 4rem 1rem; animation: fadeIn 0.5s ease-out; box-sizing: border-box; }
 
+        /* --- Brand Tabs --- */
+        .brand-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .brand-tab {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .brand-tab:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        
+        .brand-tab.zone0.active { border-color: #1d4ed8; color: #93c5fd; background: rgba(29, 78, 216, 0.15); box-shadow: 0 0 15px rgba(29, 78, 216, 0.3); }
+        .brand-tab.nitro.active { border-color: #38bdf8; color: #38bdf8; background: rgba(56, 189, 248, 0.15); box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+        .brand-tab.minor.active { border-color: #f97316; color: #f97316; background: rgba(249, 115, 22, 0.15); box-shadow: 0 0 15px rgba(249, 115, 22, 0.3); }
+
+        /* --- Sub Navigation (Views) --- */
+        .sub-nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            animation: fadeIn 0.5s ease-out 0.2s both;
+            flex-wrap: wrap;
+        }
+
+        .sub-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sub-nav-btn:hover { color: var(--text-main); }
+        .sub-nav-btn.active { color: var(--gold-light); border-bottom: 2px solid var(--gold-mid); }
+
+        .content-view, .brand-schedule-view { display: none; width: 100%; animation: fadeIn 0.3s ease-out; }
+        .content-view.active, .brand-schedule-view.active { display: block; }
+
         .section-title {
             font-size: 1.2rem; font-weight: 600; color: var(--text-main);
             margin: 2rem 0 1.5rem 0; padding-left: 0.5rem; border-left: 4px solid var(--gold-mid);
@@ -25,48 +84,74 @@
 
         .booked-by { font-size: 0.7rem; color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
 
-        /* Match Cards */
-        .match-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
+        /* Match Cards - Sports App Style */
+        .match-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
         
         .match-card {
             background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle);
-            border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden;
+            border-radius: 8px; padding: 1rem; position: relative; overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;
-            display: flex; flex-direction: column; justify-content: center;
+            display: flex; flex-direction: column;
             cursor: pointer;
         }
-        .match-card:hover { transform: translateY(-3px); border-color: var(--gold-mid); }
+        .match-card.static { cursor: default; }
+        .match-card.static:hover { transform: none; border-color: var(--border-subtle); }
+        .match-card:hover:not(.static) { transform: translateY(-2px); border-color: var(--gold-mid); }
 
-        .match-badge {
-            position: absolute; top: 0; right: 0; background: var(--gold-dark); color: #fff;
-            font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-            padding: 4px 12px; border-bottom-left-radius: 8px;
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
         }
-        .match-badge.title { background: #ef4444; }
-        .match-badge.rivalry { background: #3b82f6; }
 
-        /* Competitors & Live Scores */
-        .match-competitors { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
-        .competitor-block { display: flex; flex-direction: column; align-items: center; width: 42%; }
+        .match-sport.title { color: #ef4444; }
+        .match-sport.rivalry { color: #3b82f6; }
         
-        .competitor { text-align: center; width: 100%; font-size: 1.1rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .competitor-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0;
+        }
+
+        .competitor-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            text-align: left;
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+            padding-right: 1rem;
+            flex: 1;
+        }
         
-        .live-score { font-size: 1.3rem; font-weight: 800; color: #fff; margin-top: 0.25rem; transition: color 0.3s ease; }
+        .live-score { 
+            font-size: 1.2rem; 
+            font-weight: 700; 
+            color: #fff; 
+            text-align: right; 
+            min-width: 60px;
+            transition: color 0.3s ease; 
+        }
         .live-score.loading { color: var(--text-muted); font-size: 1rem; animation: pulse 1.5s infinite alternate; }
         .live-score.winning-score { color: var(--gold-mid); }
         
-        .vs { font-size: 0.8rem; color: var(--gold-mid); font-weight: 800; }
-        
         .multi-sport-label {
-            text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--gold-mid);
-            margin-top: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 600;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 0.8rem;
+            background: rgba(212, 175, 55, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
         }
 
         /* Loading / Error text */
@@ -92,7 +177,11 @@
         .sport-player-info { font-size: 0.7rem; line-height: 1.2; }
         .sport-player-display-name { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; color: var(--text-main); }
 
-        @media (max-width: 768px) { h1 { font-size: 1.8rem; margin-top: 1rem; } .section-title { flex-direction: column; align-items: flex-start; gap: 0.5rem; } }
+        @media (max-width: 768px) { 
+            h1 { font-size: 1.8rem; margin-top: 1rem; } 
+            .section-title { flex-direction: column; align-items: flex-start; gap: 0.5rem; } 
+            .brand-tab { padding: 0.5rem 1rem; font-size: 0.85rem; }
+        }
         @media (max-width: 600px) { .lineup-container { grid-template-columns: 1fr; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -101,7 +190,7 @@
 </head>
 <body>
     
-    <h1 id="main-header">RDE</h1>
+    <h1 id="main-header">RDE Events</h1>
 
     <div class="nav-container drafters-nav">
         <div class="nav-bar">
@@ -110,12 +199,48 @@
             <a href="rde-brands.html" class="nav-button">Brands</a>
             <a href="rde-events.html" class="nav-button active">Events</a>
             <a href="rde-players.html" class="nav-button">Players</a>
+            <a href="rde-draft-stats.html" class="nav-button">Draft Stats</a>
         </div>
     </div>
 
-    <!-- Data is injected dynamically into this container -->
-    <div class="hub-content" id="events-container">
-        <div class="loading-text" id="status-indicator">Loading live event data...</div>
+    <div class="hub-content">
+
+        <!-- Sub-Navigation for Tabs -->
+        <div class="sub-nav-container">
+            <button class="sub-nav-btn active" id="tab-live" onclick="switchView('live')">Today's Card</button>
+            <button class="sub-nav-btn" id="tab-schedule" onclick="switchView('schedule')">Full Schedule</button>
+        </div>
+
+        <!-- View 1: Today's Card (Global Across Brands) -->
+        <div id="live-view" class="content-view active">
+            <div class="loading-text" id="status-indicator">Loading live event data...</div>
+        </div>
+
+        <!-- View 2: Full Schedule (Brand Specific) -->
+        <div id="schedule-view" class="content-view">
+            <!-- Top Navigation for Brands -->
+            <div class="brand-tabs">
+                <button class="brand-tab zone0 active" id="tab-brand-ZONE0" onclick="switchBrand('ZONE0')">Zone 0</button>
+                <button class="brand-tab nitro" id="tab-brand-NITRO" onclick="switchBrand('NITRO')">Nitro</button>
+                <button class="brand-tab minor" id="tab-brand-MINOR" onclick="switchBrand('MINOR')">Minor</button>
+            </div>
+
+            <!-- ZONE 0 SCHEDULE -->
+            <div id="schedule-content-ZONE0" class="brand-schedule-view active">
+                <div class="loading-text">Loading schedule...</div>
+            </div>
+
+            <!-- NITRO SCHEDULE -->
+            <div id="schedule-content-NITRO" class="brand-schedule-view">
+                <div class="loading-text">Loading schedule...</div>
+            </div>
+
+            <!-- MINOR SCHEDULE -->
+            <div id="schedule-content-MINOR" class="brand-schedule-view">
+                <div class="loading-text">Loading schedule...</div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Lineup Modal -->
@@ -133,9 +258,18 @@
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
         
         // =======================================================
-        // GOOGLE SHEET CSV URL FOR EVENTS:
+        // GOOGLE SHEET CSV URLs FOR EACH BRAND'S SCHEDULE:
+        // Replace these with your actual published CSV links!
         // =======================================================
-        const scheduleCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSSnu1PqxLdJblb-eMURiJYSNqqdPMuDIEavZEj0ZuY8wBcLR9LHLFBB7yhMzWigEQ8PIvOBnS6h9h6/pub?gid=0&single=true&output=csv';
+        const SCHEDULE_CSV_ZONE0 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSSnu1PqxLdJblb-eMURiJYSNqqdPMuDIEavZEj0ZuY8wBcLR9LHLFBB7yhMzWigEQ8PIvOBnS6h9h6/pub?gid=0&single=true&output=csv'; 
+        const SCHEDULE_CSV_NITRO = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSSnu1PqxLdJblb-eMURiJYSNqqdPMuDIEavZEj0ZuY8wBcLR9LHLFBB7yhMzWigEQ8PIvOBnS6h9h6/pub?gid=1615478033&single=true&output=csv'; 
+        const SCHEDULE_CSV_MINOR = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSSnu1PqxLdJblb-eMURiJYSNqqdPMuDIEavZEj0ZuY8wBcLR9LHLFBB7yhMzWigEQ8PIvOBnS6h9h6/pub?gid=1658979955&single=true&output=csv';
+
+        const brandConfigs = {
+            'ZONE0': { id: 'ZONE0', name: 'Zone 0', csvUrl: SCHEDULE_CSV_ZONE0 },
+            'NITRO': { id: 'NITRO', name: 'Nitro', csvUrl: SCHEDULE_CSV_NITRO },
+            'MINOR': { id: 'MINOR', name: 'Minor', csvUrl: SCHEDULE_CSV_MINOR }
+        };
 
         // --- REAL API CONSTANTS & HELPERS ---
         const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
@@ -181,12 +315,65 @@
             return res.json();
         }
 
-        // Central state for tracking match scores and lineups
-        let matchScores = {};
+        // --- DATE HELPERS ---
+        function getCurrentDateStringEST() {
+            const now = new Date();
+            const options = { timeZone: "America/New_York", year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', hour12: false };
+            const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(now);
+            const partValue = (type) => parts.find(p => p.type === type)?.value;
+            let month = parseInt(partValue('month'));
+            let day = parseInt(partValue('day'));
+            let hour = parseInt(partValue('hour'));
+            
+            if (hour === 24) hour = 0;
+            if (hour < 12) {
+                const estDate = new Date(Date.UTC(parseInt(partValue('year')), month - 1, day));
+                estDate.setUTCDate(estDate.getUTCDate() - 1);
+                month = estDate.getUTCMonth() + 1; 
+                day = estDate.getUTCDate();
+            }
+            return `${month}/${day}`;
+        }
 
-        // UI Update Function
+        const isSameDate = (csvDate, todayStr) => {
+            if (!csvDate) return false;
+            const parts = csvDate.trim().split('/');
+            if (parts.length < 2) return false;
+            const m = parseInt(parts[0], 10);
+            const d = parseInt(parts[1], 10);
+            return `${m}/${d}` === todayStr;
+        };
+
+        // --- NAVIGATION STATE ---
+        let currentBrand = 'ZONE0';
+        let currentView = 'live';
+        let matchScores = {};
+        let globalFetchQueue = [];
+
+        window.switchBrand = (brand) => {
+            currentBrand = brand;
+            document.querySelectorAll('.brand-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-brand-${brand}`).classList.add('active');
+            
+            document.querySelectorAll('.brand-schedule-view').forEach(el => el.classList.remove('active'));
+            const targetEl = document.getElementById(`schedule-content-${brand}`);
+            if (targetEl) targetEl.classList.add('active');
+        };
+
+        window.switchView = (view) => {
+            currentView = view;
+            document.querySelectorAll('.sub-nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${view}`).classList.add('active');
+            
+            document.querySelectorAll('.content-view').forEach(el => el.classList.remove('active'));
+            const targetEl = document.getElementById(`${view}-view`);
+            if (targetEl) targetEl.classList.add('active');
+        };
+
+        // --- UI UPDATERS ---
         function updateMatchScoreUI(matchId) {
             const scores = matchScores[matchId];
+            if (!scores) return;
             const p1El = document.getElementById(`score-p1-${matchId}`);
             const p2El = document.getElementById(`score-p2-${matchId}`);
             
@@ -210,7 +397,7 @@
                 p2El.classList.remove('loading');
             }
 
-            // Apply Winning Color if fully loaded
+            // Apply Winning Color
             if (scores.p1Pending === 0 && scores.p2Pending === 0 && scores.p1HasId && scores.p2HasId) {
                 if (scores.p1Score > scores.p2Score) {
                     p1El.classList.add('winning-score');
@@ -239,9 +426,7 @@
                 let html = '';
                 const drafts = Object.keys(matchData.lineups);
                 
-                if (drafts.length === 0) {
-                    return '<p style="color:#888; font-size:0.9rem; text-align:center; padding:1rem;">No lineups loaded.</p>';
-                }
+                if (drafts.length === 0) return '<p style="color:#888; font-size:0.9rem; text-align:center; padding:1rem;">No lineups loaded.</p>';
 
                 let hasValidLineups = false;
                 let renderedCount = 0;
@@ -251,7 +436,6 @@
                     if (lineup.length > 0) {
                         hasValidLineups = true;
                         
-                        // Add dashed separator if there's more than one lineup (e.g. Main Event multi-sports)
                         if (renderedCount > 0) {
                             html += `<div style="margin-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.5rem;"></div>`;
                         }
@@ -275,7 +459,6 @@
                                 </div>`;
                         }).join('');
                         html += `</div>`;
-                        
                         renderedCount++;
                     }
                 });
@@ -305,122 +488,241 @@
         }
 
         async function loadEvents() {
-            const container = document.getElementById('events-container');
-            const statusIndicator = document.getElementById('status-indicator');
-            
-            try {
-                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(scheduleCsvUrl));
-                if (!res.ok) throw new Error('Network response was not ok');
-                const text = await res.text();
+            const todayDateString = getCurrentDateStringEST();
+            const liveContainer = document.getElementById('live-view');
+            let allLiveMatches = []; // Collects all matches scheduled for today across all brands
 
-                // CSV Parser
-                const rows = text.split('\n').map(line => {
-                    const values = [];
-                    let currentVal = '', inQuotes = false;
-                    for (let i = 0; i < line.length; i++) {
-                        const char = line[i];
-                        if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
-                        else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
-                        else currentVal += char;
-                    }
-                    values.push(currentVal.trim());
-                    return values;
-                }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
-
-                if (rows.length < 2) {
-                    container.innerHTML = '<div class="loading-text">No upcoming events are scheduled at this time.</div>';
-                    return;
-                }
-
-                // Extract headers to dynamically match column positions
-                const headers = rows[0].map(h => h.toLowerCase().trim());
+            // Fetch and process all 3 CSVs concurrently
+            const fetchPromises = Object.values(brandConfigs).map(async (config) => {
+                const scheduleContainer = document.getElementById(`schedule-content-${config.id}`);
                 
-                const getVal = (row, colName) => {
-                    const idx = headers.findIndex(h => h === colName);
-                    return idx > -1 ? row[idx] : '';
-                };
+                try {
+                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(config.csvUrl));
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    const text = await res.text();
 
-                // Group Matches by Date
-                const eventsByDate = new Map();
-                
-                rows.slice(1).forEach((row, index) => {
-                    const date = getVal(row, 'date') || 'TBD';
-                    if (!eventsByDate.has(date)) {
-                        eventsByDate.set(date, []);
-                    }
-                    
-                    const rawId = getVal(row, 'fight id');
-                    const matchId = (rawId ? rawId.replace(/\s+/g, '-') : `match-${index}-${Math.random().toString(36).substr(2,6)}`);
-
-                    const p1 = getVal(row, 'player1') || 'TBD';
-                    const p1Id = getVal(row, 'player1 id');
-                    const p2 = getVal(row, 'player2') || 'TBD';
-                    const p2Id = getVal(row, 'player2 id');
-                    const sport = getVal(row, 'sport') || 'Match';
-                    const sportIdStr = getVal(row, 'sport id');
-
-                    // Support comma-separated OR space-separated IDs within a single cell
-                    const sportIds = sportIdStr ? sportIdStr.split(/[\s,]+/).map(id => id.trim()).filter(id => id) : [];
-
-                    const dayMatches = eventsByDate.get(date);
-                    
-                    // Check if this row is an addition to an existing match (e.g. user added multiple rows for the same fight ID)
-                    let existingMatch = rawId ? dayMatches.find(m => m.id === matchId) : null;
-
-                    if (existingMatch) {
-                        // Merge the newly found IDs into the existing match
-                        sportIds.forEach(id => {
-                            if (!existingMatch.sportIds.includes(id)) {
-                                existingMatch.sportIds.push(id);
-                            }
-                        });
-                        // Ensure it triggers main event formatting if any row indicates it
-                        const sportLower = sport.toLowerCase();
-                        if (sportLower.includes('main event') || sportLower.includes('title')) {
-                            existingMatch.isTitleOrMain = true;
-                            existingMatch.sport = 'Main Event'; // Normalize title
-                            if (sportLower.includes('main event')) existingMatch.isMainEvent = true;
+                    // CSV Parser
+                    const rows = text.split('\n').map(line => {
+                        const values = [];
+                        let currentVal = '', inQuotes = false;
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                            else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                            else currentVal += char;
                         }
-                    } else {
-                        const sportLower = sport.toLowerCase();
-                        dayMatches.push({
-                            id: matchId,
-                            p1: p1,
-                            p1Id: p1Id,
-                            p2: p2,
-                            p2Id: p2Id,
-                            sport: sport,
-                            sportIds: sportIds,
-                            isTitleOrMain: sportLower.includes('main event') || sportLower.includes('title'),
-                            isMainEvent: sportLower.includes('main event'),
-                            isRivalry: sportLower.includes('feud') || sportLower.includes('rivalry')
+                        values.push(currentVal.trim());
+                        return values;
+                    }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+
+                    if (rows.length < 2) {
+                        scheduleContainer.innerHTML = '<div class="loading-text">No events are scheduled at this time.</div>';
+                        return;
+                    }
+
+                    let currentHeaders = [];
+                    let headerFound = false;
+
+                    const eventsByDate = new Map();
+                    
+                    rows.forEach((row, index) => {
+                        const lowerRow = row.map(c => c.toLowerCase().trim());
+                        const rawStr = lowerRow.join('').replace(/\s+/g, '');
+                        
+                        // Detect header row dynamically
+                        if (rawStr.includes('player1') && rawStr.includes('player2')) {
+                            currentHeaders = lowerRow;
+                            headerFound = true;
+                            return; // Skip the header row itself
+                        }
+                        
+                        // If no headers found yet, we can't parse data
+                        if (!headerFound) {
+                            // Fallback in case there are NO headers at all, use row 0 as headers if we are at row 1
+                            if (index === 1 && currentHeaders.length === 0) {
+                                currentHeaders = rows[0].map(h => h.toLowerCase().trim());
+                                headerFound = true;
+                            } else {
+                                return;
+                            }
+                        }
+
+                        const getVal = (...colNames) => {
+                            for (const name of colNames) {
+                                const idx = currentHeaders.indexOf(name);
+                                if (idx > -1) return row[idx];
+                            }
+                            return '';
+                        };
+
+                        // Check for section headers like "WEEK 1"
+                        const filledCols = row.filter(c => c.trim() !== '');
+                        const dateVal = getVal('date');
+                        if (filledCols.length <= 2 && !dateVal && !getVal('player 1', 'player1')) {
+                            return; // Skip section headers and empty rows
+                        }
+
+                        const date = dateVal || 'TBD';
+
+                        const p1 = getVal('player 1', 'player1') || 'TBD';
+                        const p1Id = getVal('player 1 id', 'player1 id', 'player1id');
+                        const p2 = getVal('player 2', 'player2') || 'TBD';
+                        const p2Id = getVal('player 2 id', 'player2 id', 'player2id');
+                        
+                        // Ignore rows that have no match data
+                        if (p1 === 'TBD' && p2 === 'TBD' && !p1Id && !p2Id) return;
+
+                        if (!eventsByDate.has(date)) {
+                            eventsByDate.set(date, []);
+                        }
+                        
+                        const rawId = getVal('fight id', 'fightid');
+                        // Crucial: Brand the match ID so it remains globally unique
+                        const matchId = (rawId ? `${config.id}-${rawId.replace(/\s+/g, '-')}` : `match-${config.id}-${index}-${Math.random().toString(36).substr(2,6)}`);
+
+                        const sport = getVal('sport') || 'Match';
+                        const sportIdStr = getVal('sport id', 'sportid');
+
+                        const sportIds = sportIdStr ? sportIdStr.split(/[\s,]+/).map(id => id.trim()).filter(id => id) : [];
+                        const dayMatches = eventsByDate.get(date);
+                        
+                        let existingMatch = rawId ? dayMatches.find(m => m.id === matchId) : null;
+
+                        if (existingMatch) {
+                            sportIds.forEach(id => {
+                                if (!existingMatch.sportIds.includes(id)) existingMatch.sportIds.push(id);
+                            });
+                            const sportLower = sport.toLowerCase();
+                            if (sportLower.includes('main event') || sportLower.includes('title')) {
+                                existingMatch.isTitleOrMain = true;
+                                existingMatch.sport = 'Main Event'; 
+                                if (sportLower.includes('main event')) existingMatch.isMainEvent = true;
+                            }
+                        } else {
+                            const sportLower = sport.toLowerCase();
+                            dayMatches.push({
+                                id: matchId,
+                                p1: p1,
+                                p1Id: p1Id,
+                                p2: p2,
+                                p2Id: p2Id,
+                                sport: sport,
+                                sportIds: sportIds,
+                                isTitleOrMain: sportLower.includes('main event') || sportLower.includes('title'),
+                                isMainEvent: sportLower.includes('main event'),
+                                isRivalry: sportLower.includes('feud') || sportLower.includes('rivalry')
+                            });
+                        }
+                    });
+
+                    let scheduleHtml = '';
+                    
+                    for (const [date, matches] of eventsByDate.entries()) {
+                        
+                        // Extract today's matches to the global live array
+                        if (isSameDate(date, todayDateString)) {
+                            matches.forEach(m => {
+                                allLiveMatches.push({ ...m, brandId: config.id, brandName: config.name });
+                            });
+                        }
+
+                        // Sort "Main Event" to the top for the Schedule view
+                        const scheduleMatches = [...matches].sort((a, b) => {
+                            if (a.isMainEvent && !b.isMainEvent) return -1;
+                            if (!a.isMainEvent && b.isMainEvent) return 1;
+                            return 0; 
                         });
+
+                        // --- Build Full Schedule HTML ---
+                        scheduleHtml += `
+                            <h2 class="section-title">
+                                ${date}
+                                <span class="booked-by">Scheduled Matches</span>
+                            </h2>
+                            <div class="match-grid">
+                        `;
+
+                        scheduleMatches.forEach(match => {
+                            let badgeClass = match.isTitleOrMain ? 'title' : (match.isRivalry ? 'rivalry' : '');
+                            let activeSportsLabel = match.isMainEvent ? `<div class="multi-sport-label">Multi-Sport</div>` : '';
+
+                            scheduleHtml += `
+                                <div class="match-card static">
+                                    <div class="match-header">
+                                        <span class="match-sport ${badgeClass}">${match.sport}</span>
+                                        ${activeSportsLabel}
+                                    </div>
+                                    <div class="matchup-stack">
+                                        <div class="competitor-row">
+                                            <div class="competitor-name" title="${match.p1}">${match.p1}</div>
+                                            <div class="live-score" style="color:var(--text-muted);">-</div>
+                                        </div>
+                                        <div class="competitor-row">
+                                            <div class="competitor-name" title="${match.p2}">${match.p2}</div>
+                                            <div class="live-score" style="color:var(--text-muted);">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        scheduleHtml += `</div>`;
+                    }
+
+                    scheduleContainer.innerHTML = scheduleHtml || `<div class="loading-text">No schedule available.</div>`;
+
+                } catch (error) {
+                    console.error(`Error loading Events CSV for ${config.id}:`, error);
+                    scheduleContainer.innerHTML = '<div class="loading-text" style="color: #f44336;">Error loading schedule data. Please ensure the CSV is published to the web.</div>';
+                }
+            });
+
+            // Wait for all 3 CSVs to parse and HTML to be built into the DOM
+            await Promise.all(fetchPromises);
+
+            // --- BUILD GLOBAL LIVE VIEW (Today's Card) ---
+            if (allLiveMatches.length === 0) {
+                liveContainer.innerHTML = `<div class="loading-text">No events scheduled for today (${todayDateString}).<br><span style="font-size:0.9rem; margin-top:1rem; display:block;">Select "Full Schedule" to view upcoming matches.</span></div>`;
+            } else {
+                // Collect all active draft IDs for today across all brands
+                const activeDraftIdsToday = new Set();
+                allLiveMatches.forEach(m => {
+                    m.sportIds.forEach(id => activeDraftIdsToday.add(id));
+                });
+                const globalDraftIds = Array.from(activeDraftIdsToday);
+
+                // Assign all active draft IDs to Main Events automatically
+                allLiveMatches.forEach(m => {
+                    if (m.isMainEvent) {
+                        m.sportIds = globalDraftIds;
                     }
                 });
 
-                // Generate HTML
-                let html = '';
-                let fetchQueue = [];
-                
-                for (const [date, matches] of eventsByDate.entries()) {
-                    
-                    // SORTING LOGIC: Push "Main Event" matches to the top of the day's card grid
-                    matches.sort((a, b) => {
-                        if (a.isMainEvent && !b.isMainEvent) return -1;
-                        if (!a.isMainEvent && b.isMainEvent) return 1;
-                        return 0; 
-                    });
+                // Sort Main Events to the top
+                allLiveMatches.sort((a, b) => {
+                    if (a.isMainEvent && !b.isMainEvent) return -1;
+                    if (!a.isMainEvent && b.isMainEvent) return 1;
+                    return 0; 
+                });
 
-                    html += `
+                // Group by brand
+                const liveByBrand = {};
+                allLiveMatches.forEach(m => {
+                    if(!liveByBrand[m.brandName]) liveByBrand[m.brandName] = [];
+                    liveByBrand[m.brandName].push(m);
+                });
+
+                let liveHtml = '';
+
+                for (const [brandName, matches] of Object.entries(liveByBrand)) {
+                    liveHtml += `
                         <h2 class="section-title">
-                            ${date}
-                            <span class="booked-by">Scheduled Matches</span>
+                            ${todayDateString}
+                            <span class="booked-by">${brandName} • Today's Card</span>
                         </h2>
                         <div class="match-grid">
                     `;
 
                     matches.forEach(match => {
-                        // Setup tracking state for this match
                         matchScores[match.id] = { 
                             p1Score: 0, p2Score: 0, 
                             p1Pending: 0, p2Pending: 0,
@@ -428,149 +730,129 @@
                             p2HasId: !!match.p2Id && match.sportIds.length > 0,
                             p1Name: match.p1,
                             p2Name: match.p2,
-                            lineups: {} // Store lineups retrieved from API
+                            lineups: {} 
                         };
 
-                        // Build Fetch Queue 
+                        // Queue API Requests
                         match.sportIds.forEach(draftId => {
                             if (match.p1Id) {
                                 matchScores[match.id].p1Pending++;
-                                fetchQueue.push({ url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${match.p1Id}?contestType=sport&source=home`, matchId: match.id, player: 'p1', retries: 0, draftId: draftId });
+                                globalFetchQueue.push({ url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${match.p1Id}?contestType=sport&source=home`, matchId: match.id, player: 'p1', retries: 0, draftId: draftId });
                             }
                             if (match.p2Id) {
                                 matchScores[match.id].p2Pending++;
-                                fetchQueue.push({ url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${match.p2Id}?contestType=sport&source=home`, matchId: match.id, player: 'p2', retries: 0, draftId: draftId });
+                                globalFetchQueue.push({ url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${match.p2Id}?contestType=sport&source=home`, matchId: match.id, player: 'p2', retries: 0, draftId: draftId });
                             }
                         });
 
-                        // Assign Badges
-                        let badgeClass = '';
-                        if (match.isTitleOrMain) badgeClass = 'title'; 
-                        else if (match.isRivalry) badgeClass = 'rivalry'; 
+                        let badgeClass = match.isTitleOrMain ? 'title' : (match.isRivalry ? 'rivalry' : '');
+                        let activeSportsLabel = match.isMainEvent ? `<div class="multi-sport-label">Multi-Sport</div>` : '';
 
-                        let activeSportsLabel = '';
-                        if (match.isMainEvent) {
-                            activeSportsLabel = `<div class="multi-sport-label">All Active Sports</div>`;
-                        }
-
-                        // Match Card HTML with onClick modal trigger
-                        html += `
+                        liveHtml += `
                             <div class="match-card" onclick="openLineupModal('${match.id}')">
-                                <div class="match-badge ${badgeClass}">${match.sport}</div>
-                                <div class="match-competitors">
-                                    <div class="competitor-block">
-                                        <div class="competitor" title="${match.p1}">${match.p1}</div>
+                                <div class="match-header">
+                                    <span class="match-sport ${badgeClass}">${match.sport}</span>
+                                    ${activeSportsLabel}
+                                </div>
+                                <div class="matchup-stack">
+                                    <div class="competitor-row">
+                                        <div class="competitor-name" title="${match.p1}">${match.p1}</div>
                                         <div class="live-score loading" id="score-p1-${match.id}">...</div>
                                     </div>
-                                    <div class="vs">VS</div>
-                                    <div class="competitor-block">
-                                        <div class="competitor" title="${match.p2}">${match.p2}</div>
+                                    <div class="competitor-row">
+                                        <div class="competitor-name" title="${match.p2}">${match.p2}</div>
                                         <div class="live-score loading" id="score-p2-${match.id}">...</div>
                                     </div>
                                 </div>
-                                ${activeSportsLabel}
                             </div>
                         `;
                     });
-
-                    html += `</div>`; // Close match-grid
+                    liveHtml += `</div>`;
                 }
 
-                // Render the structure to the DOM
-                container.innerHTML = html;
+                liveContainer.innerHTML = liveHtml;
 
-                // Force immediate render for items with missing IDs (removes infinite loading dots for "TBD" players)
+                // Update UI for missing IDs immediately
                 for (const matchId in matchScores) {
                     updateMatchScoreUI(matchId);
                 }
 
-                // --- PROCESS FETCH QUEUE ---
-                // Using a safer chunk size of 2 to guarantee the worker doesn't throw a 524 Timeout when processing 5+ sports for Main Events
-                const chunkSize = 2; 
-                let loaded = 0;
-
-                while (fetchQueue.length > 0) {
-                    const chunk = fetchQueue.splice(0, chunkSize);
-                    
-                    try {
-                        const results = await fetchBatchViaWorker(chunk.map(c => c.url));
-                        let hitRateLimit = false;
-
-                        results.forEach((res, idx) => {
-                            const req = chunk[idx];
-                            
-                            if (res.status === 200) {
-                                try {
-                                    const data = JSON.parse(base64ToText(res.body));
-                                    let score = 0;
-                                    
-                                    // Extract score safely
-                                    if (data.info?.rankDisplayInfos?.length > 0) score = parseFloat(data.info.rankDisplayInfos[0].scoreDisplay) || 0;
-                                    else if (data.rankDisplayInfos?.length > 0) score = parseFloat(data.rankDisplayInfos[0].scoreDisplay) || 0;
-                                    else if (data.scoreDisplay) score = parseFloat(data.scoreDisplay) || 0;
-
-                                    // Extract Lineup safely
-                                    let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
-                                    if (!Array.isArray(extractedLineup)) {
-                                        if (extractedLineup.players) extractedLineup = extractedLineup.players;
-                                        else if (extractedLineup.items) extractedLineup = extractedLineup.items;
-                                        else extractedLineup = [];
-                                    }
-
-                                    // Save Lineup to State
-                                    if (!matchScores[req.matchId].lineups[req.draftId]) {
-                                        matchScores[req.matchId].lineups[req.draftId] = { p1: [], p2: [] };
-                                    }
-                                    matchScores[req.matchId].lineups[req.draftId][req.player] = extractedLineup;
-
-                                    // Save Score to State
-                                    matchScores[req.matchId][req.player + 'Score'] += score;
-                                    matchScores[req.matchId][req.player + 'Pending']--;
-                                    loaded++;
-                                } catch(e) { 
-                                    console.error(e); 
-                                    matchScores[req.matchId][req.player + 'Pending']--;
-                                    loaded++;
-                                }
-                            } else if (res.status === 429 && req.retries < 3) {
-                                req.retries++;
-                                fetchQueue.push(req);
-                                hitRateLimit = true;
-                                return; // Do NOT update UI or loaded count yet
-                            } else {
-                                // Hard failure
-                                matchScores[req.matchId][req.player + 'Pending']--;
-                                loaded++;
-                            }
-
-                            // Trigger UI update for the specific match
-                            updateMatchScoreUI(req.matchId);
-                        });
-
-                        // Dynamic pacing to prevent getting instantly banned by API limits
-                        if (hitRateLimit) {
-                            await new Promise(r => setTimeout(r, 3000));
-                        } else if (fetchQueue.length > 0) {
-                            await new Promise(r => setTimeout(r, 300));
-                        }
-
-                    } catch (e) {
-                        console.error("Fetch Chunk Failed", e);
-                        // Force clearance of pending states for this chunk on critical error
-                        chunk.forEach(req => {
-                            matchScores[req.matchId][req.player + 'Pending']--;
-                            updateMatchScoreUI(req.matchId);
-                        });
-                    }
-                }
-
-            } catch (error) {
-                console.error("Error loading RDE Events CSV:", error);
-                statusIndicator.innerHTML = '<span style="color: #f44336;">Error loading schedule data. Please ensure the CSV is published to the web.</span>';
+                // Start single global queue processor for live matches
+                processGlobalFetchQueue();
             }
         }
 
-        // Initialize Application Flow
+        async function processGlobalFetchQueue() {
+            const chunkSize = 2; 
+            let loaded = 0;
+
+            while (globalFetchQueue.length > 0) {
+                const chunk = globalFetchQueue.splice(0, chunkSize);
+                
+                try {
+                    const results = await fetchBatchViaWorker(chunk.map(c => c.url));
+                    let hitRateLimit = false;
+
+                    results.forEach((res, idx) => {
+                        const req = chunk[idx];
+                        
+                        if (res.status === 200) {
+                            try {
+                                const data = JSON.parse(base64ToText(res.body));
+                                let score = 0;
+                                
+                                if (data.info?.rankDisplayInfos?.length > 0) score = parseFloat(data.info.rankDisplayInfos[0].scoreDisplay) || 0;
+                                else if (data.rankDisplayInfos?.length > 0) score = parseFloat(data.rankDisplayInfos[0].scoreDisplay) || 0;
+                                else if (data.scoreDisplay) score = parseFloat(data.scoreDisplay) || 0;
+
+                                let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
+                                if (!Array.isArray(extractedLineup)) {
+                                    if (extractedLineup.players) extractedLineup = extractedLineup.players;
+                                    else if (extractedLineup.items) extractedLineup = extractedLineup.items;
+                                    else extractedLineup = [];
+                                }
+
+                                if (!matchScores[req.matchId].lineups[req.draftId]) {
+                                    matchScores[req.matchId].lineups[req.draftId] = { p1: [], p2: [] };
+                                }
+                                matchScores[req.matchId].lineups[req.draftId][req.player] = extractedLineup;
+
+                                matchScores[req.matchId][req.player + 'Score'] += score;
+                                matchScores[req.matchId][req.player + 'Pending']--;
+                                loaded++;
+                            } catch(e) { 
+                                matchScores[req.matchId][req.player + 'Pending']--;
+                                loaded++;
+                            }
+                        } else if (res.status === 429 && req.retries < 3) {
+                            req.retries++;
+                            globalFetchQueue.push(req);
+                            hitRateLimit = true;
+                            return; 
+                        } else {
+                            matchScores[req.matchId][req.player + 'Pending']--;
+                            loaded++;
+                        }
+
+                        updateMatchScoreUI(req.matchId);
+                    });
+
+                    if (hitRateLimit) {
+                        await new Promise(r => setTimeout(r, 3000));
+                    } else if (globalFetchQueue.length > 0) {
+                        await new Promise(r => setTimeout(r, 300));
+                    }
+
+                } catch (e) {
+                    chunk.forEach(req => {
+                        matchScores[req.matchId][req.player + 'Pending']--;
+                        updateMatchScoreUI(req.matchId);
+                    });
+                }
+            }
+        }
+
+        // Initialize
         loadEvents();
     </script>
 </body>

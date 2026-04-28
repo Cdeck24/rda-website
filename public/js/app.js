@@ -89,7 +89,7 @@ function parseCsvToObject(csvText) {
 
 // Initialize Navigation Bar
 export function initNav() {
-    const showLive = currentSeason === '4';
+    const showLive = currentSeason === '5';
 
     const navHTML = `
     <div class="nav-container">

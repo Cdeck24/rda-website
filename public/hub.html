@@ -367,6 +367,7 @@
         const scheduleUrlS4 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv';
         const scheduleUrlS5 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv';
         const draftUrlS4 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?output=csv';
+        const draftUrlS5 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?output=csv'; // Utilizing the provided draft CSV for Season 5
 
         // --- CONFIGURATIONS ---
         const configs = {
@@ -429,7 +430,19 @@
                 <div id="tab-draft" class="tab-pane">
                     <h2 class="section-title">Season 5 Draft Results</h2>
                     <div class="draft-table-container">
-                        <div style="padding: 2rem; color: #888; text-align: center;">The Season 5 Draft is upcoming.</div>
+                        <table class="draft-table">
+                            <thead>
+                                <tr>
+                                    <th>Pick</th>
+                                    <th>Round</th>
+                                    <th>Team</th>
+                                    <th>Selection</th>
+                                </tr>
+                            </thead>
+                            <tbody id="draft-table-body-s5">
+                                <tr><td colspan="4" id="draft-loading-message">Loading draft data...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -453,6 +466,7 @@
             document.getElementById('btn-bracket').onclick = () => switchTab('bracket');
 
             loadUpcomingGames(scheduleUrlS5);
+            loadDraft(draftUrlS5, 'draft-table-body-s5');
         }
 
         // ==========================================
@@ -492,7 +506,7 @@
                                     <th>Selection</th>
                                 </tr>
                             </thead>
-                            <tbody id="draft-table-body">
+                            <tbody id="draft-table-body-s4">
                                 <tr><td colspan="4" id="draft-loading-message">Loading draft data...</td></tr>
                             </tbody>
                         </table>
@@ -524,7 +538,7 @@
 
             // Load Data
             loadUpcomingGames(scheduleUrlS4, true); // true flag for historical (Season 4)
-            loadDraftS4();
+            loadDraft(draftUrlS4, 'draft-table-body-s4');
             renderS4Madness();
             renderS4Bracket();
         }
@@ -868,9 +882,11 @@
             });
         }
 
-        async function loadDraftS4() {
-            const tbody = document.getElementById('draft-table-body');
-            const data = await fetchCSV(draftUrlS4);
+        // Generic Draft Loader
+        async function loadDraft(url, targetTbodyId) {
+            const tbody = document.getElementById(targetTbodyId);
+            if (!tbody) return;
+            const data = await fetchCSV(url);
 
             if (!data || data.length < 2) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">No draft data found.</td></tr>';
@@ -901,7 +917,7 @@
                     <td>${round}</td>
                     <td>
                         <div class="draft-team-cell">
-                            <img src="${getTeamLogoPath(team)}" style="width:24px;height:24px;object-fit:contain;">
+                            <img src="${getTeamLogoPath(team)}" style="width:24px;height:24px;object-fit:contain;" onerror="this.style.display='none'">
                             <span>${team}</span>
                         </div>
                     </td>
