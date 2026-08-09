@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Records</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        .records-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 3rem;
+            color: var(--gold-mid);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+
+        /* --- NEW DUAL-TIER TAB SYSTEM --- */
+        .category-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-subtle);
+            padding-bottom: 0.5rem;
+        }
+
+        .cat-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cat-btn:hover { color: #fff; }
+
+        .cat-btn.active { color: var(--gold-mid); }
+        
+        .cat-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -0.65rem;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gold-mid);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .sub-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .tab-btn.active {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: var(--gold-mid);
+            color: var(--gold-mid);
+        }
+
+        .tab-pane { display: none; animation: fadeIn 0.3s ease-out; }
+        .tab-pane.active { display: block; }
+
+        /* Dashboard Dropdown Banners */
+        .dropdown-header-container {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 1.5rem; 
+            flex-wrap: wrap; 
+            gap: 1rem; 
+            background: rgba(15, 23, 42, 0.5); 
+            padding: 1rem 1.5rem; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* --- Record Cards Grid (Overview Tab) --- */
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .record-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .record-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold-light), var(--gold-mid), var(--gold-dark));
+        }
+
+        .record-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .record-holder {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #fff;
+            font-family: 'Didot', serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .record-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .record-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* --- Leaderboard Tables --- */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 2rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .data-table th { color: var(--gold-mid); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; background: rgba(0,0,0,0.4); }
+        .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .rank-col { width: 60px; text-align: center; font-weight: bold; }
+        .rank-1 { color: #FFD700; font-size: 1.2rem; text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .rank-2 { color: #C0C0C0; font-size: 1.1rem; text-shadow: 0 0 10px rgba(192,192,192,0.3); }
+        .rank-3 { color: #CD7F32; font-size: 1.1rem; text-shadow: 0 0 10px rgba(205,127,50,0.3); }
+        .value-col { font-family: monospace; font-size: 1.1rem; color: #fff; font-weight: bold; text-align: right; }
+        .win-col { font-family: monospace; font-size: 1.2rem; color: #4ade80; font-weight: bold; text-align: right; }
+
+        .loading-container {
+            text-align: center;
+            padding: 4rem;
+            color: var(--gold-mid);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(212, 175, 55, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--gold-mid);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 1rem;
+        }
+
+        .filter-dropdown {
+            padding: 0.6rem 1rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            outline: none;
+        }
+
+        /* Hide scrollbar for horizontal tabs */
+        .sub-tabs::-webkit-scrollbar, .category-tabs::-webkit-scrollbar { display: none; }
+        .sub-tabs, .category-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            .page-header h1 { font-size: 1.8rem; }
+            .page-header p { font-size: 0.9rem; }
+            .records-content { padding: 1rem 0.5rem; }
+            .record-value { font-size: 2rem; }
+            .record-holder { font-size: 1.3rem; }
+            .record-card { padding: 1.2rem; }
+            .data-table th, .data-table td { padding: 0.75rem 0.5rem; font-size: 0.85rem; }
+            
+            .category-tabs { justify-content: flex-start; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 1rem; }
+            .cat-btn { font-size: 0.95rem; white-space: nowrap; padding: 0.5rem; }
+            
+            .sub-tabs { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; }
+            .tab-btn { flex: 0 0 auto; font-size: 0.85rem; padding: 0.6rem 1rem; scroll-snap-align: start; }
+            
+            .dropdown-header-container { flex-direction: column; justify-content: center; text-align: center; }
+            
+            .rank-col { width: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Nav injected by JS -->
+
+    <div class="records-content">
+        <div class="page-header">
+            <h1 id="dynamic-header">RDA Record Book</h1>
+            <p>The all-time historical highs compiled across every season of the Real Draft Association.</p>
+        </div>
+
+        <div id="loading-area" class="loading-container">
+            <div class="loading-spinner"></div>
+            <h3>Compiling 6 Seasons of History...</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Fetching thousands of games and stat lines. This may take a few seconds.</p>
+        </div>
+
+        <div id="data-area" style="display: none;">
+            
+            <!-- MAIN CATEGORIES -->
+            <div class="category-tabs">
+                <button class="cat-btn active" onclick="switchCategory('overview-cat', 'overview', this)">Overview</button>
+                <button class="cat-btn" onclick="switchCategory('player-cat', 'all-time-pts', this)">Player Leaderboards</button>
+                <button class="cat-btn" onclick="switchCategory('team-cat', 'team-wins', this)">Team Leaderboards</button>
+            </div>
+
+            <!-- SUB TABS: OVERVIEW -->
+            <div id="overview-cat" class="sub-tabs" style="display: flex;">
+                <!-- Empty anchor, no sub-tabs for the main overview -->
+            </div>
+
+            <!-- SUB TABS: PLAYERS -->
+            <div id="player-cat" class="sub-tabs" style="display: none;">
+                <button class="tab-btn active" onclick="switchTab('all-time-pts', this)">Career Points</button>
+                <button class="tab-btn" onclick="switchTab('team-scorers', this)">Points By Team</button>
+                <button class="tab-btn" onclick="switchTab('sport-pts', this)">Points By Sport</button>
+                <button class="tab-btn" onclick="switchTab('single-game', this)">Single-Game Highs</button>
+            </div>
+
+            <!-- SUB TABS: TEAMS -->
+            <div id="team-cat" class="sub-tabs" style="display: none;">
+                <button class="tab-btn active" onclick="switchTab('team-wins', this)">Franchise Wins</button>
+                <button class="tab-btn" onclick="switchTab('team-scores', this)">Team High Scores</button>
+                <button class="tab-btn" onclick="switchTab('trivia', this)">Game Trivia</button>
+            </div>
+
+            <!-- OVERVIEW TAB -->
+            <div id="overview" class="tab-pane active">
+                <h2 style="color: var(--gold-mid); margin-bottom: 1.5rem; text-align: center; text-transform: uppercase; letter-spacing: 1px;">Player Records</h2>
+                <div class="records-grid" id="player-records-grid">
+                    <!-- Injected by JS -->
+                </div>
+                <h2 style="color: var(--gold-mid); margin-bottom: 1.5rem; text-align: center; text-transform: uppercase; letter-spacing: 1px;">Team Records</h2>
+                <div class="records-grid" id="team-records-grid">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <!-- ALL TIME LEADERBOARD TAB -->
+            <div id="all-time-pts" class="tab-pane">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th>Player</th>
+                                <th>Seasons Played</th>
+                                <th>Games Played</th>
+                                <th style="text-align: right;">Total Career Points</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-tbody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- POINTS BY TEAM TAB -->
+            <div id="team-scorers" class="tab-pane">
+                <div class="dropdown-header-container">
+                    <div style="display:flex; align-items:center; gap: 1rem;">
+                        <img id="team-filter-logo" src="" style="width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));" onerror="this.style.display='none'">
+                        <h2 id="team-filter-name" style="margin:0; color: #fff; font-family: 'Didot', serif; font-size: 1.5rem; letter-spacing: 1px;">Team Scorers</h2>
+                    </div>
+                    <select id="team-filter" class="filter-dropdown" onchange="window.renderTeamLeaderboard(this.value)">
+                        <!-- Injected by JS -->
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th>Player</th>
+                                <th style="text-align: right;">Total Points for Team</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-leaderboard-tbody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- POINTS BY SPORT TAB -->
+            <div id="sport-pts" class="tab-pane">
+                <div class="dropdown-header-container">
+                    <h2 id="sport-filter-name" style="margin:0; color: var(--gold-mid); text-transform: uppercase; letter-spacing: 1px;">Sport Points</h2>
+                    <select id="sport-filter" class="filter-dropdown" onchange="window.renderSportLeaderboard(this.value)">
+                        <!-- Injected by JS -->
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th>Player</th>
+                                <th style="text-align: right;">Total Points in Sport</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sport-leaderboard-tbody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SINGLE GAME HIGHS TAB -->
+            <div id="single-game" class="tab-pane">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th>Player</th>
+                                <th>Date</th>
+                                <th>Season</th>
+                                <th style="text-align: right;">Gameday Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="single-game-tbody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TEAM HIGH SCORES TAB -->
+            <div id="team-scores" class="tab-pane">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th>Team</th>
+                                <th>Opponent</th>
+                                <th>Date</th>
+                                <th>Season</th>
+                                <th style="text-align: right;">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-scores-tbody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FRANCHISE WINS TAB -->
+            <div id="team-wins" class="tab-pane">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th>Franchise</th>
+                                <th style="text-align: right;">All-Time Wins</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-wins-tbody">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- GAME TRIVIA TAB -->
+            <div id="trivia" class="tab-pane">
+                <div class="records-grid">
+                    <div class="record-card" style="grid-column: 1 / -1; background: rgba(0,0,0,0.4);">
+                        <h2 style="color: var(--gold-mid); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">Longest Win Streaks</h2>
+                        <div class="table-wrapper" style="margin-bottom: 0;">
+                            <table class="data-table">
+                                <thead><tr><th class="rank-col">Rank</th><th>Franchise</th><th style="text-align: right;">Consecutive Wins</th></tr></thead>
+                                <tbody id="streaks-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="record-card" style="grid-column: 1 / -1; background: rgba(0,0,0,0.4);">
+                        <h2 style="color: var(--gold-mid); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">Biggest Blowouts</h2>
+                        <div class="table-wrapper" style="margin-bottom: 0;">
+                            <table class="data-table">
+                                <thead><tr><th class="rank-col">Rank</th><th>Matchup</th><th>Season</th><th style="text-align: right;">Margin of Victory</th></tr></thead>
+                                <tbody id="blowouts-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="record-card" style="grid-column: 1 / -1; background: rgba(0,0,0,0.4);">
+                        <h2 style="color: var(--gold-mid); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">The Heartbreakers (Highest Scoring Losses)</h2>
+                        <div class="table-wrapper" style="margin-bottom: 0;">
+                            <table class="data-table">
+                                <thead><tr><th class="rank-col">Rank</th><th>Losing Team</th><th>Matchup</th><th>Season</th><th style="text-align: right;">Losing Score</th></tr></thead>
+                                <tbody id="heartbreakers-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, HISTORICAL_CSVS, TEAM_MAPPINGS_CSV, PLAYER_MAPPINGS_CSV } from './js/app.js';
+        import { db } from './js/firebase-config.js';
+        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+
+        // Dynamically get all configured seasons
+        const seasonsToFetch = Object.keys(HISTORICAL_CSVS);
+
+        window.switchCategory = function(catId, defaultTabId, btn) {
+            document.querySelectorAll('.sub-tabs').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.cat-btn').forEach(el => el.classList.remove('active'));
+            
+            const subTabContainer = document.getElementById(catId);
+            if (subTabContainer) {
+                subTabContainer.style.display = 'flex';
+            }
+            if (btn) btn.classList.add('active');
+            
+            // Auto-click the default tab for this category
+            const defaultBtn = subTabContainer ? subTabContainer.querySelector(`[onclick*="${defaultTabId}"]`) : null;
+            window.switchTab(defaultTabId, defaultBtn);
+        };
+
+        window.switchTab = function(tabId, btn) {
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            
+            if (btn) {
+                const parent = btn.closest('.sub-tabs');
+                if (parent) {
+                    parent.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+                }
+                btn.classList.add('active');
+            }
+            
+            document.getElementById(tabId).classList.add('active');
+        };
+
+        // Bulletproof CSV Parser
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) {
+                console.warn("Invalid CSV received (likely HTML/404 link).");
+                return [];
+            }
+            
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            
+            // Auto-detect Tab or Comma separated
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            
+            // Aggressively clean headers of invisible BOM characters and quotes
+            const headers = rows[0].split(delimiter).map(h => 
+                h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase()
+            );
+            
+            return rows.slice(1).map(row => {
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim(); // Strip surrounding quotes
+                });
+                return obj;
+            });
+        }
+
+        // --- UNIFIED FETCHER (Mirrors GM Page Fallbacks) ---
+        async function fetchCollection(s, type) {
+            let data = [];
+            const csvUrl = HISTORICAL_CSVS[s]?.[type];
+            
+            if (csvUrl) {
+                try {
+                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
+                    if (res.ok) data = parseCsvLocal(await res.text());
+                } catch (e) { console.error(`Error fetching CSV for s${s} ${type}:`, e); }
+            } else {
+                // Secure Firestore Fallback for missing CSVs (e.g. S6 Playoffs)
+                try {
+                    const snaps = await getDocs(collection(db, `s${s}-${type}`));
+                    snaps.forEach(doc => data.push(doc.data()));
+                } catch (e) { /* silently ignore if collection doesn't exist yet */ }
+            }
+            // Append metadata for sorting later
+            return data.map(d => ({ ...d, _season: s, _type: type }));
+        }
+
+        // Helper to strip commas from thousands (e.g. 1,234.50 -> 1234.50)
+        const getNum = (val) => {
+            if (val === undefined || val === null || String(val).trim() === '') return 0;
+            return parseFloat(String(val).replace(/,/g, '')) || 0;
+        };
+
+        // Renders rank column with emojis
+        const getRankHtml = (rank) => {
+            if (rank === 1) return `<span class="rank-1">👑 1</span>`;
+            if (rank === 2) return `<span class="rank-2">🥈 2</span>`;
+            if (rank === 3) return `<span class="rank-3">🥉 3</span>`;
+            return rank;
+        };
+
+        async function compileHistory() {
+            // 0a. Fetch Team Mappings CSV
+            let teamMap = {};
+            try {
+                const mapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(TEAM_MAPPINGS_CSV));
+                if (mapRes.ok) {
+                    const mapData = parseCsvLocal(await mapRes.text());
+                    mapData.forEach(row => {
+                        const curr = row['current name'];
+                        const prev = row['previous name'];
+                        if (curr) {
+                            teamMap[curr.toLowerCase().trim()] = curr;
+                            if (prev) {
+                                prev.split(',').forEach(p => {
+                                    if(p.trim()) teamMap[p.trim().toLowerCase()] = curr;
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.warn("Failed to fetch team mappings.", e); }
+
+            const getRealTeam = (name) => {
+                if(!name) return 'Unknown';
+                const clean = name.trim().toLowerCase();
+                return teamMap[clean] || name.trim();
+            };
+
+            // 0b. Fetch Player Mappings CSV
+            let playerAliasMap = {}; 
+            let canonicalDisplayNames = {}; 
+            let userIdToCanonical = {}; 
+
+            try {
+                const pMapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(PLAYER_MAPPINGS_CSV));
+                if (pMapRes.ok) {
+                    const pMapData = parseCsvLocal(await pMapRes.text());
+                    pMapData.forEach(row => {
+                        const currentUname = row['current username'] || row['username'] || row['current name'] || row['display name'] || row['player'];
+                        const uid = row['user id'] || row['userid'] || row['id'];
+                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || row['past names'] || row['previous name'] || row['past name'] || '';
+
+                        if (currentUname) {
+                            const canonicalKey = uid ? uid.trim() : currentUname.replace(/@/g, '').trim().toLowerCase();
+                            canonicalDisplayNames[canonicalKey] = currentUname.trim();
+
+                            if (uid) {
+                                userIdToCanonical[uid.trim()] = canonicalKey;
+                            }
+
+                            const cleanCurrent = currentUname.replace(/@/g, '').trim().toLowerCase();
+                            playerAliasMap[cleanCurrent] = canonicalKey;
+
+                            if (pastUsernamesStr) {
+                                pastUsernamesStr.split(',').forEach(pName => {
+                                    const cleanPast = pName.replace(/@/g, '').trim().toLowerCase();
+                                    if (cleanPast) {
+                                        playerAliasMap[cleanPast] = canonicalKey;
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.warn("Failed to fetch player mappings.", e); }
+
+            // 1. Fetch EVERYTHING concurrently via the unified fetcher
+            const fetchPromises = [];
+            for (const s of seasonsToFetch) {
+                fetchPromises.push(fetchCollection(s, 'games'));
+                fetchPromises.push(fetchCollection(s, 'playoff-games'));
+                fetchPromises.push(fetchCollection(s, 'players'));
+                fetchPromises.push(fetchCollection(s, 'playoff-players'));
+            }
+
+            const allResults = await Promise.all(fetchPromises);
+            const flatResults = allResults.flat();
+            
+            const allGames = flatResults.filter(d => d._type.includes('game'));
+            const allPlayers = flatResults.filter(d => d._type.includes('player'));
+
+            // ==========================================
+            // PLAYER DATA AGGREGATION
+            // ==========================================
+            const playerMap = {};
+            const sportSet = new Set();
+
+            allPlayers.forEach(d => {
+                const rawName = d.username || d.user || d.name || d.player || d['player name'] || d.discord || d['discord name'] || d['discord username'];
+                if (!rawName) return;
+
+                const cleanNameKey = rawName.replace(/@/g, '').trim().toLowerCase();
+                const rawUid = (d['user id'] || d.userid || d.userId || d.id || '').trim();
+
+                let canonicalKey = null;
+                if (rawUid && userIdToCanonical[rawUid]) canonicalKey = userIdToCanonical[rawUid];
+                else if (playerAliasMap[cleanNameKey]) canonicalKey = playerAliasMap[cleanNameKey];
+                else if (rawUid) canonicalKey = rawUid;
+                else canonicalKey = cleanNameKey;
+
+                const displayName = canonicalDisplayNames[canonicalKey] || rawName;
+
+                const scoreVal = getNum(d.score) || getNum(d['overall raw average']) || getNum(d['overall adjusted average']) || getNum(d['adjusted average']) || getNum(d['raw average']) || getNum(d['points']) || getNum(d['total points']) || getNum(d['total score']) || getNum(d.total) || getNum(d.pts) || getNum(d.avg) || 0;
+                const season = d._season;
+
+                if (scoreVal === 0 && !d.date && !d['games played'] && !d.gp && !d.games) return; 
+
+                if (!playerMap[canonicalKey]) {
+                    playerMap[canonicalKey] = {
+                        display_name: displayName,
+                        total_career_pts: 0,
+                        seasons_played: new Set(),
+                        season_stats: {},
+                        sport_totals: {},
+                        team_pts: {}
+                    };
+                }
+
+                const p = playerMap[canonicalKey];
+
+                if (!canonicalDisplayNames[canonicalKey] && rawName.length > p.display_name.length) {
+                    p.display_name = rawName;
+                }
+
+                p.total_career_pts += scoreVal;
+                p.seasons_played.add(season);
+
+                // Aggregate by Team
+                const rawTeam = d.team || d['team name'] || d.franchise;
+                const teamName = rawTeam ? getRealTeam(rawTeam) : 'Unknown';
+                if (teamName !== 'Unknown' && teamName.toUpperCase() !== 'FREE AGENTS' && teamName.toUpperCase() !== 'FREE AGENT' && teamName.toUpperCase() !== 'FA') {
+                    p.team_pts[teamName] = (p.team_pts[teamName] || 0) + scoreVal;
+                }
+
+                // Aggregate by Sport
+                const sport = d.sport ? d.sport.toUpperCase().trim() : '';
+                if (sport && sport !== 'UNKNOWN' && sport !== 'USER' && sport !== 'DRAFT' && sport !== 'SPORT') {
+                    if (!p.sport_totals[sport]) p.sport_totals[sport] = 0;
+                    p.sport_totals[sport] += scoreVal;
+                    sportSet.add(sport);
+                }
+
+                if (!p.season_stats[season]) {
+                    p.season_stats[season] = { total_pts: 0, date_scores: {}, legacy_games: 0 };
+                }
+
+                p.season_stats[season].total_pts += scoreVal;
+
+                if (d.date) {
+                    if (!p.season_stats[season].date_scores) p.season_stats[season].date_scores = {};
+                    p.season_stats[season].date_scores[d.date] = (p.season_stats[season].date_scores[d.date] || 0) + scoreVal;
+                } else {
+                    const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
+                    p.season_stats[season].legacy_games = Math.max(p.season_stats[season].legacy_games, gp);
+                }
+            });
+
+            // Flatten Player Maps to Find Records & Build Global Databases
+            let highestSingleGame = { score: 0, name: '', date: '', season: '' };
+            let highestSeasonTotal = { score: 0, name: '', season: '' };
+            let highestSeasonPPG = { score: 0, name: '', season: '', gp: 0 };
+            let highestCareerPPG = { score: 0, name: '', gp: 0 };
+            let mostCareerGames = { count: 0, name: '' };
+
+            const allTimeLeaderboard = [];
+            const allSingleGames = [];
+
+            Object.values(playerMap).forEach(p => {
+                let careerGamesPlayed = 0;
+
+                Object.entries(p.season_stats).forEach(([season, sData]) => {
+                    let seasonGamesPlayed = 0;
+                    
+                    if (sData.date_scores && Object.keys(sData.date_scores).length > 0) {
+                        seasonGamesPlayed = Object.keys(sData.date_scores).length;
+                        
+                        Object.entries(sData.date_scores).forEach(([date, dayScore]) => {
+                            if (dayScore > 0) {
+                                allSingleGames.push({ name: p.display_name, score: dayScore, date: date, season: season });
+                                if (dayScore > highestSingleGame.score) {
+                                    highestSingleGame = { score: dayScore, name: p.display_name, date: date, season: season };
+                                }
+                            }
+                        });
+                    } else {
+                        seasonGamesPlayed = sData.legacy_games;
+                    }
+
+                    careerGamesPlayed += seasonGamesPlayed;
+                    const ppg = seasonGamesPlayed > 0 ? (sData.total_pts / seasonGamesPlayed) : 0;
+
+                    if (sData.total_pts > highestSeasonTotal.score) highestSeasonTotal = { score: sData.total_pts, name: p.display_name, season: season };
+                    if (seasonGamesPlayed >= 5 && ppg > highestSeasonPPG.score) highestSeasonPPG = { score: ppg, name: p.display_name, season: season, gp: seasonGamesPlayed };
+                });
+
+                if (careerGamesPlayed > mostCareerGames.count) mostCareerGames = { count: careerGamesPlayed, name: p.display_name };
+
+                if (careerGamesPlayed >= 20) {
+                    const careerPPG = p.total_career_pts / careerGamesPlayed;
+                    if (careerPPG > highestCareerPPG.score) highestCareerPPG = { score: careerPPG, name: p.display_name, gp: careerGamesPlayed };
+                }
+
+                allTimeLeaderboard.push({
+                    name: p.display_name,
+                    careerPts: p.total_career_pts,
+                    seasons: p.seasons_played.size,
+                    games: careerGamesPlayed
+                });
+            });
+
+            // Sort Flat Arrays
+            allSingleGames.sort((a,b) => b.score - a.score);
+            const topSingleGames = allSingleGames.slice(0, 100); // Keep top 100
+
+            // Build Team Leaderboards globally
+            window.globalTeamScorersData = {};
+            const teamNamesSet = new Set();
+
+            Object.values(playerMap).forEach(p => {
+                Object.entries(p.team_pts).forEach(([team, pts]) => {
+                    if (pts > 0) {
+                        if (!window.globalTeamScorersData[team]) window.globalTeamScorersData[team] = [];
+                        window.globalTeamScorersData[team].push({ name: p.display_name, pts: pts });
+                        teamNamesSet.add(team);
+                    }
+                });
+            });
+
+            teamNamesSet.forEach(team => {
+                window.globalTeamScorersData[team].sort((a,b) => b.pts - a.pts);
+            });
+
+            // Build Sport Leaderboards globally
+            window.globalSportData = {};
+            sportSet.forEach(s => {
+                const list = [];
+                Object.values(playerMap).forEach(p => {
+                    if (p.sport_totals[s] > 0) list.push({ name: p.display_name, pts: p.sport_totals[s] });
+                });
+                list.sort((a,b) => b.pts - a.pts);
+                window.globalSportData[s] = list;
+            });
+
+            // ==========================================
+            // TEAM DATA AGGREGATION
+            // ==========================================
+            let highestTeamGame = { score: 0, team: '', date: '', season: '' };
+            let highestAggregateScore = { score: 0, team1: '', team2: '', date: '', season: '' };
+            let teamWinTracker = {};
+            const allTeamGames = [];
+            
+            // Trivia Tracking
+            const allBlowouts = [];
+            const allLosses = [];
+            const allWins = [];
+
+            // Helper to parse dates for chronological streak tracking
+            const parseGameDate = (dateStr, seasonStr) => {
+                if (!dateStr) return 0;
+                const parts = dateStr.split('/');
+                if (parts.length >= 2) {
+                    const month = parseInt(parts[0], 10), day = parseInt(parts[1], 10);
+                    return new Date(2020 + parseInt(seasonStr), month - 1, day).getTime();
+                }
+                return new Date(dateStr).getTime() || 0;
+            };
+
+            const chronologicalGames = allGames.map(g => ({
+                ...g, sortDate: parseGameDate(g.date, g._season)
+            })).sort((a,b) => a.sortDate - b.sortDate);
+
+            // Win Streak Processing (Chronological)
+            const currentStreaks = {};
+            const maxStreaks = {};
+
+            chronologicalGames.forEach(g => {
+                const s1 = getNum(g.team1score) || getNum(g['team 1 score']) || getNum(g['team1 score']) || getNum(g['team 1']) || getNum(g.score1) || getNum(g['score 1']) || 0;
+                const s2 = getNum(g.team2score) || getNum(g['team 2 score']) || getNum(g['team2 score']) || getNum(g['team 2']) || getNum(g.score2) || getNum(g['score 2']) || 0;
+                
+                const rawT1 = g.team1 || g['team 1'] || g.away || g['away team'] || 'Unknown';
+                const rawT2 = g.team2 || g['team 2'] || g.home || g['home team'] || 'Unknown';
+                const rawWinner = g.winner || g.winning_team || g['winning team'] || g['winning team name'] || 'Unknown';
+                
+                const t1 = getRealTeam(rawT1);
+                const t2 = getRealTeam(rawT2);
+                
+                const date = g.date || 'Unknown';
+                const season = g._season;
+
+                // Only process completed games with actual points
+                if (s1 === 0 && s2 === 0) return;
+
+                if (s1 > 0) allTeamGames.push({ team: t1, score: s1, opponent: t2, date: date, season: season });
+                if (s2 > 0) allTeamGames.push({ team: t2, score: s2, opponent: t1, date: date, season: season });
+
+                if (s1 > highestTeamGame.score) highestTeamGame = { score: s1, team: t1, date: date, season: season };
+                if (s2 > highestTeamGame.score) highestTeamGame = { score: s2, team: t2, date: date, season: season };
+
+                if ((s1 + s2) > highestAggregateScore.score) highestAggregateScore = { score: s1 + s2, team1: t1, team2: t2, date: date, season: season };
+
+                // Trivia specific pushing
+                if (s1 > 0 && s2 > 0) {
+                    const margin = Math.abs(s1 - s2);
+                    const winnerStr = s1 > s2 ? t1 : t2;
+                    const loserStr = s1 > s2 ? t2 : t1;
+                    const wScore = Math.max(s1, s2);
+                    const lScore = Math.min(s1, s2);
+                    
+                    allBlowouts.push({ matchup: `${winnerStr} def. ${loserStr}`, margin: margin, season: season });
+                    allLosses.push({ team: loserStr, score: lScore, matchup: `vs ${winnerStr}`, season: season });
+                    allWins.push({ team: winnerStr, score: wScore, matchup: `vs ${loserStr}`, season: season });
+                }
+
+                if (rawWinner && rawWinner !== 'TIE' && rawWinner !== 'Unknown') {
+                    const winner = getRealTeam(rawWinner);
+                    const loser = winner === t1 ? t2 : t1;
+                    
+                    if (!teamWinTracker[winner]) teamWinTracker[winner] = { allTime: 0, seasons: {} };
+                    teamWinTracker[winner].allTime++;
+                    teamWinTracker[winner].seasons[season] = (teamWinTracker[winner].seasons[season] || 0) + 1;
+
+                    // Streak Tracking
+                    if (!currentStreaks[winner]) currentStreaks[winner] = 0;
+                    if (!currentStreaks[loser]) currentStreaks[loser] = 0;
+                    if (!maxStreaks[winner]) maxStreaks[winner] = 0;
+                    if (!maxStreaks[loser]) maxStreaks[loser] = 0;
+
+                    currentStreaks[winner]++;
+                    currentStreaks[loser] = 0;
+                    
+                    if (currentStreaks[winner] > maxStreaks[winner]) {
+                        maxStreaks[winner] = currentStreaks[winner];
+                    }
+                }
+            });
+
+            allTeamGames.sort((a,b) => b.score - a.score);
+            const topTeamGames = allTeamGames.slice(0, 100);
+
+            // Sort Trivia
+            allBlowouts.sort((a,b) => b.margin - a.margin);
+            allLosses.sort((a,b) => b.score - a.score);
+            allWins.sort((a,b) => a.score - b.score);
+            
+            const streakArray = Object.entries(maxStreaks).map(([team, streak]) => ({team, streak})).sort((a,b) => b.streak - a.streak).filter(s => s.streak > 0).slice(0, 5);
+
+            let mostSeasonWins = { score: 0, team: '', season: '' };
+            let mostAllTimeWins = { score: 0, team: '' };
+            
+            const franchiseWinsTable = [];
+
+            Object.entries(teamWinTracker).forEach(([team, data]) => {
+                franchiseWinsTable.push({ team: team, wins: data.allTime });
+                if (data.allTime > mostAllTimeWins.score) mostAllTimeWins = { score: data.allTime, team: team };
+                Object.entries(data.seasons).forEach(([season, wins]) => {
+                    if (wins > mostSeasonWins.score) mostSeasonWins = { score: wins, team: team, season: season };
+                });
+            });
+
+            franchiseWinsTable.sort((a,b) => b.wins - a.wins);
+
+            // ==========================================
+            // RENDERING THE UI
+            // ==========================================
+            document.getElementById('loading-area').style.display = 'none';
+            document.getElementById('data-area').style.display = 'block';
+
+            // 1. Render Overview Tab
+            const pGrid = document.getElementById('player-records-grid');
+            pGrid.innerHTML = `
+                <div class="record-card">
+                    <div class="record-title">Highest Single-Game Score</div>
+                    <div class="record-holder">${highestSingleGame.name}</div>
+                    <div class="record-value">${highestSingleGame.score.toFixed(2)}</div>
+                    <div class="record-meta">Season ${highestSingleGame.season} &bull; ${highestSingleGame.date}</div>
+                </div>
+                <div class="record-card">
+                    <div class="record-title">Highest Single-Season Points</div>
+                    <div class="record-holder">${highestSeasonTotal.name}</div>
+                    <div class="record-value">${highestSeasonTotal.score.toFixed(2)}</div>
+                    <div class="record-meta">Achieved in Season ${highestSeasonTotal.season}</div>
+                </div>
+                <div class="record-card">
+                    <div class="record-title">Highest Single-Season PPG</div>
+                    <div class="record-holder">${highestSeasonPPG.name}</div>
+                    <div class="record-value">${highestSeasonPPG.score.toFixed(2)}</div>
+                    <div class="record-meta">Season ${highestSeasonPPG.season} &bull; Qualified with ${highestSeasonPPG.gp} Games Played</div>
+                </div>
+                <div class="record-card">
+                    <div class="record-title">Highest Career PPG</div>
+                    <div class="record-holder">${highestCareerPPG.name}</div>
+                    <div class="record-value">${highestCareerPPG.score.toFixed(2)}</div>
+                    <div class="record-meta">All-Time &bull; Qualified with ${highestCareerPPG.gp} Career Games Played</div>
+                </div>
+                <div class="record-card">
+                    <div class="record-title">Ironman Award</div>
+                    <div class="record-holder">${mostCareerGames.name}</div>
+                    <div class="record-value">${mostCareerGames.count}</div>
+                    <div class="record-meta">Most All-Time Games Played</div>
+                </div>
+            `;
+
+            const tGrid = document.getElementById('team-records-grid');
+            tGrid.innerHTML = `
+                <div class="record-card">
+                    <div class="record-title">Highest Team Score (Single Game)</div>
+                    <div class="record-holder">${highestTeamGame.team}</div>
+                    <div class="record-value">${highestTeamGame.score.toFixed(2)}</div>
+                    <div class="record-meta">Season ${highestTeamGame.season} &bull; ${highestTeamGame.date}</div>
+                </div>
+                <div class="record-card">
+                    <div class="record-title">Highest Combined Scoring Game</div>
+                    <div class="record-holder">${highestAggregateScore.team1} vs ${highestAggregateScore.team2}</div>
+                    <div class="record-value">${highestAggregateScore.score.toFixed(2)}</div>
+                    <div class="record-meta">Season ${highestAggregateScore.season} &bull; ${highestAggregateScore.date}</div>
+                </div>
+                <div class="record-card">
+                    <div class="record-title">Most Wins in a Single Season</div>
+                    <div class="record-holder">${mostSeasonWins.team}</div>
+                    <div class="record-value">${mostSeasonWins.score}</div>
+                    <div class="record-meta">Achieved in Season ${mostSeasonWins.season}</div>
+                </div>
+                <div class="record-card">
+                    <div class="record-title">Most All-Time Franchise Wins</div>
+                    <div class="record-holder">${mostAllTimeWins.team}</div>
+                    <div class="record-value">${mostAllTimeWins.score}</div>
+                    <div class="record-meta">Combined Regular Season & Playoffs</div>
+                </div>
+            `;
+
+            // 2. Render All-Time Points Leaderboard
+            allTimeLeaderboard.sort((a, b) => b.careerPts - a.careerPts);
+            const tbody = document.getElementById('leaderboard-tbody');
+            tbody.innerHTML = allTimeLeaderboard.map((p, index) => `
+                <tr>
+                    <td class="rank-col">${getRankHtml(index + 1)}</td>
+                    <td style="font-weight: bold; color: #fff;">${p.name}</td>
+                    <td>${p.seasons}</td>
+                    <td>${p.games}</td>
+                    <td class="value-col">${p.careerPts.toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            // 2b. Render Points By Team
+            const teamFilterEl = document.getElementById('team-filter');
+            teamFilterEl.innerHTML = Array.from(teamNamesSet).sort().map(t => `<option value="${t}">${t}</option>`).join('');
+            
+            window.renderTeamLeaderboard = (team) => {
+                const list = window.globalTeamScorersData[team] || [];
+                const tBody = document.getElementById('team-leaderboard-tbody');
+                tBody.innerHTML = list.map((p, idx) => `
+                    <tr>
+                        <td class="rank-col">${getRankHtml(idx + 1)}</td>
+                        <td style="font-weight: bold; color: #fff;">${p.name}</td>
+                        <td class="value-col">${p.pts.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+
+                // Update visual header banner
+                const nameEl = document.getElementById('team-filter-name');
+                const logoEl = document.getElementById('team-filter-logo');
+                if (nameEl) nameEl.innerText = team + " All-Time Leaders";
+                if (logoEl) {
+                    let cleanName = team.toLowerCase().replace(/\s+/g, '-');
+                    const isPng = ['reapers', 'zombies', 'free-agents', 'saucers', 'east-all-stars', 'west-all-stars'].includes(cleanName);
+                    logoEl.src = `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+                    logoEl.onerror = function() { this.style.display='none'; };
+                    logoEl.style.display = 'block';
+                }
+            };
+            if(teamNamesSet.size > 0) window.renderTeamLeaderboard(Array.from(teamNamesSet).sort()[0]);
+
+            // 3. Render Points By Sport
+            const sportFilterEl = document.getElementById('sport-filter');
+            sportFilterEl.innerHTML = Array.from(sportSet).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+            
+            window.renderSportLeaderboard = (sport) => {
+                const list = window.globalSportData[sport] || [];
+                const sBody = document.getElementById('sport-leaderboard-tbody');
+                sBody.innerHTML = list.map((p, idx) => `
+                    <tr>
+                        <td class="rank-col">${getRankHtml(idx + 1)}</td>
+                        <td style="font-weight: bold; color: #fff;">${p.name}</td>
+                        <td class="value-col">${p.pts.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+
+                // Update visual header banner
+                const nameEl = document.getElementById('sport-filter-name');
+                if (nameEl) nameEl.innerText = sport + " All-Time Leaders";
+            };
+            if(sportSet.size > 0) window.renderSportLeaderboard(Array.from(sportSet).sort()[0]);
+
+            // 4. Render Single-Game Highs
+            document.getElementById('single-game-tbody').innerHTML = topSingleGames.map((g, idx) => `
+                <tr>
+                    <td class="rank-col">${getRankHtml(idx + 1)}</td>
+                    <td style="font-weight: bold; color: #fff;">${g.name}</td>
+                    <td>${g.date}</td>
+                    <td>Season ${g.season}</td>
+                    <td class="value-col">${g.score.toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            // 5. Render Team High Scores
+            document.getElementById('team-scores-tbody').innerHTML = topTeamGames.map((g, idx) => `
+                <tr>
+                    <td class="rank-col">${getRankHtml(idx + 1)}</td>
+                    <td style="font-weight: bold; color: #fff;">${g.team}</td>
+                    <td>vs ${g.opponent}</td>
+                    <td>${g.date}</td>
+                    <td>Season ${g.season}</td>
+                    <td class="value-col">${g.score.toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            // 6. Render Franchise Wins
+            document.getElementById('team-wins-tbody').innerHTML = franchiseWinsTable.map((t, idx) => `
+                <tr>
+                    <td class="rank-col">${getRankHtml(idx + 1)}</td>
+                    <td style="font-weight: bold; color: #fff; font-size: 1.1rem; text-transform: uppercase;">${t.team}</td>
+                    <td class="win-col">${t.wins}</td>
+                </tr>
+            `).join('');
+
+            // 7. Render Trivia
+            document.getElementById('streaks-tbody').innerHTML = streakArray.map((s, idx) => `
+                <tr><td class="rank-col">${getRankHtml(idx + 1)}</td><td style="font-weight: bold; color: #fff;">${s.team}</td><td class="value-col" style="color:#4ade80;">${s.streak}</td></tr>
+            `).join('');
+
+            document.getElementById('blowouts-tbody').innerHTML = allBlowouts.slice(0, 5).map((b, idx) => `
+                <tr><td class="rank-col">${getRankHtml(idx + 1)}</td><td style="font-weight: bold; color: #fff;">${b.matchup}</td><td>Season ${b.season}</td><td class="value-col" style="color:var(--gold-mid);">+${b.margin.toFixed(2)}</td></tr>
+            `).join('');
+
+            document.getElementById('heartbreakers-tbody').innerHTML = allLosses.slice(0, 5).map((l, idx) => `
+                <tr><td class="rank-col">${getRankHtml(idx + 1)}</td><td style="font-weight: bold; color: #fff;">${l.team}</td><td>${l.matchup}</td><td>Season ${l.season}</td><td class="value-col" style="color:#f87171;">${l.score.toFixed(2)}</td></tr>
+            `).join('');
+        }
+
+        compileHistory();
+    </script>
+</body>
+</html>

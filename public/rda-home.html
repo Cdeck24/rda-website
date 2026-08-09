@@ -15,25 +15,15 @@
             padding-bottom: 2rem;
         }
 
-        .top-left-link {
-            position: absolute;
-            top: 1.5rem;
-            left: 1.5rem;
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--border-subtle);
-            border-radius: 4px;
-            transition: all 0.3s ease;
-            text-decoration: none; 
-        }
-
-        .admin-link {
+        .top-right-links {
             position: absolute;
             top: 1.5rem;
             right: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .admin-link {
             color: var(--text-muted);
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -45,7 +35,7 @@
             text-decoration: none; 
         }
 
-        .top-left-link:hover, .admin-link:hover {
+        .admin-link:hover {
             border-color: var(--gold-mid);
             color: var(--gold-mid);
             background: rgba(212, 175, 55, 0.1);
@@ -183,12 +173,25 @@
             font-weight: 700;
         }
 
+        .season-card.upcoming {
+            border-color: #f97316;
+            box-shadow: 0 0 25px rgba(249, 115, 22, 0.15);
+        }
+        
+        .season-card.upcoming .season-status {
+            background: #f97316;
+            color: #fff;
+            border-color: #f97316;
+            font-weight: 700;
+        }
+
         @media (max-width: 600px) {
             .season-card { padding: 1.5rem; min-height: 100px; }
             .season-number { font-size: 3rem; left: 1rem; }
             .season-content { flex-direction: column; align-items: flex-start; gap: 0.5rem; margin-left: 3rem; }
             .season-title { font-size: 1.1rem; }
             .season-status { margin-top: 0.2rem; font-size: 0.65rem; padding: 4px 10px; }
+            .top-right-links { top: 1rem; right: 1rem; flex-direction: column; gap: 0.5rem; }
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -196,8 +199,10 @@
 </head>
 <body>
 
-    <a href="index.html" class="top-left-link">&#8592; Leagues</a>
-    <a href="admin.html" class="admin-link">Admin Access</a>
+    <div class="top-right-links">
+        <a href="gms.html" class="admin-link">GM Access</a>
+        <a href="admin.html" class="admin-link">Admin Access</a>
+    </div>
 
     <div class="logo-container">
         <img src="images/logo.png" alt="RDA Crest Logo" class="main-logo" onerror="this.style.display='none';">
@@ -238,11 +243,19 @@
             </div>
         </div>
 
-        <div class="season-card active" onclick="window.location.href='hub.html?season=5'">
+        <div class="season-card" onclick="window.location.href='hub.html?season=5'">
             <div class="season-number">V</div>
             <div class="season-content">
                 <div class="season-title">Season Five</div>
-                <div class="season-status">Upcoming</div>
+                <div class="season-status">Completed</div>
+            </div>
+        </div>
+
+        <div class="season-card active" onclick="window.location.href='hub.html?season=6'">
+            <div class="season-number">VI</div>
+            <div class="season-content">
+                <div class="season-title">Season Six</div>
+                <div class="season-status">Live</div>
             </div>
         </div>
     </div>

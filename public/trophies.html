@@ -285,7 +285,8 @@
              if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
              cleanName = cleanName.replace(/\s+/g, '-');
              
-             const isPng = ['reapers', 'zombies', 'free-agents'].includes(cleanName);
+             // Fixed: Includes saucers to use lowercase .png
+             const isPng = ['reapers', 'zombies', 'free-agents', 'saucers'].includes(cleanName);
              return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
         }
 
@@ -331,6 +332,17 @@
                 ]
             },
             '5': {
+                podium: { first: 'Dragons', second: 'Reapers', third: 'Bajas' },
+                awards: [
+                    { icon: '🏆', title: 'League MVP', winner: '@nottherealben' },
+                    { icon: '🏅', title: 'Finals MVP', winner: '@victorosimhen' },
+                    { icon: '🤝', title: 'FA Pickup of Year', winner: '@e3thqn' },
+                    { icon: '👶', title: 'Rookie of the Year', winner: '@fbb77' },
+                    { icon: '🧠', title: 'GM of the Year', winner: '@r0dmanx' },
+                    { icon: '📈', title: 'Most Improved Player', winner: '@tredawg' }
+                ]
+            },
+            '6': {
                 podium: { first: 'TBD', second: 'TBD', third: 'TBD' },
                 awards: [
                     { icon: '🏆', title: 'League MVP', winner: 'TBD' },
@@ -344,8 +356,8 @@
         };
 
         function renderTrophies() {
-            // Updated to fall back to '5' instead of '4' for missing future seasons
-            const data = trophyData[currentSeason] || trophyData['5'];
+            // Updated to fall back to '6'
+            const data = trophyData[currentSeason] || trophyData['6'];
 
             // 1. Render Podium
             const p = data.podium;

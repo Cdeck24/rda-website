@@ -109,56 +109,50 @@
 
         // --- CONFIGURATION: Define your Divisions here ---
         const seasonConfigs = {
-            '3': {
-                'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
-                'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
-                'Underdogs': { conf: 'East Conference', div: 'Atlantic Division' },
-                'Stars': { conf: 'East Conference', div: 'Metro Division' },
-                'Buffaloes': { conf: 'East Conference', div: 'Metro Division' },
-                'Zombies': { conf: 'East Conference', div: 'Metro Division' },
-                'Reapers': { conf: 'West Conference', div: 'Central Division' },
-                'Kings': { conf: 'West Conference', div: 'Central Division' },
-                'Voyagers': { conf: 'West Conference', div: 'Central Division' },
-                'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
-                'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
-                'Knights': { conf: 'West Conference', div: 'Pacific Division' }
-            },
             '4': {
-                // East Conference
                 'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
                 'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
                 'Buffaloes': { conf: 'East Conference', div: 'Atlantic Division' },
-                
                 'Kings': { conf: 'East Conference', div: 'Metro Division' },
                 'Underdogs': { conf: 'East Conference', div: 'Metro Division' },
                 'Knights': { conf: 'East Conference', div: 'Metro Division' },
-
-                // West Conference
                 'Reapers': { conf: 'West Conference', div: 'Central Division' },
                 'Stars': { conf: 'West Conference', div: 'Central Division' },
                 'Zombies': { conf: 'West Conference', div: 'Central Division' },
-
                 'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
                 'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
                 'Voyagers': { conf: 'West Conference', div: 'Pacific Division' }
             },
             '5': {
-                // Duplicate of S4 for now until new Season 5 alignments are provided
                 'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
                 'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
                 'Buffaloes': { conf: 'East Conference', div: 'Atlantic Division' },
-                
                 'Kings': { conf: 'East Conference', div: 'Metro Division' },
                 'Underdogs': { conf: 'East Conference', div: 'Metro Division' },
                 'Knights': { conf: 'East Conference', div: 'Metro Division' },
-
                 'Reapers': { conf: 'West Conference', div: 'Central Division' },
                 'Stars': { conf: 'West Conference', div: 'Central Division' },
                 'Zombies': { conf: 'West Conference', div: 'Central Division' },
-
                 'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
                 'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
                 'Voyagers': { conf: 'West Conference', div: 'Pacific Division' }
+            },
+            '6': {
+                'Reapers': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Knights': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Voyagers': { conf: 'East Conference', div: 'Atlantic Division' },
+                
+                'Bajas': { conf: 'East Conference', div: 'Metro Division' },
+                'Manatees': { conf: 'East Conference', div: 'Metro Division' },
+                'Saucers': { conf: 'East Conference', div: 'Metro Division' },
+
+                'Dragons': { conf: 'West Conference', div: 'Central Division' },
+                'Tigers': { conf: 'West Conference', div: 'Central Division' },
+                'Zombies': { conf: 'West Conference', div: 'Central Division' },
+
+                'Underdogs': { conf: 'West Conference', div: 'Pacific Division' },
+                'Kings': { conf: 'West Conference', div: 'Pacific Division' },
+                'Buffaloes': { conf: 'West Conference', div: 'Pacific Division' }
             }
         };
 
@@ -166,9 +160,36 @@
         let globalConfig = null;
         let currentView = 'conference';
 
+        // --- ROBUST LOGO HELPER ---
+        function getTeamLogoPath(name) {
+            if (!name) return '';
+            let cleanName = name.trim().toLowerCase();
+            if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
+            cleanName = cleanName.replace(/\s+/g, '-');
+            
+            const isPng = ['reapers', 'zombies', 'free-agents', 'east-all-stars', 'west-all-stars', 'saucers'].includes(cleanName);
+            return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+        }
+
         function processTeamStats(team) {
-            team.pct = team.gamesPlayed ? (team.wins / team.gamesPlayed) : 0;
-            team.diff = (team.pointsFor || 0) - (team.pointsAgainst || 0);
+            // Safety Check: Exclude invalid teams or free agents
+            if (!team.name || team.name === 'TIE' || team.name.toLowerCase().includes('free agent')) {
+                return null;
+            }
+
+            // Parse existing metrics securely
+            team.wins = parseInt(team.wins) || 0;
+            team.losses = parseInt(team.losses) || 0;
+            team.pointsFor = parseFloat(team.pointsFor) || 0;
+            team.pointsAgainst = parseFloat(team.pointsAgainst) || 0;
+
+            // FORCE Games Played to be W + L so the math can never desync
+            team.gamesPlayed = team.wins + team.losses;
+            
+            // Calculate downstream stats
+            team.pct = team.gamesPlayed > 0 ? (team.wins / team.gamesPlayed) : 0;
+            team.diff = team.pointsFor - team.pointsAgainst;
+            
             return team;
         }
 
@@ -186,14 +207,51 @@
 
         async function load() {
             const container = document.getElementById('standings-container');
-            const teamsRaw = await getSeasonData('teams');
+            let teamsRaw = await getSeasonData('teams');
+            const gamesRaw = await getSeasonData('games');
             
-            if (!teamsRaw.length) {
+            // Dynamic Calculation: If no "teams" CSV exists, calculate standings directly from the "games" CSV!
+            if (!teamsRaw || !teamsRaw.length) {
+                const calculatedTeams = {};
+                const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+                
+                // Initialize empty teams based on the division structure
+                Object.keys(config).forEach(teamName => {
+                    calculatedTeams[teamName] = { name: teamName, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 };
+                });
+
+                // Tally up the stats from completed games
+                if (gamesRaw && gamesRaw.length) {
+                    gamesRaw.forEach(game => {
+                        const t1 = game.team1, t2 = game.team2;
+                        const s1 = parseFloat(game.team1score) || 0;
+                        const s2 = parseFloat(game.team2score) || 0;
+                        const winner = game.winner;
+
+                        if (calculatedTeams[t1]) {
+                            calculatedTeams[t1].pointsFor += s1;
+                            calculatedTeams[t1].pointsAgainst += s2;
+                            if (winner === t1) calculatedTeams[t1].wins++;
+                            else if (winner === t2) calculatedTeams[t1].losses++;
+                        }
+                        if (calculatedTeams[t2]) {
+                            calculatedTeams[t2].pointsFor += s2;
+                            calculatedTeams[t2].pointsAgainst += s1;
+                            if (winner === t2) calculatedTeams[t2].wins++;
+                            else if (winner === t1) calculatedTeams[t2].losses++;
+                        }
+                    });
+                }
+                teamsRaw = Object.values(calculatedTeams);
+            }
+
+            if (!teamsRaw || !teamsRaw.length) {
                 container.innerHTML = '<div class="card" style="text-align: center;">No data available for this season yet.</div>';
                 return;
             }
 
-            globalTeams = teamsRaw.map(processTeamStats);
+            // Process and filter out any null teams
+            globalTeams = teamsRaw.map(processTeamStats).filter(t => t !== null);
             globalConfig = seasonConfigs[currentSeason];
 
             if (globalConfig) {
@@ -353,7 +411,7 @@
                 <tr>
                     ${rank ? `<td style="text-align: center; color: #888; font-weight: bold; font-size: 1.1rem;">${rank}</td>` : ''}
                     <td style="font-weight:bold; color:white; display:flex; align-items:center; gap:10px;">
-                        <img src="images/teams/${t.name.toLowerCase().replace(/\s/g, '')}.png" 
+                        <img src="${getTeamLogoPath(t.name)}" 
                              style="width:24px; height:24px; object-fit:contain;" 
                              onerror="this.style.display='none'">
                         ${t.name}
@@ -362,7 +420,7 @@
                     <td class="loss">${t.losses}</td>
                     <td>${t.pct.toFixed(3)}</td>
                     <td style="color: ${t.diff > 0 ? '#4CAF50' : '#F44336'}">
-                        ${t.diff > 0 ? '+' : ''}${t.diff.toFixed(0)}
+                        ${t.diff > 0 ? '+' : ''}${t.diff.toFixed(2)}
                     </td>
                 </tr>
             `;

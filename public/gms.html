@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GM Dashboard | RDA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <!-- Required for Hashids Token Generation (Free Agency API) -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    <style>
+        .dashboard-container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+
+        .dashboard-header {
+            position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 2rem;
+        }
+        .logout-btn {
+            position: absolute; right: 0; background: transparent; border: 1px solid var(--border-subtle);
+            color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+        }
+        .logout-btn:hover { border-color: var(--gold-mid); color: var(--gold-mid); }
+        
+        @media (max-width: 600px) {
+            .dashboard-header { flex-direction: column; gap: 1rem; }
+            .logout-btn { position: relative; right: auto; }
+            .tabs { gap: 0.5rem !important; }
+            .tab-btn { padding: 0.6rem 0.5rem !important; font-size: 0.85rem; flex: 1 1 auto; text-align: center; }
+        }
+
+        .auth-container { text-align: center; margin-top: 10vh; }
+        .auth-container input { display: block; margin: 1rem auto; padding: 0.75rem; width: 100%; max-width: 300px; border-radius: 4px; border: 1px solid var(--border-gold); background: rgba(0,0,0,0.5); color: white; }
+        .auth-container button { padding: 0.75rem 2rem; background: var(--gold-mid); color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+
+        .tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem; }
+        .tab-btn { background: none; border: 1px solid var(--border-subtle); color: var(--text-muted); padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+        .tab-btn.active { background: rgba(212, 175, 55, 0.1); border-color: var(--gold-mid); color: var(--gold-mid); }
+
+        .team-select { display: block; width: 100%; max-width: 300px; padding: 0.75rem; margin: 0 auto 1.5rem auto; background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--border-gold); border-radius: 4px; }
+
+        .lineup-date-container {
+            display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem;
+            background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-subtle); max-width: 400px; margin-left: auto; margin-right: auto;
+        }
+        .nav-arrow {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: #fff; width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 1.2rem; font-weight: bold;
+        }
+        .nav-arrow:hover { background: rgba(255,255,255,0.15); border-color: var(--gold-mid); color: var(--gold-mid); }
+        
+        .date-info { display: flex; flex-direction: column; align-items: center; min-width: 150px; }
+        .date-title { font-size: 1.3rem; font-weight: 700; color: #fff; }
+        .lock-status { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-top: 0.2rem; letter-spacing: 1px; }
+        .status-open { color: #4ade80; }
+        .status-locked { color: #f87171; }
+        
+        .sport-badges { display: flex; gap: 0.3rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center; }
+        .sport-badge { background: var(--gold-mid); color: #000; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; }
+
+        .player-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-card); border: 1px solid var(--border-subtle); margin-bottom: 0.5rem; border-radius: 6px; }
+        .player-row.locked { opacity: 0.8; }
+        
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--gold-mid); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        input:disabled + .slider { cursor: not-allowed; opacity: 0.6; }
+
+        .status-label { font-size: 0.85rem; font-weight: bold; margin-right: 15px; text-transform: uppercase; width: 60px; display: inline-block; }
+        .starter-label { color: #4ade80; }
+        .bench-label { color: #f87171; }
+
+        .counter-box { text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); max-width: 400px; margin-left: auto; margin-right: auto; }
+        .counter-valid { color: #4ade80; border-color: #4ade80; }
+        .counter-invalid { color: #f87171; border-color: #f87171; }
+
+        .fa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .fa-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1.5rem; text-align: left; position: relative; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .fa-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem; }
+        .fa-name { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
+        .fa-id { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; opacity: 0.5; }
+
+        .sport-dropdown { width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-gold); color: var(--gold-light); border-radius: 4px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem; text-transform: uppercase; }
+        .sport-dropdown option { background: var(--bg-navy); color: var(--text-main); }
+
+        .sport-stats-view { display: none; }
+        .sport-stats-view.active { display: block; }
+        
+        .stats-grid-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+        .stat-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 8px; text-align: center; }
+        .stat-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+        .stat-value { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+
+        .claim-btn { width: 100%; margin-top: auto; padding: 0.75rem; background: var(--gold-mid); color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: filter 0.2s; }
+        .claim-btn:hover { filter: brightness(1.1); }
+
+        .trade-analyzer-container { display: flex; flex-wrap: wrap; gap: 2rem; }
+        .team-side { flex: 1; min-width: 300px; background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-subtle); overflow-x: auto; }
+        .data-table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 1rem; min-width: 300px; }
+        .data-table th, .data-table td { padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--border-subtle); }
+        .data-table th { color: var(--gold-mid); font-size: 0.8rem; text-transform: uppercase; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
+        .modal-content { background: #1e293b; padding: 2rem; border-radius: 8px; border: 1px solid var(--border-gold); width: 90%; max-width: 400px; }
+
+        .save-btn { display: block; width: 100%; max-width: 300px; margin: 2rem auto; padding: 1rem; background: var(--gold-mid); color: black; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
+        .save-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; border: 1px solid #475569; }
+
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--gold-mid); color: black; padding: 1rem 2rem; border-radius: 4px; font-weight: bold; display: none; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+        .top-filter-dropdown { padding: 0.6rem 1rem; background: rgba(0,0,0,0.5); border: 1px solid var(--border-gold); color: var(--gold-light); border-radius: 6px; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-transform: uppercase; width: 100%; max-width: 300px; }
+    </style>
+</head>
+<body>
+
+    <!-- Nav injected by JS -->
+
+    <div id="login-screen" class="dashboard-container auth-container">
+        <img src="images/logo.png" alt="RDA" style="width: 120px; margin-bottom: 1rem;" onerror="this.style.display='none'">
+        <h2 style="color: var(--gold-mid); text-transform: uppercase; letter-spacing: 2px;">GM Access</h2>
+        <input type="email" id="email" placeholder="Email Address">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleLogin()">Login</button>
+        <p id="login-error" style="color: #ef4444; margin-top: 1rem; font-weight: bold;"></p>
+        <div style="margin-top: 2rem;">
+            <a href="index.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">&larr; Back to Portal</a>
+        </div>
+    </div>
+
+    <div id="dashboard-screen" class="dashboard-container" style="display: none;">
+        
+        <div class="dashboard-header">
+            <h2 style="margin: 0; color: var(--gold-mid); font-size: 2rem; text-transform: uppercase; letter-spacing: 1px;">GM Dashboard</h2>
+            <button onclick="handleLogout()" class="logout-btn">Sign Out</button>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('lineups', this)">Lineups</button>
+            <button class="tab-btn" onclick="switchTab('transactions', this)">Free Agency</button>
+            <button class="tab-btn" onclick="switchTab('trades', this)">Trade Analyzer</button>
+        </div>
+
+        <div id="lineups-section" class="dashboard-section">
+            <select id="team-select" class="team-select" onchange="loadRoster()">
+                <option value="">Select Team...</option>
+            </select>
+            
+            <div class="lineup-date-container" id="date-navigator" style="display: none;">
+                <button onclick="changeDate(-1)" class="nav-arrow">&lt;</button>
+                <div class="date-info">
+                    <div class="date-title" id="display-date">Loading...</div>
+                    <div class="lock-status" id="display-lock">Checking...</div>
+                    <div class="sport-badges" id="display-sports"></div>
+                </div>
+                <button onclick="changeDate(1)" class="nav-arrow">&gt;</button>
+            </div>
+            
+            <div id="lineup-counter" class="counter-box" style="display: none;">
+                Starters: <span id="starter-count">0</span>/8 | Bench: <span id="bench-count">0</span>/2
+            </div>
+
+            <div id="roster-container"></div>
+            <button class="save-btn" onclick="saveLineup()" style="display: none;" id="save-btn">Save Lineup</button>
+        </div>
+
+        <div id="transactions-section" class="dashboard-section" style="display: none;">
+            
+            <div id="my-claims-box" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-gold); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                <h3 style="color: var(--gold-mid); margin: 0 0 1rem 0; text-transform: uppercase;">My Surviving Claims</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem; line-height: 1.5;">
+                    This list only shows claims where you currently hold the highest waiver priority. If a claim disappears from here, you have been outbid, and any secondary claims you hold are automatically promoted.
+                </p>
+                <div id="my-claims-list">Loading claims...</div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+                <h2 style="margin: 0; color: #fff;">Available Free Agents</h2>
+                
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px; text-align: center; max-width: 800px; margin: 0 auto;">
+                    <h3 style="color: var(--gold-mid); margin: 0 0 0.5rem 0; font-size: 0.9rem; text-transform: uppercase;">Current Waiver Order:</h3>
+                    <p id="waiver-order-display" style="color: #ccc; margin: 0; font-size: 0.85rem; line-height: 1.5;">
+                        Loading live waiver order from database...
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem; font-style: italic;">
+                        Note: Your second claim drops to the end of the line. You will be blocked if a higher priority team has already claimed a player.
+                    </p>
+                </div>
+
+                <select id="top-sport-filter" class="top-filter-dropdown" onchange="filterAndSortGrid()">
+                    <option value="ALL">All Sports</option>
+                </select>
+            </div>
+            <div id="fa-grid" class="fa-grid">
+                <div style="color: var(--text-muted); padding: 2rem; grid-column: 1/-1; text-align: center;">Loading Live Stats...</div>
+            </div>
+        </div>
+
+        <div id="trades-section" class="dashboard-section" style="display: none;">
+            <h2 style="text-align: center; margin-bottom: 0.5rem; color: #fff;">Compare Teams</h2>
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <select id="trade-stats-toggle" class="team-select" style="max-width: 250px; display: inline-block; margin: 0; padding: 0.5rem;" onchange="toggleTradeStatsMode()">
+                    <option value="current">Current Season Stats</option>
+                    <option value="career">Career Stats (All Seasons)</option>
+                </select>
+            </div>
+            <div class="trade-analyzer-container">
+                <div class="team-side">
+                    <select id="trade-team-1" class="team-select" style="margin-bottom: 1rem;" onchange="loadTradeSide(1)">
+                        <option value="">Select Team 1...</option>
+                    </select>
+                    <table class="data-table">
+                        <thead><tr><th>Player</th><th>GP</th><th>Pts</th><th>PPG</th></tr></thead>
+                        <tbody id="trade-roster-1"></tbody>
+                    </table>
+                </div>
+                <div class="team-side">
+                    <select id="trade-team-2" class="team-select" style="margin-bottom: 1rem;" onchange="loadTradeSide(2)">
+                        <option value="">Select Team 2...</option>
+                    </select>
+                    <table class="data-table">
+                        <thead><tr><th>Player</th><th>GP</th><th>Pts</th><th>PPG</th></tr></thead>
+                        <tbody id="trade-roster-2"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Claim Modal -->
+    <div id="claim-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="claim-title" style="margin-top:0; color: var(--gold-light);">Claim Player</h2>
+            <p style="color:var(--text-muted); margin-bottom: 1rem;">Select a player to drop (Required):</p>
+            <select id="drop-select" class="team-select" style="margin-bottom: 1rem; width: 100%; max-width: 100%;">
+                <option value="">Select player to drop...</option>
+            </select>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="submitClaim()" style="flex:1; padding: 0.75rem; background: var(--gold-mid); color:black; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">Submit Claim</button>
+                <button onclick="closeModal()" style="flex:1; padding: 0.75rem; background: #334155; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Success!</div>
+
+    <script type="module">
+        import { auth, db } from './js/firebase-config.js';
+        import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
+        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+        import { initNav, currentSeason, HISTORICAL_CSVS, PLAYER_MAPPINGS_CSV } from './js/app.js';
+
+        // Apply Global Nav
+        initNav();
+
+        // =========================================================================
+        // IMPORTANT: PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+        // =========================================================================
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCThTL5b8sgFBlEuebH0yPt4w6ESR4fh16v22obah9toHXPTtLmYOG1iuoE_AD9s5qiQ/exec';
+
+        // GM Mapping - Restricts emails to specific teams for secure client-side auth
+        const GM_MAP = {
+            "dragons@rda.com": "Dragons", "bajas@rda.com": "Bajas", "buffaloes@rda.com": "Buffaloes",
+            "kings@rda.com": "Kings", "underdogs@rda.com": "Underdogs", "knights@rda.com": "Knights",
+            "reapers@rda.com": "Reapers", "stars@rda.com": "Stars", "zombies@rda.com": "Zombies",
+            "manatees@rda.com": "Manatees", "tigers@rda.com": "Tigers", "voyagers@rda.com": "Voyagers", "saucers@rda.com": "Saucers"
+        };
+        const ADMIN_EMAILS = ["coledecker04@gmail.com"];
+
+        // Global State Variables
+        let allPlayersData = [];
+        let allFaData = [];
+        let playerStatsCache = {}; 
+        let careerStatsCache = {};
+        let isCareerMode = false;
+        let careerStatsLoaded = false;
+        let myTeam = null;
+        let selectedFA = null;
+        const globalDiscoveredSports = new Set(); 
+        
+        // Lineup Date State
+        window.gamedays = [];
+        window.gamedaySports = {};
+        window.gamedayLocks = {};
+        window.currentDateIndex = 0;
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const playersCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv';
+        const faCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=334253637&single=true&output=csv';
+        const waiverOrderCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=160021912&single=true&output=csv';
+        
+        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
+        const REAL_VERSION = '27';
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const email = user.email.toLowerCase();
+                
+                if (ADMIN_EMAILS.includes(email)) myTeam = 'ADMIN';
+                else myTeam = GM_MAP[email] || null;
+                
+                if (!myTeam) {
+                    await signOut(auth);
+                    document.getElementById('login-error').innerText = "Access Denied: Account not mapped to an active team.";
+                    document.getElementById('login-screen').style.display = 'block';
+                    document.getElementById('dashboard-screen').style.display = 'none';
+                    return;
+                }
+
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard-screen').style.display = 'block';
+
+                await initDashboard();
+            } else {
+                document.getElementById('login-screen').style.display = 'block';
+                document.getElementById('dashboard-screen').style.display = 'none';
+            }
+        });
+
+        window.handleLogin = async () => {
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const pass = document.getElementById('password').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.innerText = "";
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch (err) { errorEl.innerText = "Login failed: " + err.message; }
+        };
+
+        window.handleLogout = async () => {
+            await signOut(auth);
+            myTeam = null; allPlayersData = []; allFaData = []; playerStatsCache = {};
+            document.getElementById('email').value = ""; document.getElementById('password').value = "";
+        };
+
+        const cleanName = (str) => str ? str.toString().replace(/@/g, '').trim().toLowerCase() : '';
+
+        // Bulletproof CSV Parser to strip BOM characters and double quotes correctly
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) {
+                console.warn("Invalid CSV received.");
+                return [];
+            }
+            
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            
+            // Auto-detect Tab or Comma separated
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            
+            // Aggressively clean headers of invisible BOM characters and quotes
+            const headers = rows[0].split(delimiter).map(h => 
+                h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase()
+            );
+            
+            return rows.slice(1).map(row => {
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim(); // Strip surrounding quotes
+                });
+                return obj;
+            });
+        }
+
+        async function initDashboard() {
+            try {
+                // Get the current season's schedule URL to extract dates
+                const scheduleUrl = HISTORICAL_CSVS[currentSeason]?.schedule || HISTORICAL_CSVS['6']?.schedule || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv';
+
+                const [res, faRes, schedRes] = await Promise.all([
+                    fetch(workerProxy + '?url=' + encodeURIComponent(playersCsvUrl)),
+                    fetch(workerProxy + '?url=' + encodeURIComponent(faCsvUrl)),
+                    fetch(workerProxy + '?url=' + encodeURIComponent(scheduleUrl))
+                ]);
+                
+                allPlayersData = parseCsvLocal(await res.text());
+                allFaData = parseCsvLocal(await faRes.text());
+                const schedData = parseCsvLocal(await schedRes.text());
+
+                // Parse Schedule Dates & Sports
+                if (schedData.length > 0) {
+                    const uniqueDates = new Set();
+                    window.gamedaySports = {};
+                    window.gamedayLocks = {};
+                    
+                    // Auto-find sport and lock columns
+                    const sampleHeaders = Object.keys(schedData[0]);
+                    const sportCols = sampleHeaders.filter(h => h.startsWith('sport'));
+                    const lockCol = sampleHeaders.find(h => h.includes('lock'));
+
+                    schedData.forEach(row => {
+                        const dateVal = row['date'] || row['date '];
+                        if (!dateVal) return;
+                        const cleanDate = dateVal.trim();
+                        uniqueDates.add(cleanDate);
+                        
+                        // Grab active sports for this date
+                        if (!window.gamedaySports[cleanDate]) window.gamedaySports[cleanDate] = new Set();
+                        sportCols.forEach(col => {
+                            const val = row[col];
+                            if (val && val.trim() !== '') window.gamedaySports[cleanDate].add(val.trim());
+                        });
+
+                        // Grab dynamic lock time
+                        if (!window.gamedayLocks[cleanDate]) {
+                            let lTime = lockCol ? row[lockCol] : null;
+                            window.gamedayLocks[cleanDate] = lTime && lTime.trim() !== '' ? lTime.trim() : "7:00 PM";
+                        }
+                    });
+
+                    window.gamedays = Array.from(uniqueDates);
+                    
+                    // Sort the gamedays array chronologically
+                    window.gamedays.sort((a, b) => {
+                        const dateA = new Date(`${a}/${new Date().getFullYear()}`);
+                        const dateB = new Date(`${b}/${new Date().getFullYear()}`);
+                        return dateA - dateB;
+                    });
+
+                    // Set active date to today or next upcoming (Rolls over at 10 AM EST)
+                    const estNow = new Date(new Date().toLocaleString("en-US", {timeZone: "America/New_York"}));
+                    if (estNow.getHours() < 10) {
+                        estNow.setDate(estNow.getDate() - 1);
+                    }
+                    const today = new Date(estNow.getFullYear(), estNow.getMonth(), estNow.getDate());
+                    today.setHours(0,0,0,0);
+                    let minDiff = Infinity;
+                    
+                    window.gamedays.forEach((d, index) => {
+                        const parts = d.split('/');
+                        if (parts.length >= 2) {
+                            const dObj = new Date(today.getFullYear(), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
+                            const diff = dObj - today;
+                            if (diff >= 0 && diff < minDiff) {
+                                minDiff = diff;
+                                window.currentDateIndex = index;
+                            }
+                        }
+                    });
+                    
+                    document.getElementById('date-navigator').style.display = 'flex';
+                    window.updateDateDisplay();
+                }
+
+                await loadPlayerStatsForTrades();
+
+                const teamsSet = new Set(allPlayersData.map(p => p.team).filter(t => t && t.toLowerCase() !== 'free agents' && t.toLowerCase() !== 'free agent' && t.toLowerCase() !== 'fa'));
+                const sortedTeams = [...teamsSet].sort();
+                
+                const teamSelect = document.getElementById('team-select');
+                const tradeT1 = document.getElementById('trade-team-1');
+                const tradeT2 = document.getElementById('trade-team-2');
+                
+                teamSelect.innerHTML = '<option value="">Select Team...</option>';
+                tradeT1.innerHTML = '<option value="">Select Team 1...</option>';
+                tradeT2.innerHTML = '<option value="">Select Team 2...</option>';
+
+                sortedTeams.forEach(t => {
+                    tradeT1.innerHTML += `<option value="${t}">${t}</option>`;
+                    tradeT2.innerHTML += `<option value="${t}">${t}</option>`;
+                    if (myTeam === 'ADMIN' || myTeam === t) {
+                        teamSelect.innerHTML += `<option value="${t}">${t}</option>`;
+                    }
+                });
+
+                if (myTeam !== 'ADMIN') {
+                    teamSelect.value = myTeam; teamSelect.disabled = true;
+                    tradeT1.value = myTeam; tradeT1.disabled = true;
+                    teamSelect.dispatchEvent(new Event('change'));
+                    tradeT1.dispatchEvent(new Event('change'));
+                }
+
+                loadFreeAgentsLive();
+                
+                // Fetch Claims if on transaction tab, or proactively
+                window.loadMyClaims();
+                
+            } catch (e) { 
+                alert("Dashboard initialization failed. Please check network.");
+                console.error(e); 
+            }
+        }
+
+        function isLineupLocked(dateStr) {
+            // Get current time explicitly forced to EST
+            const now = new Date();
+            const estDateString = now.toLocaleString("en-US", {timeZone: "America/New_York"});
+            const estNow = new Date(estDateString);
+            
+            // Parse target dateStr (e.g. "7/27")
+            const parts = dateStr.split('/');
+            if (parts.length < 2) return false;
+            const month = parseInt(parts[0], 10) - 1;
+            const day = parseInt(parts[1], 10);
+            
+            let year = estNow.getFullYear();
+            // Handle cross-year edge case (e.g., date is Jan, current is Dec)
+            if (month === 0 && estNow.getMonth() === 11) year += 1;
+            else if (month === 11 && estNow.getMonth() === 0) year -= 1;
+
+            const targetDateStart = new Date(year, month, day);
+            const todayStart = new Date(estNow.getFullYear(), estNow.getMonth(), estNow.getDate());
+            
+            // If the selected game date is strictly in the past (yesterday or older), it is permanently locked.
+            if (targetDateStart < todayStart) return true; 
+            
+            // If the selected game date is strictly in the future (tomorrow or later), it is always open.
+            if (targetDateStart > todayStart) return false; 
+            
+            // If the selected game date is TODAY, dynamically check against the specific lock time.
+            const lockStr = window.gamedayLocks[dateStr] || "7:00 PM";
+            let lockHours = 19; // Default 7 PM
+            let lockMins = 0;
+
+            try {
+                // Safely parse formats like "4:30 PM", "12:00 PM", "20:00"
+                const match = lockStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                if (match) {
+                    let h = parseInt(match[1], 10);
+                    lockMins = parseInt(match[2], 10);
+                    const ampm = match[3] ? match[3].toUpperCase() : null;
+                    
+                    if (ampm === 'PM' && h < 12) h += 12;
+                    if (ampm === 'AM' && h === 12) h = 0;
+                    lockHours = h;
+                }
+            } catch(e) { console.warn("Failed to parse lock time:", lockStr); }
+
+            if (estNow.getHours() > lockHours) return true;
+            if (estNow.getHours() === lockHours && estNow.getMinutes() >= lockMins) return true;
+            
+            return false;
+        }
+
+        window.changeDate = (direction) => {
+            window.currentDateIndex += direction;
+            if (window.currentDateIndex < 0) window.currentDateIndex = window.gamedays.length - 1;
+            if (window.currentDateIndex >= window.gamedays.length) window.currentDateIndex = 0;
+            window.updateDateDisplay();
+        };
+
+        window.updateDateDisplay = () => {
+            if (window.gamedays.length === 0) return;
+            const dateStr = window.gamedays[window.currentDateIndex];
+            
+            document.getElementById('display-date').innerText = dateStr;
+            
+            const isLocked = isLineupLocked(dateStr);
+            const lockTimeStr = window.gamedayLocks[dateStr] || "7:00 PM";
+            const lockEl = document.getElementById('display-lock');
+            
+            if (isLocked) {
+                lockEl.innerText = '🔒 Locked';
+                lockEl.className = 'lock-status status-locked';
+            } else {
+                lockEl.innerText = `✅ Open (Locks ${lockTimeStr} EST)`;
+                lockEl.className = 'lock-status status-open';
+            }
+            
+            // Render Sports
+            const sports = Array.from(window.gamedaySports[dateStr] || []);
+            document.getElementById('display-sports').innerHTML = sports.map(s => `<span class="sport-badge">${s}</span>`).join('');
+            
+            // Re-render the roster applying the correct lock status and date-specific status
+            window.loadRoster();
+        };
+
+        window.updateCounter = () => {
+            let starters = 0;
+            let bench = 0;
+            document.querySelectorAll('.playing-toggle').forEach(t => {
+                if (t.checked) starters++; else bench++;
+            });
+
+            const sEl = document.getElementById('starter-count');
+            const bEl = document.getElementById('bench-count');
+            if(sEl) sEl.innerText = starters;
+            if(bEl) bEl.innerText = bench;
+
+            const counterBox = document.getElementById('lineup-counter');
+            const saveBtn = document.getElementById('save-btn');
+
+            if (counterBox && saveBtn) {
+                // Determine if we show the save button
+                const dateStr = window.gamedays[window.currentDateIndex];
+                const isLocked = dateStr ? isLineupLocked(dateStr) : false;
+
+                if (starters === 8 && bench === 2) {
+                    counterBox.classList.remove('counter-invalid');
+                    counterBox.classList.add('counter-valid');
+                    if (!isLocked) saveBtn.style.display = 'block'; // Only show if not locked
+                } else {
+                    counterBox.classList.remove('counter-valid');
+                    counterBox.classList.add('counter-invalid');
+                    saveBtn.style.display = 'none';
+                }
+            }
+
+            // Update green/red labels
+            document.querySelectorAll('.player-row').forEach(row => {
+                const isPlaying = row.querySelector('.playing-toggle').checked;
+                const label = row.querySelector('.status-label');
+                if (label) {
+                    if (isPlaying) { label.innerText = 'Starter'; label.className = 'status-label starter-label'; } 
+                    else { label.innerText = 'Bench'; label.className = 'status-label bench-label'; }
+                }
+            });
+        };
+
+        window.loadRoster = () => {
+            const team = document.getElementById('team-select').value;
+            const container = document.getElementById('roster-container');
+            const dropSelect = document.getElementById('drop-select');
+            
+            if (!team) {
+                container.innerHTML = '';
+                document.getElementById('save-btn').style.display = 'none';
+                document.getElementById('date-navigator').style.display = 'none';
+                document.getElementById('lineup-counter').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('date-navigator').style.display = 'flex';
+            const dateStr = window.gamedays[window.currentDateIndex];
+            const isLocked = dateStr ? isLineupLocked(dateStr) : false;
+
+            const roster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === team.trim().toLowerCase());
+            let html = '';
+            dropSelect.innerHTML = '<option value="">Select player to drop...</option>';
+
+            roster.forEach(p => {
+                let playVal = '';
+                const dateKey = dateStr ? dateStr.trim().toLowerCase() : null;
+                
+                // Read from the date-specific column first, fallback to default 'playing?'
+                if (dateKey && p[dateKey] !== undefined && p[dateKey].trim() !== '') {
+                    playVal = p[dateKey];
+                } else {
+                    playVal = p['playing?'] || p['playing'] || '';
+                }
+                
+                playVal = playVal.toString().toUpperCase().trim();
+                const isPlaying = playVal === 'TRUE' || playVal === 'YES' || playVal === '1';
+                
+                html += `
+                    <div class="player-row ${isLocked ? 'locked' : ''}" data-user="${p.username}">
+                        <div style="display:flex; align-items:center;">
+                            <span class="status-label ${isPlaying ? 'starter-label' : 'bench-label'}">${isPlaying ? 'Starter' : 'Bench'}</span>
+                            <strong style="color: var(--text-main); font-size: 1.1rem;">${p.username}</strong>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" class="playing-toggle" onchange="updateCounter()" ${isPlaying ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+                dropSelect.innerHTML += `<option value="${p.username}">${p.username}</option>`;
+            });
+
+            container.innerHTML = html;
+            document.getElementById('lineup-counter').style.display = 'block';
+            window.updateCounter();
+        };
+
+        window.saveLineup = async () => {
+            const btn = document.getElementById('save-btn');
+            btn.innerText = "Saving...";
+            
+            // NOTE: Passes the explicitly selected date from the UI to the backend so the Admin knows which day this is meant for.
+            const lineupDate = window.gamedays[window.currentDateIndex];
+            
+            const updates = [];
+            document.querySelectorAll('.player-row').forEach(row => {
+                updates.push({
+                    username: row.getAttribute('data-user'),
+                    playing: row.querySelector('.playing-toggle').checked ? 'Yes' : 'No'
+                });
+            });
+
+            try {
+                const res = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'lineup', date: lineupDate, updates: updates })
+                });
+                const data = await res.json();
+                if(data.status === 'error') throw new Error(data.message);
+                showToast(`Lineup Saved for ${lineupDate}!`);
+            } catch (e) {
+                alert(`Failed to save: ${e.message}`);
+            }
+            btn.innerText = "Save Lineup";
+            window.updateCounter(); 
+        };
+
+        // Number Parser Helper to strip commas from thousands (e.g. 1,234.50 -> 1234.50)
+        const getNum = (val) => {
+            if (val === undefined || val === null || String(val).trim() === '') return 0;
+            return parseFloat(String(val).replace(/,/g, '')) || 0;
+        };
+
+        async function loadPlayerStatsForTrades() {
+            try {
+                let playersData = [];
+                const csvUrl = HISTORICAL_CSVS[currentSeason]?.['players'];
+                
+                if (csvUrl) {
+                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
+                    if (res.ok) playersData = parseCsvLocal(await res.text());
+                } else {
+                    // Fallback to Firestore only if no CSV link is provided for the season
+                    const targetCollection = `s${currentSeason}-players`;
+                    const snaps = await getDocs(collection(db, targetCollection));
+                    snaps.forEach(doc => playersData.push(doc.data()));
+                }
+
+                const tempDates = {}; 
+
+                playersData.forEach(d => {
+                    const rawName = d.username || d.user || d.name || d.player || d['player name'] || '';
+                    if (!rawName) return;
+                    
+                    const uidRaw = d.userId || d.userid || d['user id'] || d.id;
+                    const cleanUid = uidRaw ? String(uidRaw).trim() : null;
+                    const cleanNameKey = cleanName(rawName);
+                    
+                    const key = cleanUid || cleanNameKey;
+
+                    if (!playerStatsCache[key]) {
+                        playerStatsCache[key] = { total: 0, games: 0 };
+                        tempDates[key] = new Set();
+                    }
+                    
+                    // Safely parse the score float value across various potential CSV header names
+                    const scoreVal = getNum(d.score) || getNum(d['overall raw average']) || getNum(d['overall adjusted average']) || getNum(d['adjusted average']) || getNum(d['raw average']) || getNum(d['points']) || getNum(d['total points']) || getNum(d['total score']) || getNum(d.total) || getNum(d.pts) || getNum(d.avg) || 0;
+                    
+                    playerStatsCache[key].total += scoreVal;
+                    
+                    if (d.date) {
+                        tempDates[key].add(d.date);
+                    } else {
+                        const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
+                        playerStatsCache[key].games += gp;
+                    }
+                });
+
+                Object.keys(playerStatsCache).forEach(key => {
+                    const datesCount = tempDates[key] ? tempDates[key].size : 0;
+                    playerStatsCache[key].games += datesCount;
+                });
+            } catch (e) {
+                console.error("Failed to load player stats for trades:", e);
+            }
+        }
+
+        async function loadCareerStats() {
+            careerStatsCache = {};
+            const tempDates = {};
+
+            // Fetch player mappings to resolve past usernames / User IDs
+            let playerAliasMap = {};
+            let userIdToCanonical = {};
+
+            try {
+                const pMapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(PLAYER_MAPPINGS_CSV));
+                if (pMapRes.ok) {
+                    const pMapData = parseCsvLocal(await pMapRes.text());
+                    pMapData.forEach(row => {
+                        const currentUname = row['current username'] || row['username'] || row['current name'] || row['display name'] || row['player'];
+                        const uid = row['user id'] || row['userid'] || row['id'];
+                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || row['past names'] || row['previous name'] || row['past name'] || '';
+
+                        if (currentUname) {
+                            const canonicalKey = uid ? uid.trim() : currentUname.replace(/@/g, '').trim().toLowerCase();
+
+                            if (uid) {
+                                userIdToCanonical[uid.trim()] = canonicalKey;
+                            }
+
+                            const cleanCurrent = currentUname.replace(/@/g, '').trim().toLowerCase();
+                            playerAliasMap[cleanCurrent] = canonicalKey;
+
+                            if (pastUsernamesStr) {
+                                pastUsernamesStr.split(',').forEach(pName => {
+                                    const cleanPast = pName.replace(/@/g, '').trim().toLowerCase();
+                                    if (cleanPast) {
+                                        playerAliasMap[cleanPast] = canonicalKey;
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.warn("Failed to fetch player mappings in GM Dashboard.", e); }
+            
+            // Helper function to process both regular season and playoff arrays identically
+            const processDataList = (playersData, seasonPrefix) => {
+                playersData.forEach(d => {
+                    const rawName = d.username || d.user || d.name || d.player || d['player name'] || d.discord || d['discord name'] || d['discord username'];
+                    if (!rawName) return;
+                    
+                    const uidRaw = d['user id'] || d.userid || d.userId || d.id || d.firestore_id;
+                    const cleanUid = uidRaw ? String(uidRaw).trim() : null;
+                    const cleanNameKey = cleanName(rawName);
+                    
+                    // Determine canonical key via Player Mapping CSV
+                    let key = null;
+                    if (cleanUid && userIdToCanonical[cleanUid]) {
+                        key = userIdToCanonical[cleanUid];
+                    } else if (playerAliasMap[cleanNameKey]) {
+                        key = playerAliasMap[cleanNameKey];
+                    } else if (cleanUid) {
+                        key = cleanUid;
+                    } else {
+                        key = cleanNameKey;
+                    }
+
+                    if (!careerStatsCache[key]) {
+                        careerStatsCache[key] = { total: 0, games: 0 };
+                        tempDates[key] = new Set();
+                    }
+                    
+                    // Robust score fallback for different CSV headers from old seasons & thousands separators
+                    const scoreVal = getNum(d.score) || getNum(d['overall raw average']) || getNum(d['overall adjusted average']) || getNum(d['adjusted average']) || getNum(d['raw average']) || getNum(d['points']) || getNum(d['total points']) || getNum(d['total score']) || getNum(d.total) || getNum(d.pts) || getNum(d.avg) || 0;
+                    
+                    careerStatsCache[key].total += scoreVal;
+                    
+                    if (d.date) {
+                        tempDates[key].add(`${seasonPrefix}-${d.date}`);
+                    } else {
+                        const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
+                        careerStatsCache[key].games += gp;
+                    }
+                });
+            };
+            
+            // Loop through all defined historical seasons
+            const seasonsToFetch = Object.keys(HISTORICAL_CSVS);
+            
+            for (const s of seasonsToFetch) {
+                // 1. Fetch Regular Season Stats
+                try {
+                    let playersData = [];
+                    const csvUrl = HISTORICAL_CSVS[s]?.['players'];
+                    
+                    if (csvUrl) {
+                        const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
+                        if (res.ok) playersData = parseCsvLocal(await res.text());
+                    } else {
+                        // Fallback to Firestore for active seasons without CSVs
+                        const snaps = await getDocs(collection(db, `s${s}-players`));
+                        snaps.forEach(doc => playersData.push(doc.data()));
+                    }
+                    
+                    processDataList(playersData, `s${s}`);
+                } catch (e) { console.error(`Failed to load regular season stats for season ${s}`, e); }
+
+                // 2. Fetch Playoff Stats (If they exist)
+                try {
+                    let playoffData = [];
+                    const playoffCsvUrl = HISTORICAL_CSVS[s]?.['playoff-players'];
+                    
+                    if (playoffCsvUrl) {
+                        const res = await fetch(workerProxy + '?url=' + encodeURIComponent(playoffCsvUrl));
+                        if (res.ok) playoffData = parseCsvLocal(await res.text());
+                    } else {
+                        // Fallback to Firestore for active playoff seasons
+                        const snaps = await getDocs(collection(db, `s${s}-playoff-players`));
+                        snaps.forEach(doc => playoffData.push(doc.data()));
+                    }
+                    
+                    processDataList(playoffData, `s${s}-playoffs`);
+                } catch (e) { console.error(`Failed to load playoff stats for season ${s}`, e); }
+            }
+            
+            Object.keys(careerStatsCache).forEach(key => {
+                const datesCount = tempDates[key] ? tempDates[key].size : 0;
+                careerStatsCache[key].games += datesCount;
+            });
+            careerStatsLoaded = true;
+        }
+
+        window.toggleTradeStatsMode = async () => {
+            const mode = document.getElementById('trade-stats-toggle').value;
+            isCareerMode = (mode === 'career');
+            
+            if (isCareerMode && !careerStatsLoaded) {
+                const t1 = document.getElementById('trade-roster-1');
+                const t2 = document.getElementById('trade-roster-2');
+                if (t1) t1.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
+                if (t2) t2.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
+                await loadCareerStats();
+            }
+            
+            window.loadTradeSide(1);
+            window.loadTradeSide(2);
+        };
+
+        window.loadTradeSide = (sideNum) => {
+            const team = document.getElementById(`trade-team-${sideNum}`).value;
+            const tbody = document.getElementById(`trade-roster-${sideNum}`);
+            
+            if (!team) { tbody.innerHTML = ''; return; }
+
+            const roster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === team.trim().toLowerCase());
+            let html = '';
+            let teamTotalPts = 0; let teamTotalGames = 0;
+
+            const cacheToUse = isCareerMode ? careerStatsCache : playerStatsCache;
+
+            roster.forEach(p => {
+                const keyName = cleanName(p.username);
+                const uidRaw = p['user id'] || p.userid || p.userId || p.id;
+                const cleanUid = uidRaw ? String(uidRaw).trim() : null;
+                
+                let total = 0;
+                let games = 0;
+
+                // Safely sum up stats from UserID and Username matching to catch legacy rows
+                if (cleanUid && cacheToUse[cleanUid]) {
+                    total += cacheToUse[cleanUid].total;
+                    games += cacheToUse[cleanUid].games;
+                }
+                if (cacheToUse[keyName]) {
+                    total += cacheToUse[keyName].total;
+                    games += cacheToUse[keyName].games;
+                }
+
+                const ppg = games > 0 ? (total / games).toFixed(2) : '0.00';
+                
+                teamTotalPts += total; teamTotalGames += games;
+                
+                html += `<tr>
+                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);"><strong>${p.username}</strong></td>
+                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted);">${games}</td>
+                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);">${total.toFixed(2)}</td>
+                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);">${ppg}</td>
+                </tr>`;
+            });
+
+            const teamPPG = teamTotalGames > 0 ? (teamTotalPts / teamTotalGames).toFixed(2) : '0.00';
+            html += `<tr style="background: rgba(212,175,55,0.1); border-top: 2px solid var(--gold-mid);">
+                <td style="padding: 0.75rem 0.5rem; color: var(--gold-light);"><strong>TOTALS</strong></td>
+                <td style="padding: 0.75rem 0; color: var(--gold-light);">${teamTotalGames}</td>
+                <td style="padding: 0.75rem 0; color:var(--gold-mid); font-weight:bold;">${teamTotalPts.toFixed(2)}</td>
+                <td style="padding: 0.75rem 0; color:var(--gold-mid); font-weight:bold;">${teamPPG}</td>
+            </tr>`;
+
+            tbody.innerHTML = html;
+        };
+
+        window.loadMyClaims = async () => {
+            if (!myTeam) return;
+            const listEl = document.getElementById('my-claims-list');
+            const orderDisplayEl = document.getElementById('waiver-order-display');
+            listEl.innerHTML = '<div style="color: var(--text-muted);">Syncing secure ledger...</div>';
+            
+            // 1. Fetch live waiver order from CSV directly
+            try {
+                const csvRes = await fetch(workerProxy + '?url=' + encodeURIComponent(waiverOrderCsvUrl));
+                if (csvRes.ok) {
+                    const csvText = await csvRes.text();
+                    const rows = parseCsvLocal(csvText);
+                    
+                    if (rows.length > 0) {
+                        // Find the column that contains the team names
+                        const headers = Object.keys(rows[0]);
+                        const teamColKey = headers.find(h => h.includes('team name') || h.includes('team')) || headers[1];
+                        
+                        if (teamColKey) {
+                            const orderList = rows.map(r => r[teamColKey]).filter(t => t && t.trim() !== '');
+                            const displayStr = orderList.map((team, idx) => {
+                                return `${idx + 1}. ${team}`;
+                            }).join(' | ');
+                            if (orderDisplayEl) orderDisplayEl.innerText = displayStr;
+                        }
+                    } else {
+                        if (orderDisplayEl) orderDisplayEl.innerText = "Waiver order pending.";
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to fetch waiver order from CSV", e);
+                if (orderDisplayEl) orderDisplayEl.innerText = "Failed to load waiver order.";
+            }
+
+            // Admin skips checking their own personal claims
+            if (myTeam === 'ADMIN') {
+                listEl.innerHTML = '<div style="color: var(--text-muted); font-style: italic;">Admins do not have personal claims.</div>';
+                return;
+            }
+
+            // 2. Fetch Active Claims from Apps Script
+            try {
+                const res = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'get_my_claims', team: myTeam })
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success' && data.claims && data.claims.length > 0) {
+                    listEl.innerHTML = data.claims.map((c) => `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background: var(--bg-card); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-subtle); margin-bottom: 0.5rem;">
+                            <div>
+                                <span style="color: var(--gold-mid); font-weight:bold; margin-right:10px;">Priority ${c.priority}</span>
+                                <span style="color: white; font-weight:bold; font-size: 1.1rem;">Add: ${c.add}</span>
+                                <span style="color: var(--text-muted); margin-left: 10px; font-size: 0.85rem;">(Drop: ${c.drop || 'None'})</span>
+                            </div>
+                            <button onclick="cancelClaim('${c.add.replace(/'/g, "\\'")}')" style="background: var(--danger); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold;">Cancel</button>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = '<div style="color: var(--text-muted); font-style: italic;">No active claims. You have not submitted a claim or have been outbid on all requests.</div>';
+                }
+            } catch (e) { listEl.innerHTML = '<div style="color: #ef4444;">Failed to load claims.</div>'; }
+        };
+
+        window.cancelClaim = async (addPlayer) => {
+            if (!confirm(`Are you sure you want to cancel your claim for ${addPlayer}?`)) return;
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'cancel_claim', team: myTeam, add: addPlayer })
+                });
+                showToast("Claim canceled.");
+                window.loadMyClaims();
+            } catch (e) { alert("Error canceling claim."); }
+        };
+
+        window.openClaimModal = (player) => {
+            selectedFA = player;
+            document.getElementById('claim-title').innerText = `Claim ${player}`;
+            
+            if (myTeam === 'ADMIN') { alert("Admin: Please log in as a GM to securely submit claims."); return; }
+            if (!document.getElementById('team-select').value) { alert("Please ensure your team is loaded first."); return; }
+            document.getElementById('claim-modal').style.display = 'flex';
+        };
+
+        window.closeModal = () => { document.getElementById('claim-modal').style.display = 'none'; selectedFA = null; };
+
+        window.submitClaim = async () => {
+            const drop = document.getElementById('drop-select').value;
+            const team = document.getElementById('team-select').value;
+            
+            if (!drop) { alert("You must select a player to drop to make a valid claim."); return; }
+            
+            try {
+                const res = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'transaction', team: team, add: selectedFA, drop: drop })
+                });
+                
+                const data = await res.json();
+                if (data.status === 'error') alert(data.message);
+                else { window.closeModal(); showToast("Claim safely locked in!"); window.loadMyClaims(); }
+            } catch (e) { alert("Error submitting claim."); }
+        };
+
+        function generateUUID() {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
+            });
+        }
+
+        function generateRequestToken() {
+            const timestampMs = Date.now();
+            // @ts-ignore
+            const hasher = new Hashids("realwebapp", 16); return hasher.encode(timestampMs);
+        }
+
+        async function fetchRealStats(userId, retries = 0) {
+            const token = generateRequestToken(); const deviceUuid = generateUUID(); 
+            const targetUrl = `https://web.realsports.io/sportbrawluserstats/${userId}`;
+            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(targetUrl)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${deviceUuid}&token=${token}`;
+            
+            const res = await fetch(proxyUrl);
+            if (res.status === 429 || res.status === 502) {
+                if (retries < 3) {
+                    await new Promise(r => setTimeout(r, 2000 + (Math.random() * 1000)));
+                    return fetchRealStats(userId, retries + 1);
+                }
+                throw new Error(`Rate Limit (${res.status})`);
+            }
+            if (!res.ok) throw new Error(`API Error: ${res.status}`);
+            return res.json();
+        }
+
+        function calculateSingleSportPower(stats) {
+            const exc10 = parseFloat(stats["Top 10s"] || stats["Top 10"] || 0);
+            const raw100 = parseFloat(stats["Top 100s"] || stats["Top 100"] || 0);
+            const raw10pct = parseFloat(stats["Top 10%"] || 0);
+            const raw20pct = parseFloat(stats["Top 20%"] || 0);
+            const raw50pct = parseFloat(stats["Top 50%"] || 0);
+            
+            const exc100 = Math.max(0, raw100 - exc10);
+            const exc10pct = Math.max(0, raw10pct - raw100);
+            const exc20pct = Math.max(0, raw20pct - raw10pct);
+            const exc50pct = Math.max(0, raw50pct - raw20pct);
+
+            let power = (exc10 * 10) + (exc100 * 7) + (exc10pct * 5) + (exc20pct * 3) + (exc50pct * 1);
+            const highest = parseFloat(stats["Highest Score"] || 0);
+            if (!isNaN(highest)) power += (highest / 10000); 
+            return power;
+        }
+
+        function calculateOverallPower(aggregatedStatsObj) {
+            if (aggregatedStatsObj["ALL_SPORTS"]) return calculateSingleSportPower(aggregatedStatsObj["ALL_SPORTS"]);
+            return 0;
+        }
+
+        function aggregateStatsBySport(statsObj) {
+            const aggregated = {}; let hasStats = false;
+            const sumFields = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 100s", "Top 10s", "Wins", "Score", "Total Score", "Points"];
+            const maxFields = ["Highest Score"];
+
+            Object.entries(statsObj).forEach(([key, stats]) => {
+                hasStats = true;
+                const lastDashIndex = key.lastIndexOf('-');
+                const sport = (lastDashIndex > -1 ? key.substring(0, lastDashIndex) : key).toUpperCase();
+                
+                if (!aggregated[sport]) aggregated[sport] = {};
+                if (!aggregated["ALL_SPORTS"]) aggregated["ALL_SPORTS"] = {};
+                
+                Object.entries(stats).forEach(([label, value]) => {
+                    let numVal = parseFloat(value); if (isNaN(numVal)) numVal = 0;
+                    const isSumField = sumFields.some(f => label.includes(f) && label !== "Highest Score");
+                    
+                    if (isSumField) { 
+                         if (!aggregated[sport][label]) aggregated[sport][label] = 0; aggregated[sport][label] += numVal;
+                         if (!aggregated["ALL_SPORTS"][label]) aggregated["ALL_SPORTS"][label] = 0; aggregated["ALL_SPORTS"][label] += numVal;
+                    } else if (maxFields.includes(label)) {
+                         if (!aggregated[sport][label]) aggregated[sport][label] = 0; aggregated[sport][label] = Math.max(aggregated[sport][label], numVal);
+                         if (!aggregated["ALL_SPORTS"][label]) aggregated["ALL_SPORTS"][label] = 0; aggregated["ALL_SPORTS"][label] = Math.max(aggregated["ALL_SPORTS"][label], numVal);
+                    } else aggregated[sport][label] = value; 
+                });
+            });
+
+            if (!hasStats) return {};
+            
+            Object.values(aggregated).forEach(sportStats => {
+                const allDrafts = sportStats["All Drafts"] || 0;
+                const raw10 = sportStats["Top 10s"] || sportStats["Top 10"] || 0;
+                const raw100 = sportStats["Top 100s"] || sportStats["Top 100"] || 0;
+                const raw10pct = sportStats["Top 10%"] || 0;
+                const raw20pct = sportStats["Top 20%"] || 0;
+                const raw50pct = sportStats["Top 50%"] || 0;
+
+                const exc10 = raw10; 
+                const exc100 = Math.max(0, raw100 - raw10);
+                const exc10pct = Math.max(0, raw10pct - raw100);
+                const exc20pct = Math.max(0, raw20pct - raw10pct);
+                const exc50pct = Math.max(0, raw50pct - raw20pct);
+
+                const formatStat = (val) => {
+                    if (allDrafts === 0) return `0 (0%)`;
+                    const pct = ((val / allDrafts) * 100).toFixed(0);
+                    return `${val} (${pct}%)`;
+                };
+
+                sportStats["Top 10"] = formatStat(exc10); sportStats["Top 100"] = formatStat(exc100); 
+                sportStats["Top 10%"] = formatStat(exc10pct); sportStats["Top 20%"] = formatStat(exc20pct); sportStats["Top 50%"] = formatStat(exc50pct);
+            });
+
+            return aggregated;
+        }
+
+        async function loadFreeAgentsLive() {
+            const container = document.getElementById('fa-grid');
+            const faList = allFaData.filter(p => { const uid = p['user id'] || p['userid'] || p['id']; return uid && p.username; });
+
+            if (faList.length === 0) { container.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1; text-align:center;">No Free Agents found in registry.</div>'; return; }
+            container.innerHTML = ''; 
+
+            for (let i = 0; i < faList.length; i++) {
+                const row = faList[i]; const name = row.username; const uid = row['user id'] || row['userid'] || row['id'];
+                if (!uid) continue;
+
+                const cardId = `card-${uid}`;
+                const skeletonHtml = `<div class="fa-card" id="${cardId}" data-power-overall="-1"><div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><div class="stats-loading" style="color:var(--text-muted); font-style:italic; font-size:0.9rem;">Syncing stats...</div></div>`;
+                container.insertAdjacentHTML('beforeend', skeletonHtml);
+
+                try {
+                    const data = await fetchRealStats(uid);
+                    const normalizedStats = {};
+                    (data.stats || []).forEach(s => {
+                        const key = `${s.sport}-${s.season}`;
+                        normalizedStats[key] = {};
+                        s.displayStats.forEach(ds => { normalizedStats[key][ds.label] = ds.display; });
+                    });
+                    
+                    const aggregatedStats = aggregateStatsBySport(normalizedStats);
+                    updateCard(cardId, name, uid, aggregatedStats);
+                    
+                    const updatedCard = document.getElementById(cardId);
+                    if (updatedCard) {
+                        updatedCard.dataset.powerOverall = calculateOverallPower(aggregatedStats);
+                        for (const [sport, dataObj] of Object.entries(aggregatedStats)) {
+                            if (sport !== "ALL_SPORTS") { updatedCard.dataset[`power${sport}`] = calculateSingleSportPower(dataObj); globalDiscoveredSports.add(sport); }
+                        }
+                    }
+
+                    updateFilterDropdown(); await new Promise(r => setTimeout(r, 200)); 
+                } catch (err) {
+                    const card = document.getElementById(cardId);
+                    if (card) { card.querySelector('.stats-loading').innerHTML = `<span style="color:var(--danger)">Update Failed</span>`; card.dataset.powerOverall = -1; }
+                }
+            }
+            updateFilterDropdown(); window.filterAndSortGrid();
+        }
+
+        window.switchSport = function(selectElement) {
+            const selectedSport = selectElement.value; const card = selectElement.closest('.fa-card'); if (!card) return;
+            const views = card.querySelectorAll('.sport-stats-view');
+            views.forEach(view => { if (view.dataset.sport === selectedSport) view.classList.add('active'); else view.classList.remove('active'); });
+        };
+
+        window.filterAndSortGrid = function() {
+            const filterVal = document.getElementById('top-sport-filter').value;
+            const container = document.getElementById('fa-grid');
+            const cards = Array.from(container.querySelectorAll('.fa-card'));
+
+            cards.forEach(card => {
+                if (!card.id) return;
+                if (filterVal === 'ALL') {
+                    card.style.display = 'flex';
+                    const sportSelect = card.querySelector('.sport-dropdown');
+                    if (sportSelect) { sportSelect.value = "ALL_SPORTS"; window.switchSport(sportSelect); }
+                } else {
+                    if (card.dataset[`power${filterVal}`] !== undefined) {
+                        card.style.display = 'flex';
+                        const sportSelect = card.querySelector('.sport-dropdown');
+                        if (sportSelect) { sportSelect.value = filterVal; window.switchSport(sportSelect); }
+                    } else card.style.display = 'none';
+                }
+            });
+
+            const visibleCards = cards.filter(c => c.style.display !== 'none');
+            visibleCards.sort((a, b) => {
+                let scoreA, scoreB;
+                if (filterVal === 'ALL') { scoreA = parseFloat(a.dataset.powerOverall || -1); scoreB = parseFloat(b.dataset.powerOverall || -1); } 
+                else { scoreA = parseFloat(a.dataset[`power${filterVal}`] || -1); scoreB = parseFloat(b.dataset[`power${filterVal}`] || -1); }
+                return scoreB - scoreA; 
+            });
+            visibleCards.forEach(card => container.appendChild(card));
+        };
+
+        function updateFilterDropdown() {
+            const dropdown = document.getElementById('top-sport-filter'); const currentVal = dropdown.value;
+            let html = `<option value="ALL">All Sports</option>`;
+            Array.from(globalDiscoveredSports).sort().forEach(sport => { html += `<option value="${sport}">${sport}</option>`; });
+            dropdown.innerHTML = html; dropdown.value = currentVal; 
+        }
+
+        function createCardHTML(uid, name, statsObj) {
+            let keys = Object.keys(statsObj).sort();
+            const safeName = name.replace(/'/g, "\\'"); // Escape apostrophes for modal
+            
+            if (keys.length === 0) return `<div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><div style="text-align:center; font-style:italic; padding:1rem; color:var(--text-muted); flex-grow: 1;">No active stats found</div><button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
+
+            const allIndex = keys.indexOf("ALL_SPORTS");
+            if (allIndex > -1) { keys.splice(allIndex, 1); keys.unshift("ALL_SPORTS"); }
+
+            let optionsHtml = ''; let viewsHtml = '';
+            const targetStats = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 10"];
+            
+            keys.forEach((key, index) => {
+                const details = statsObj[key]; const displayKey = key === "ALL_SPORTS" ? "All Sports" : key.replace('-', ' ');
+                let headerScore = '-'; if (details["Highest Score"] !== undefined) headerScore = details["Highest Score"];
+                optionsHtml += `<option value="${key}">${displayKey}</option>`;
+
+                let gridHtml = '';
+                targetStats.forEach(targetLabel => {
+                    let val = details[targetLabel];
+                    if (val !== undefined) gridHtml += `<div class="stat-box"><span class="stat-label">${targetLabel}</span><span class="stat-value">${val}</span></div>`;
+                });
+
+                const activeClass = index === 0 ? 'active' : '';
+                viewsHtml += `<div class="sport-stats-view ${activeClass}" data-sport="${key}"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; color:var(--gold-mid); font-size:0.9rem; font-weight:700; text-transform:uppercase;"><span>Highest Score</span><span>${headerScore}</span></div><div class="stats-grid-row">${gridHtml}</div></div>`;
+            });
+
+            return `<div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><select class="sport-dropdown" onchange="switchSport(this)">${optionsHtml}</select><div class="stats-container" style="flex-grow: 1;">${viewsHtml}</div><button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
+        }
+
+        function updateCard(cardId, name, uid, statsObj) {
+            const card = document.getElementById(cardId);
+            if (!card) return; card.innerHTML = createCardHTML(uid, name, statsObj);
+        }
+
+        window.switchTab = (tabId, element) => {
+            document.querySelectorAll('.dashboard-section').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId + '-section').style.display = 'block';
+            if(element) element.classList.add('active');
+            if (tabId === 'transactions') window.loadMyClaims();
+        };
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>

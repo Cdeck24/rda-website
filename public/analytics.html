@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        .analytics-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .page-header { text-align: center; margin-bottom: 2rem; }
+        .page-header h1 { font-size: 3rem; color: var(--gold-mid); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 2px; margin-top: 0; }
+        .page-header p { color: var(--text-muted); font-style: italic; font-size: 1.1rem; }
+
+        .tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem; }
+        .tab-btn { background: none; border: 1px solid var(--border-subtle); color: var(--text-muted); padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.2s ease; font-size: 0.9rem; }
+        .tab-btn:hover { color: var(--text-main); border-color: var(--text-muted); background: rgba(255,255,255,0.03); }
+        .tab-btn.active { background: rgba(212, 175, 55, 0.1); border-color: var(--gold-mid); color: var(--gold-mid); }
+
+        .tab-pane { display: none; animation: fadeIn 0.3s ease-out; }
+        .tab-pane.active { display: block; }
+
+        .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 2rem; }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .data-table th, .data-table td { padding: 1rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .data-table th { color: var(--gold-mid); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; background: rgba(0,0,0,0.4); position: sticky; top: 0; z-index: 10; }
+        .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+        
+        .table-left-align { text-align: left !important; }
+        .table-right-align { text-align: right !important; }
+
+        .rank-col { font-weight: bold; width: 60px; color: var(--text-muted); }
+        .rank-1 { color: #FFD700; font-size: 1.2rem; text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+
+        .loading-container { text-align: center; padding: 4rem; color: var(--gold-mid); }
+        .loading-spinner { display: inline-block; width: 50px; height: 50px; border: 3px solid rgba(212, 175, 55, 0.3); border-radius: 50%; border-top-color: var(--gold-mid); animation: spin 1s ease-in-out infinite; margin-bottom: 1rem; }
+
+        .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .badge-good { background: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); }
+        .badge-bad { background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.4); }
+        .badge-neutral { background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); }
+
+        .pr-score { font-size: 1.5rem; font-weight: 900; color: var(--gold-mid); }
+        .matrix-cell { font-size: 0.85rem; font-weight: bold; border-left: 1px solid rgba(255,255,255,0.05); }
+        .matrix-cell.self { background: rgba(255,255,255,0.05); color: #333; }
+        .matrix-cell.winning { color: #4ade80; }
+        .matrix-cell.losing { color: #f87171; }
+        .matrix-cell.tied { color: #fbbf24; }
+        
+        .info-card { background: rgba(0,0,0,0.4); border: 1px solid var(--border-gold); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
+        .info-card h3 { color: var(--gold-light); margin-top: 0; margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; }
+        .info-card p { color: #ccc; font-size: 0.9rem; margin: 0; line-height: 1.5; }
+
+        /* Hide scrollbar for horizontal tabs */
+        .tabs::-webkit-scrollbar { display: none; }
+        .tabs { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            .page-header h1 { font-size: 2rem; }
+            .page-header p { font-size: 0.95rem; }
+            .tabs { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; }
+            .tab-btn { flex: 0 0 auto; font-size: 0.85rem; padding: 0.6rem 1rem; scroll-snap-align: start; }
+            .analytics-content { padding: 1rem 0.5rem; }
+            .info-card { padding: 1rem; }
+            .data-table th, .data-table td { padding: 0.75rem 0.5rem; font-size: 0.85rem; }
+            .pr-score { font-size: 1.2rem; }
+            .rank-col { width: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Nav injected by JS -->
+
+    <div class="analytics-content">
+        <div class="page-header">
+            <h1 id="dynamic-header">Advanced Analytics</h1>
+            <p>Algorithmic models, split stats, and deep head-to-head metrics.</p>
+        </div>
+
+        <div id="loading-area" class="loading-container">
+            <div class="loading-spinner"></div>
+            <h3>Compiling Machine Learning Models...</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Processing entire database history. This may take a few seconds.</p>
+        </div>
+
+        <div id="data-area" style="display: none;">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('power-rankings', this)">Power Rankings</button>
+                <button class="tab-btn" onclick="switchTab('expected-wins', this)">Pythagorean Expected Wins</button>
+                <button class="tab-btn" onclick="switchTab('matrix', this)">Head-to-Head Matrix</button>
+            </div>
+
+            <!-- POWER RANKINGS -->
+            <div id="power-rankings" class="tab-pane active">
+                <div class="info-card">
+                    <h3 id="pr-title">Current Season Power Rankings</h3>
+                    <p>Unlike standard standings which only look at total wins, this Power Ranking calculates who is playing the best <i>right now</i>. It weights Season Win % (40%), Point Differential Percentile (30%), and Last 5 Form Win % (30%) to generate a definitive 0-100 rating.</p>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th class="table-left-align">Team</th>
+                                <th>Win % (40%)</th>
+                                <th>Point Diff (30%)</th>
+                                <th>L5 Form (30%)</th>
+                                <th class="table-right-align">Power Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pr-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- EXPECTED WINS (LUCK) -->
+            <div id="expected-wins" class="tab-pane">
+                <div class="info-card">
+                    <h3 id="luck-title">Current Season Expected Wins (Luck vs Skill)</h3>
+                    <p>A formula originally created by Bill James for baseball, adapted for RDA. By ignoring actual game outcomes and purely analyzing a team's Total Points Scored vs Total Points Allowed, the math predicts how many games a team <i>should</i> have won. We subtract Expected Wins from Actual Wins to calculate how "Lucky" or "Unlucky" a franchise has been this season.</p>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="table-left-align">Team</th>
+                                <th>Actual W-L</th>
+                                <th>Points For</th>
+                                <th>Points Against</th>
+                                <th>Expected Wins</th>
+                                <th class="table-right-align">Luck Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="luck-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- H2H MATRIX -->
+            <div id="matrix" class="tab-pane">
+                <div class="info-card">
+                    <h3>All-Time Head-to-Head Matrix</h3>
+                    <p>The lifetime W-L record of every active franchise against every other active franchise. Find out who really owns who. (Read rows left-to-right to see a team's record against the column opponent).</p>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table" style="min-width: 1200px;">
+                        <thead id="matrix-thead"></thead>
+                        <tbody id="matrix-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason, HISTORICAL_CSVS, TEAM_MAPPINGS_CSV, PLAYER_MAPPINGS_CSV } from './js/app.js';
+        import { db } from './js/firebase-config.js';
+        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const seasonsToFetch = Object.keys(HISTORICAL_CSVS);
+
+        window.switchTab = function(tabId, btn) {
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (btn) btn.classList.add('active');
+        };
+
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            const headers = rows[0].split(delimiter).map(h => h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase());
+            return rows.slice(1).map(row => {
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim();
+                });
+                return obj;
+            });
+        }
+
+        async function fetchCollection(s, type) {
+            let data = [];
+            const csvUrl = HISTORICAL_CSVS[s]?.[type];
+            if (csvUrl) {
+                try {
+                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
+                    if (res.ok) data = parseCsvLocal(await res.text());
+                } catch (e) { console.error(e); }
+            } else {
+                try {
+                    const snaps = await getDocs(collection(db, `s${s}-${type}`));
+                    snaps.forEach(doc => data.push(doc.data()));
+                } catch (e) {}
+            }
+            return data.map(d => ({ ...d, _season: s, _type: type }));
+        }
+
+        const getNum = (val) => parseFloat(String(val).replace(/,/g, '')) || 0;
+        const parseGameDate = (dateStr, seasonStr) => {
+            if (!dateStr) return 0;
+            const parts = dateStr.split('/');
+            if (parts.length >= 2) return new Date(2020 + parseInt(seasonStr), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10)).getTime();
+            return new Date(dateStr).getTime() || 0;
+        };
+
+        async function compileAnalytics() {
+            // Mappings
+            let teamMap = {};
+            let activeFranchises = new Set();
+            try {
+                const mapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(TEAM_MAPPINGS_CSV));
+                if (mapRes.ok) {
+                    const mapData = parseCsvLocal(await mapRes.text());
+                    mapData.forEach(row => {
+                        const curr = row['current name'];
+                        const prev = row['previous name'];
+                        if (curr) {
+                            teamMap[curr.toLowerCase().trim()] = curr;
+                            activeFranchises.add(curr);
+                            if (prev) prev.split(',').forEach(p => { if(p.trim()) teamMap[p.trim().toLowerCase()] = curr; });
+                        }
+                    });
+                }
+            } catch (e) {}
+            const getRealTeam = (name) => {
+                if(!name) return 'Unknown';
+                return teamMap[name.trim().toLowerCase()] || name.trim();
+            };
+
+            let playerAliasMap = {}; let canonicalDisplayNames = {}; let userIdToCanonical = {}; 
+            try {
+                const pMapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(PLAYER_MAPPINGS_CSV));
+                if (pMapRes.ok) {
+                    const pMapData = parseCsvLocal(await pMapRes.text());
+                    pMapData.forEach(row => {
+                        const currentUname = row['current username'] || row['username'] || row['player'];
+                        const uid = row['user id'] || row['userid'] || row['id'];
+                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || '';
+                        if (currentUname) {
+                            const canonicalKey = uid ? uid.trim() : currentUname.replace(/@/g, '').trim().toLowerCase();
+                            canonicalDisplayNames[canonicalKey] = currentUname.trim();
+                            if (uid) userIdToCanonical[uid.trim()] = canonicalKey;
+                            playerAliasMap[currentUname.replace(/@/g, '').trim().toLowerCase()] = canonicalKey;
+                            if (pastUsernamesStr) pastUsernamesStr.split(',').forEach(pName => {
+                                playerAliasMap[pName.replace(/@/g, '').trim().toLowerCase()] = canonicalKey;
+                            });
+                        }
+                    });
+                }
+            } catch (e) {}
+
+            // Fetch Data
+            const promises = [];
+            for (const s of seasonsToFetch) {
+                promises.push(fetchCollection(s, 'games')); promises.push(fetchCollection(s, 'playoff-games'));
+                promises.push(fetchCollection(s, 'players')); promises.push(fetchCollection(s, 'playoff-players'));
+            }
+            const allData = (await Promise.all(promises)).flat();
+            
+            const games = allData.filter(d => d._type.includes('game'));
+
+            // Update Dynamic Titles to explicitly state the active season
+            document.getElementById('pr-title').innerText = `Season ${currentSeason} Power Rankings`;
+            document.getElementById('luck-title').innerText = `Season ${currentSeason} Expected Wins (Luck vs Skill)`;
+
+            // ==========================================
+            // 2. Team Matchup Parsing (For PR, Luck & Matrix)
+            // ==========================================
+            const chronGames = games.map(g => ({ ...g, sortDate: parseGameDate(g.date, g._season) })).sort((a,b) => a.sortDate - b.sortDate);
+            
+            const currSeasonTeams = {};
+            const matrix = {};
+            const activeArr = Array.from(activeFranchises).sort();
+            
+            activeArr.forEach(t1 => {
+                matrix[t1] = {};
+                activeArr.forEach(t2 => matrix[t1][t2] = { w: 0, l: 0, t: 0 });
+            });
+
+            chronGames.forEach(g => {
+                const s1 = getNum(g.team1score) || getNum(g['team 1']) || 0;
+                const s2 = getNum(g.team2score) || getNum(g['team 2']) || 0;
+                const t1 = getRealTeam(g.team1 || g['team 1'] || g.away);
+                const t2 = getRealTeam(g.team2 || g['team 2'] || g.home);
+                const winner = getRealTeam(g.winner || g.winning_team);
+                
+                if (s1 === 0 && s2 === 0) return;
+
+                // Matrix Logic (All Time)
+                if (activeFranchises.has(t1) && activeFranchises.has(t2)) {
+                    if (winner === t1) { matrix[t1][t2].w++; matrix[t2][t1].l++; }
+                    else if (winner === t2) { matrix[t2][t1].w++; matrix[t1][t2].l++; }
+                    else { matrix[t1][t2].t++; matrix[t2][t1].t++; }
+                }
+
+                // Current Season Logic (Power Rankings & Expected Wins)
+                if (g._season === currentSeason && !g._type.includes('playoff')) {
+                    if (!currSeasonTeams[t1]) currSeasonTeams[t1] = { w: 0, l: 0, pf: 0, pa: 0, last5: [] };
+                    if (!currSeasonTeams[t2]) currSeasonTeams[t2] = { w: 0, l: 0, pf: 0, pa: 0, last5: [] };
+                    
+                    currSeasonTeams[t1].pf += s1; currSeasonTeams[t1].pa += s2;
+                    currSeasonTeams[t2].pf += s2; currSeasonTeams[t2].pa += s1;
+                    
+                    if (winner === t1) { currSeasonTeams[t1].w++; currSeasonTeams[t2].l++; currSeasonTeams[t1].last5.push(1); currSeasonTeams[t2].last5.push(0); }
+                    else if (winner === t2) { currSeasonTeams[t2].w++; currSeasonTeams[t1].l++; currSeasonTeams[t2].last5.push(1); currSeasonTeams[t1].last5.push(0); }
+                }
+            });
+
+            // ==========================================
+            // 3. Power Rankings & Pythagorean Math
+            // ==========================================
+            let maxDiff = -9999, minDiff = 9999;
+            Object.values(currSeasonTeams).forEach(t => {
+                const diff = t.pf - t.pa;
+                if (diff > maxDiff) maxDiff = diff;
+                if (diff < minDiff) minDiff = diff;
+            });
+
+            const powerRankings = [];
+            const expectedWins = [];
+
+            Object.entries(currSeasonTeams).forEach(([team, stats]) => {
+                const gp = stats.w + stats.l;
+                if (gp === 0) return;
+                
+                // Power Rankings
+                const winPct = stats.w / gp;
+                const diff = stats.pf - stats.pa;
+                const diffPctile = maxDiff === minDiff ? 0.5 : (diff - minDiff) / (maxDiff - minDiff);
+                
+                const l5 = stats.last5.slice(-5);
+                const l5WinPct = l5.length > 0 ? l5.reduce((a,b)=>a+b,0) / l5.length : 0;
+                
+                const prScore = (winPct * 40) + (diffPctile * 30) + (l5WinPct * 30);
+                powerRankings.push({ team, winPct, diff, l5WinPct, prScore, l5Form: l5.map(r => r ? 'W':'L').join('-') });
+
+                // Pythagorean
+                const pf4 = Math.pow(stats.pf, 4);
+                const pa4 = Math.pow(stats.pa, 4);
+                const expWinPct = (pf4 + pa4) === 0 ? 0.5 : (pf4 / (pf4 + pa4));
+                const expWins = expWinPct * gp;
+                const luck = stats.w - expWins;
+                expectedWins.push({ team, w: stats.w, l: stats.l, pf: stats.pf, pa: stats.pa, expWins, luck });
+            });
+
+            powerRankings.sort((a,b) => b.prScore - a.prScore);
+            expectedWins.sort((a,b) => b.luck - a.luck);
+
+            // ==========================================
+            // UI RENDERING
+            // ==========================================
+            document.getElementById('loading-area').style.display = 'none';
+            document.getElementById('data-area').style.display = 'block';
+
+            // PR Tab
+            document.getElementById('pr-tbody').innerHTML = powerRankings.map((t, idx) => `
+                <tr>
+                    <td class="rank-col ${idx === 0 ? 'rank-1' : ''}">${idx + 1}</td>
+                    <td class="table-left-align" style="font-weight:bold; color:white;">${t.team}</td>
+                    <td>${(t.winPct * 100).toFixed(1)}%</td>
+                    <td style="color:${t.diff > 0 ? '#4ade80':'#f87171'}">${t.diff > 0 ? '+':''}${t.diff.toFixed(1)}</td>
+                    <td>${t.l5Form}</td>
+                    <td class="table-right-align pr-score">${t.prScore.toFixed(1)}</td>
+                </tr>
+            `).join('');
+
+            // Luck Tab
+            const getLuckBadge = (luck) => {
+                if (luck > 1) return `<span class="badge badge-good">+${luck.toFixed(2)} (Lucky)</span>`;
+                if (luck < -1) return `<span class="badge badge-bad">${luck.toFixed(2)} (Unlucky)</span>`;
+                return `<span class="badge badge-neutral">${luck > 0 ? '+':''}${luck.toFixed(2)} (Neutral)</span>`;
+            };
+
+            document.getElementById('luck-tbody').innerHTML = expectedWins.map(t => `
+                <tr>
+                    <td class="table-left-align" style="font-weight:bold; color:white;">${t.team}</td>
+                    <td>${t.w}-${t.l}</td>
+                    <td>${t.pf.toFixed(1)}</td>
+                    <td>${t.pa.toFixed(1)}</td>
+                    <td style="color:var(--gold-mid); font-weight:bold;">${t.expWins.toFixed(2)}</td>
+                    <td class="table-right-align">${getLuckBadge(t.luck)}</td>
+                </tr>
+            `).join('');
+
+            // Matrix Tab
+            let theadHtml = '<tr><th></th>';
+            activeArr.forEach(t => theadHtml += `<th>${t.substring(0,3).toUpperCase()}</th>`);
+            theadHtml += '</tr>';
+            document.getElementById('matrix-thead').innerHTML = theadHtml;
+
+            document.getElementById('matrix-tbody').innerHTML = activeArr.map(t1 => {
+                let row = `<tr><td class="table-left-align" style="font-weight:bold; color:var(--gold-mid);">${t1}</td>`;
+                activeArr.forEach(t2 => {
+                    if (t1 === t2) { row += `<td class="matrix-cell self">-</td>`; }
+                    else {
+                        const rec = matrix[t1][t2];
+                        let cls = '';
+                        if (rec.w > rec.l) cls = 'winning';
+                        else if (rec.l > rec.w) cls = 'losing';
+                        else if (rec.w > 0) cls = 'tied';
+                        
+                        const display = (rec.w + rec.l + rec.t) > 0 ? `${rec.w}-${rec.l}` : '-';
+                        row += `<td class="matrix-cell ${cls}">${display}</td>`;
+                    }
+                });
+                return row + '</tr>';
+            }).join('');
+        }
+
+        compileAnalytics();
+    </script>
+</body>
+</html>

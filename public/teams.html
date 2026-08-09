@@ -5,67 +5,35 @@
     <title>RDA Teams</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles/global.css">
+    <!-- Load Chart.js for Advanced Metrics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* --- Page Specific Styles --- */
-        
-        /* Headers */
-        h1 {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        }
+        h1 { display: flex; align-items: center; justify-content: center; gap: 1rem; }
 
         h1.conference-header {
-            font-size: 1.8rem;
-            margin-top: 3rem;
-            margin-bottom: 1rem;
-            color: var(--text-main);
-            border-bottom: 2px solid var(--border-gold);
-            padding-bottom: 0.5rem;
-            display: inline-block;
+            font-size: 1.8rem; margin-top: 3rem; margin-bottom: 1rem; color: var(--text-main);
+            border-bottom: 2px solid var(--border-gold); padding-bottom: 0.5rem; display: inline-block;
         }
 
-        h2 {
-            font-size: 1.4rem;
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-            color: var(--gold-mid);
-            text-align: left;
-        }
+        h2 { font-size: 1.4rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--gold-mid); text-align: left; }
         
         h2.division-header {
-            text-align: center;
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 1.5rem;
+            text-align: center; font-size: 1.2rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.5rem;
         }
 
         /* Team Grid Layout */
         .team-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 1.5rem;
-            max-width: 1000px;
-            margin: 0 auto 3rem auto;
-            padding: 0 1rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.5rem; max-width: 1000px; margin: 0 auto 3rem auto; padding: 0 1rem;
         }
 
         .team-link {
-            /* Inherit global card style, but ensure flex layout for this specific use */
             background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
-            border: 1px solid var(--border-gold);
-            border-radius: 6px;
-            padding: 2rem 1rem;
-            text-decoration: none;
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
+            border: 1px solid var(--border-gold); border-radius: 6px; padding: 2rem 1rem;
+            text-decoration: none; color: var(--text-main); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; transition: all 0.3s ease;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
@@ -76,70 +44,71 @@
             border-color: var(--gold-mid);
         }
 
-        .team-link span {
-            margin-top: 1rem;
-            font-weight: 600;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .team-link span { margin-top: 1rem; font-weight: 600; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
 
         /* Stats Cards */
-        .team-stats-grid {
+        .team-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1.5rem; text-align: center; }
+        .stat-card .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.5rem; }
+        .stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--gold-light); font-family: 'Didot', serif; }
+
+        /* --- Advanced Metrics Section --- */
+        .metrics-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 1.5rem;
             margin-bottom: 3rem;
         }
 
-        .stat-card {
-            background: var(--bg-card);
+        .metric-card {
+            background: rgba(15, 23, 42, 0.5);
             border: 1px solid var(--border-subtle);
             border-radius: 8px;
             padding: 1.5rem;
-            text-align: center;
-        }
-        
-        .stat-card .label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        .stat-card .value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--gold-light);
-            font-family: 'Didot', serif;
+        .metric-card h3 { margin: 0 0 1.5rem 0; font-size: 1.1rem; color: var(--gold-mid); text-transform: uppercase; letter-spacing: 1px; }
+
+        .form-tracker { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .form-badge {
+            width: 45px; height: 45px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; font-weight: 800; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
+        .form-badge.W { background: linear-gradient(135deg, #22c55e, #16a34a); border: 1px solid #4ade80; }
+        .form-badge.L { background: linear-gradient(135deg, #ef4444, #dc2626); border: 1px solid #f87171; }
+        .form-badge.T { background: linear-gradient(135deg, #64748b, #475569); border: 1px solid #94a3b8; }
+        .form-badge.none { background: rgba(255,255,255,0.05); color: #555; border: 1px dashed #333; }
+        
+        .chart-wrapper { width: 100%; max-width: 400px; position: relative; }
 
         /* Loading & Placeholders */
-        .loading, .placeholder {
-            padding: 3rem;
-            font-style: italic;
-            color: var(--text-muted);
-            grid-column: 1 / -1;
-        }
+        .loading, .placeholder { padding: 3rem; font-style: italic; color: var(--text-muted); grid-column: 1 / -1; text-align: center; }
+        .header-logo { width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3)); }
+        .main-content { max-width: 1000px; margin: 0 auto; padding-bottom: 4rem; }
 
-        /* Team Header Image */
-        .header-logo {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3));
-        }
+        /* Responsive Table Overrides */
+        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.4); margin-bottom: 2rem; }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .data-table th, .data-table td { padding: 1rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .data-table th { color: var(--gold-mid); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.3); }
+        .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
 
-        .main-content {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding-bottom: 4rem;
+        @media (max-width: 768px) {
+            .main-content { padding: 0 1rem 4rem 1rem; }
+            .team-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+            .metrics-container { grid-template-columns: 1fr; }
+            .stat-card { padding: 1rem 0.5rem; }
+            .stat-card .value { font-size: 1.4rem; }
+            .header-logo { width: 45px; height: 45px; }
+            h1 { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
-
     <h1 id="team-name-header">Teams</h1>
 
     <!-- Navigation (Injected via JS) -->
@@ -149,9 +118,7 @@
     </div>
 
     <script type="module">
-        import { initNav, getSeasonData, currentSeason } from './js/app.js';
-        import { db } from './js/firebase-config.js';
-        import { collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+        import { initNav, getSeasonData, currentSeason, TEAM_MAPPINGS_CSV } from './js/app.js';
         
         initNav();
 
@@ -176,54 +143,45 @@
                 scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv',
                 playersUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
                 draftPicksUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=464460076&single=true&output=csv' 
+            },
+            '6': {
+                scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv',
+                playersUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
+                draftPicksUrl: '' 
             }
         };
 
-        // Default to S5 if config missing
-        const activeConfig = seasonConfig[currentSeason] || seasonConfig['5'];
+        const activeConfig = seasonConfig[currentSeason] || seasonConfig['6'];
 
         // --- Division Structures ---
         const divisions = {
             "East Conference": {
-                "Atlantic Division": ["Dragons", "Bajas", "Buffaloes"],
-                "Metro Division": ["Kings", "Underdogs", "Knights"]
+                "Atlantic Division": ["Reapers", "Knights", "Voyagers"],
+                "Metro Division": ["Bajas", "Manatees", "Saucers"]
             },
             "West Conference": {
-                "Central Division": ["Reapers", "Stars", "Zombies"],
-                "Pacific Division": ["Manatees", "Tigers", "Voyagers"]
+                "Central Division": ["Dragons", "Tigers", "Zombies"],
+                "Pacific Division": ["Underdogs", "Kings", "Buffaloes"]
             }
         };
 
-        // --- Image Helper ---
         function getTeamLogoPath(name) {
              if(!name) return '';
              let cleanName = name.trim().toLowerCase();
              if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
              cleanName = cleanName.replace(/\s+/g, '-');
              
-             const isPng = ['reapers', 'zombies', 'free-agents'].includes(cleanName);
+             const isPng = ['reapers', 'zombies', 'free-agents', 'east', 'west', 'saucers'].includes(cleanName);
              return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
         }
 
-        // --- Helpers ---
         async function fetchViaWorker(url) {
-            // Graceful handling if URL is missing
             if (!url) return null; 
-
             try {
                 const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
                 if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
                 return res.text();
-            } catch (e) {
-                console.warn("CSV Fetch failed", e);
-                return null;
-            }
-        }
-
-        async function fetchJSONViaWorker(url) {
-             const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
-             if (!res.ok) throw new Error(`Fetch JSON error`);
-             return res.json();
+            } catch (e) { return null; }
         }
 
         function parseCsvToObject(csvText) {
@@ -232,25 +190,40 @@
             if (rows.length < 2) return [];
             const headers = rows[0].split(',').map(h => h.trim());
             return rows.slice(1).map(row => {
-                const values = row.split(',');
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
                 const obj = {};
-                headers.forEach((header, index) => {
-                    // Normalize headers for easier access
-                    obj[header.toLowerCase()] = values[index] ? values[index].trim() : '';
-                });
+                headers.forEach((h, i) => obj[h.toLowerCase()] = values[i] !== undefined ? values[i] : '');
                 return obj;
             });
         }
 
-        // --- Logic ---
+        // --- Date Parser for Sorting Games ---
+        function parseGameDate(dateStr) {
+            if (!dateStr) return 0;
+            const parts = dateStr.split('/');
+            if (parts.length >= 2) {
+                const m = parseInt(parts[0], 10) - 1;
+                const d = parseInt(parts[1], 10);
+                let y = new Date().getFullYear();
+                if (parts.length === 3) y = parseInt(parts[2], 10);
+                if (y < 100) y += 2000;
+                return new Date(y, m, d).getTime();
+            }
+            return new Date(dateStr).getTime();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const teamName = params.get('team');
-            if (teamName) {
-                loadTeamData(decodeURIComponent(teamName));
-            } else {
-                displayTeamGrid();
-            }
+            if (teamName) loadTeamData(decodeURIComponent(teamName));
+            else displayTeamGrid();
         });
 
         // 1. GRID VIEW
@@ -279,7 +252,6 @@
 
         // 2. TEAM DETAIL VIEW
         async function loadTeamData(teamName) {
-            // Update Header
             const headerEl = document.getElementById('team-name-header');
             headerEl.innerHTML = `
                 <img src="${getTeamLogoPath(teamName)}" class="header-logo" onerror="this.style.display='none'">
@@ -289,10 +261,31 @@
             const mainContent = document.getElementById('main-content');
             mainContent.innerHTML = `
                 <div class="team-stats-grid">
-                    <div class="stat-card"><div class="label">Wins</div><div class="value" id="team-wins">0</div></div>
-                    <div class="stat-card"><div class="label">Losses</div><div class="value" id="team-losses">0</div></div>
+                    <div class="stat-card"><div class="label">Reg. Wins</div><div class="value" id="team-wins">0</div></div>
+                    <div class="stat-card"><div class="label">Reg. Losses</div><div class="value" id="team-losses">0</div></div>
+                    <div class="stat-card"><div class="label">Playoff Wins</div><div class="value" id="team-pwins">0</div></div>
+                    <div class="stat-card"><div class="label">Playoff Losses</div><div class="value" id="team-plosses">0</div></div>
                     <div class="stat-card"><div class="label">Points For</div><div class="value" id="team-pf">0.00</div></div>
                     <div class="stat-card"><div class="label">Points Against</div><div class="value" id="team-pa">0.00</div></div>
+                </div>
+
+                <!-- ADVANCED METRICS -->
+                <div class="metrics-container">
+                    <div class="metric-card">
+                        <h3>Form (Last 5)</h3>
+                        <div class="form-tracker" id="team-form-tracker">
+                            <div class="form-badge none">-</div><div class="form-badge none">-</div>
+                            <div class="form-badge none">-</div><div class="form-badge none">-</div>
+                            <div class="form-badge none">-</div>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; text-align: center;">Recent regular season/playoff performance.</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Strength by Sport</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="teamRadarChart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
                 <h2>Roster</h2>
@@ -303,163 +296,222 @@
                     </table>
                 </div>
 
-                <h2>Draft Capital</h2>
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead><tr><th>Season</th><th>Round</th><th>Details</th></tr></thead>
-                        <tbody id="draft-tbody"><tr><td colspan="3">Loading draft capital...</td></tr></tbody>
-                    </table>
-                </div>
-
                 <h2>Schedule</h2>
                 <div class="table-wrapper">
                     <table class="data-table">
-                        <thead><tr><th>Date</th><th>Opponent</th><th>Result</th><th>Score</th></tr></thead>
-                        <tbody id="schedule-tbody"><tr><td colspan="4">Loading schedule...</td></tr></tbody>
+                        <thead><tr><th>Date</th><th>Type</th><th>Opponent</th><th>Result</th><th>Score</th></tr></thead>
+                        <tbody id="schedule-tbody"><tr><td colspan="5">Loading schedule...</td></tr></tbody>
                     </table>
                 </div>
             `;
 
-            // Handling Merged Teams for History
             let teamNamesToQuery = [teamName];
-            if (teamName === 'Reapers') teamNamesToQuery.push('Crovers');
-            if (teamName === 'Zombies') teamNamesToQuery.push('Free Agents');
+            
+            try {
+                const mapText = await fetchViaWorker(TEAM_MAPPINGS_CSV);
+                if(mapText) {
+                    const mapData = parseCsvToObject(mapText);
+                    const tRow = mapData.find(r => r['current name']?.trim().toLowerCase() === teamName.toLowerCase());
+                    if(tRow && tRow['previous name']) {
+                        teamNamesToQuery.push(...tRow['previous name'].split(',').map(n => n.trim()).filter(n => n));
+                    }
+                }
+            } catch(e) { console.warn("Team Mapping fetch failed", e); }
 
             try {
-                // Fetch Games from Firestore (Regular Season)
-                const gamesRef = collection(db, `s${currentSeason}-games`);
-                const q1 = query(gamesRef, where('team1', 'in', teamNamesToQuery));
-                const q2 = query(gamesRef, where('team2', 'in', teamNamesToQuery));
-                
-                // Fetch All Data (CSV + Firestore for totals)
-                const [scheduleText, gamesSnap1, gamesSnap2, playersText, draftPicksText, ...playerSnaps] = await Promise.all([
+                const [scheduleText, allGames, allPlayoffGames, playersText, allPlayers] = await Promise.all([
                     fetchViaWorker(activeConfig.scheduleUrl),
-                    getDocs(q1),
-                    getDocs(q2),
+                    getSeasonData('games'),
+                    getSeasonData('playoff-games'),
                     fetchViaWorker(activeConfig.playersUrl),
-                    fetchViaWorker(activeConfig.draftPicksUrl), // Fetch Draft Picks
-                    // Fetch player stats from Firestore for each alias
-                    ...teamNamesToQuery.map(name => getDocs(query(collection(db, `s${currentSeason}-players`), where('team', '==', name))))
+                    getSeasonData('players') // Raw stats log
                 ]);
 
-                // --- PROCESS SCHEDULE & STATS ---
-                const scheduleData = parseCsvToObject(scheduleText);
-                
-                // Firestore Games Logic (Deduplicate)
+                // --- 1. PROCESS GAMES & BASIC STATS ---
+                let regWins = 0, regLosses = 0, playoffWins = 0, playoffLosses = 0, pf = 0, pa = 0;
                 const completedGames = {};
-                const processDoc = (doc) => {
-                    const data = doc.data();
-                    const k = `${data.date}_${data.team1}_${data.team2}`; // Composite key
-                    completedGames[k] = data;
-                };
-                gamesSnap1.forEach(processDoc);
-                gamesSnap2.forEach(processDoc);
-
-                let wins = 0, losses = 0, pf = 0, pa = 0;
-                const scheduleTbody = document.getElementById('schedule-tbody');
-                scheduleTbody.innerHTML = '';
-
-                // Identify columns in CSV
-                const sampleRow = scheduleData[0] || {};
-                const dateKey = Object.keys(sampleRow).find(k => k.includes('date'));
-                const t1Key = Object.keys(sampleRow).find(k => k.includes('team 1') || k === 'team1');
-                const t2Key = Object.keys(sampleRow).find(k => k.includes('team 2') || k === 'team2');
-                const typeKey = Object.keys(sampleRow).find(k => k.includes('game type') || k === 'type');
-
-                // Filter Schedule CSV
-                const teamSchedule = scheduleData.filter(g => {
-                    // Check if team matches
-                    const isRelevant = teamNamesToQuery.includes(g[t1Key]) || teamNamesToQuery.includes(g[t2Key]);
-                    
-                    // Filter out Preseason games
-                    if (typeKey && g[typeKey]) {
-                        const typeVal = g[typeKey].toLowerCase();
-                        if (typeVal.includes('preseason') || typeVal.includes('pre-season')) {
-                            return false;
-                        }
+                
+                const processDoc = (data, isPlayoff) => {
+                    if (teamNamesToQuery.includes(data.team1) || teamNamesToQuery.includes(data.team2)) {
+                        const k = `${data.date}_${data.team1}_${data.team2}`; 
+                        completedGames[k] = { ...data, isPlayoff, sortDate: parseGameDate(data.date) };
                     }
-                    return isRelevant;
+                };
+                
+                allGames.forEach(d => processDoc(d, false));
+                allPlayoffGames.forEach(d => processDoc(d, true));
+
+                Object.values(completedGames).forEach(game => {
+                    const isHome = teamNamesToQuery.includes(game.team1);
+                    const isPlayoff = game.isPlayoff;
+                    const score1 = parseFloat(game.team1score) || 0;
+                    const score2 = parseFloat(game.team2score) || 0;
+                    
+                    pf += isHome ? score1 : score2;
+                    pa += isHome ? score2 : score1;
+
+                    if (teamNamesToQuery.includes(game.winner)) {
+                        if (isPlayoff) playoffWins++; else regWins++;
+                    } else if (game.winner !== 'TIE') {
+                        if (isPlayoff) playoffLosses++; else regLosses++;
+                    }
                 });
 
-                if (teamSchedule.length === 0) {
-                    scheduleTbody.innerHTML = '<tr><td colspan="4">Schedule not available.</td></tr>';
-                } else {
-                    teamSchedule.forEach(game => {
-                        const gT1 = game[t1Key];
-                        const gT2 = game[t2Key];
-                        const isHome = teamNamesToQuery.includes(gT1);
-                        const opponent = isHome ? gT2 : gT1;
-                        const date = game[dateKey];
-
-                        // Lookup Result
-                        let resultData = completedGames[`${date}_${gT1}_${gT2}`] || completedGames[`${date}_${gT2}_${gT1}`];
-
-                        let scoreStr = 'Upcoming';
-                        let resBadge = '-';
-
-                        if (resultData) {
-                            const ourScore = isHome ? resultData.team1score : resultData.team2score;
-                            const oppScore = isHome ? resultData.team2score : resultData.team1score;
-                            scoreStr = `${ourScore.toFixed(2)} - ${oppScore.toFixed(2)}`;
-                            
-                            // Winner check
-                            if (teamNamesToQuery.includes(resultData.winner)) {
-                                resBadge = '<span class="win">W</span>';
-                                wins++; pf += ourScore; pa += oppScore;
-                            } else {
-                                resBadge = '<span class="loss">L</span>';
-                                losses++; pf += ourScore; pa += oppScore;
-                            }
-                        }
-
-                        scheduleTbody.innerHTML += `<tr><td>${date}</td><td>${opponent}</td><td>${resBadge}</td><td>${scoreStr}</td></tr>`;
-                    });
-                }
-
-                // Update Stat Cards
-                document.getElementById('team-wins').textContent = wins;
-                document.getElementById('team-losses').textContent = losses;
+                document.getElementById('team-wins').textContent = regWins;
+                document.getElementById('team-losses').textContent = regLosses;
+                document.getElementById('team-pwins').textContent = playoffWins;
+                document.getElementById('team-plosses').textContent = playoffLosses;
                 document.getElementById('team-pf').textContent = pf.toFixed(2);
                 document.getElementById('team-pa').textContent = pa.toFixed(2);
 
-
-                // --- PROCESS ROSTER ---
-                const rosterTbody = document.getElementById('roster-tbody');
-                const playersData = parseCsvToObject(playersText);
+                // --- 2. ADVANCED METRICS: FORM TRACKER ---
+                const teamGamesList = Object.values(completedGames).sort((a,b) => a.sortDate - b.sortDate);
+                const last5 = teamGamesList.slice(-5);
+                const formTrackerEl = document.getElementById('team-form-tracker');
                 
-                // 1. Get List of Players currently on team from CSV
-                // Keys: 'user id', 'username', 'team'
-                const rosterList = playersData.filter(p => teamNamesToQuery.includes(p.team) && p['user id']);
-
-                // 2. Aggregate Stats from Firestore Snapshots
-                const playerStats = {};
-                playerSnaps.forEach(snap => {
-                    snap.forEach(doc => {
-                        const d = doc.data();
-                        if (!playerStats[d.userId]) playerStats[d.userId] = { total: 0, games: 0 };
-                        playerStats[d.userId].total += d.score;
-                        playerStats[d.userId].games += 1;
+                if (last5.length > 0) {
+                    let formHtml = '';
+                    last5.forEach(g => {
+                        const isWin = teamNamesToQuery.includes(g.winner);
+                        const isTie = g.winner === 'TIE';
+                        const cls = isWin ? 'W' : (isTie ? 'T' : 'L');
+                        formHtml += `<div class="form-badge ${cls}" title="${g.date} vs ${isWin ? (g.team1 === g.winner ? g.team2 : g.team1) : g.winner}">${cls}</div>`;
                     });
+                    // Pad with empty badges if less than 5 games played
+                    for(let i = last5.length; i < 5; i++) formHtml += `<div class="form-badge none">-</div>`;
+                    formTrackerEl.innerHTML = formHtml;
+                }
+
+                // --- 3. ADVANCED METRICS: RADAR CHART ---
+                // Calculate League Averages by Sport
+                const leagueSportTotals = {};
+                const leagueSportCounts = {};
+                const teamSportTotals = {};
+                const teamSportCounts = {};
+
+                // Loop through every player stat logged this season
+                allPlayers.forEach(p => {
+                    const sport = p.sport ? p.sport.toUpperCase() : null;
+                    if (!sport) return;
+                    
+                    const score = parseFloat(p.score || 0);
+                    
+                    // Add to League Pool
+                    leagueSportTotals[sport] = (leagueSportTotals[sport] || 0) + score;
+                    leagueSportCounts[sport] = (leagueSportCounts[sport] || 0) + 1;
+
+                    // Add to Team Pool if they are on this team
+                    if (teamNamesToQuery.includes(p.team)) {
+                        teamSportTotals[sport] = (teamSportTotals[sport] || 0) + score;
+                        teamSportCounts[sport] = (teamSportCounts[sport] || 0) + 1;
+                    }
                 });
 
-                // 3. Render Roster
+                const radarLabels = [];
+                const radarDataValues = [];
+                
+                // Sort sports alphabetically for a consistent shape across all teams
+                const allLeagueSports = Object.keys(leagueSportTotals).sort();
+
+                // Calculate "Strength Index" (100 is league average) for ALL league sports
+                allLeagueSports.forEach(sport => {
+                    const leagueAvg = leagueSportTotals[sport] / leagueSportCounts[sport];
+                    
+                    if (leagueAvg > 0) {
+                        radarLabels.push(sport);
+                        
+                        // If the team hasn't played this sport, their average is 0
+                        const teamAvg = teamSportCounts[sport] ? (teamSportTotals[sport] / teamSportCounts[sport]) : 0;
+                        
+                        // Cap at 150 visually so it doesn't break the chart boundaries if they are insane at one sport
+                        const index = Math.min((teamAvg / leagueAvg) * 100, 150);
+                        radarDataValues.push(index.toFixed(1));
+                    }
+                });
+
+                const ctx = document.getElementById('teamRadarChart');
+                if (radarLabels.length > 0) {
+                    new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: radarLabels,
+                            datasets: [{
+                                label: 'Strength Index (100 = Avg)',
+                                data: radarDataValues,
+                                backgroundColor: 'rgba(212, 175, 55, 0.4)',
+                                borderColor: '#d4af37',
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: '#d4af37',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: '#d4af37',
+                                borderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                r: {
+                                    angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                    pointLabels: { color: '#e2e8f0', font: { size: 12, family: "'Inter', sans-serif", weight: 'bold' } },
+                                    ticks: { display: false, min: 0, max: 150 } // Hide inner numbers, standardize scale
+                                }
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return ` Strength Index: ${context.formattedValue}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    ctx.parentElement.innerHTML = '<div style="color:#888; text-align:center; padding: 2rem;">Not enough sport data to generate chart.</div>';
+                }
+
+                // --- 4. PROCESS ROSTER ---
+                const rosterTbody = document.getElementById('roster-tbody');
+                const playersData = parseCsvToObject(playersText);
+                const rosterList = playersData.filter(p => teamNamesToQuery.includes(p.team) && (p.userid || p['user id']));
+
+                const playerStats = {};
+                const teamPlayerStats = allPlayers.filter(p => teamNamesToQuery.includes(p.team));
+                teamPlayerStats.forEach(d => {
+                    const uid = d.userId || d.userid || d['user id']; 
+                    const score = parseFloat(d.score) || parseFloat(d.totalscore) || 0; 
+                    const date = d.date; 
+                    if (uid) {
+                        if (!playerStats[uid]) playerStats[uid] = { total: 0, dates: new Set() };
+                        playerStats[uid].total += score;
+                        if (date) playerStats[uid].dates.add(date);
+                    }
+                });
+
                 rosterTbody.innerHTML = '';
                 const renderedRoster = rosterList.map(p => {
-                    const stats = playerStats[p['user id']] || { total: 0, games: 0 };
+                    const uid = p['user id'] || p['userid'];
+                    const stats = playerStats[uid] || { total: 0, dates: new Set() };
+                    const gamesCount = stats.dates.size;
                     return {
-                        name: p.username,
-                        games: stats.games,
+                        name: p.username, 
+                        games: gamesCount, 
                         total: stats.total,
-                        ppg: stats.games > 0 ? (stats.total / stats.games) : 0
+                        ppg: gamesCount > 0 ? (stats.total / gamesCount) : 0,
+                        isRookie: p.rookie && (p.rookie.toLowerCase() === 'yes' || p.rookie.toLowerCase() === 'true')
                     };
-                }).sort((a,b) => b.total - a.total); // Sort by total points
+                }).sort((a,b) => b.total - a.total);
 
                 if (renderedRoster.length === 0) {
                     rosterTbody.innerHTML = '<tr><td colspan="4">No roster data found.</td></tr>';
                 } else {
                     renderedRoster.forEach(p => {
+                        const rookieBadge = p.isRookie ? '<span title="Rookie" style="color: var(--gold-mid); background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.4); font-size: 0.55rem; padding: 1px 4px; border-radius: 3px; margin-left: 6px; font-weight: 800; vertical-align: middle;">R</span>' : '';
                         rosterTbody.innerHTML += `<tr>
-                            <td style="font-weight:600;color:white;">${p.name}</td>
+                            <td style="font-weight:600;color:white;">${p.name}${rookieBadge}</td>
                             <td>${p.games}</td>
                             <td class="win">${p.total.toFixed(2)}</td>
                             <td>${p.ppg.toFixed(2)}</td>
@@ -467,32 +519,71 @@
                     });
                 }
 
-                // --- PROCESS DRAFT CAPITAL ---
-                const draftTbody = document.getElementById('draft-tbody');
-                draftTbody.innerHTML = '';
-                
-                if (draftPicksText) {
-                    const draftData = parseCsvToObject(draftPicksText);
-                    // Filter where Team matches the current team
-                    const teamPicks = draftData.filter(p => teamNamesToQuery.includes(p['team']));
-                    
-                    if (teamPicks.length === 0) {
-                         draftTbody.innerHTML = '<tr><td colspan="3">No draft capital found.</td></tr>';
-                    } else {
-                        // Sort by Season then Round
-                        teamPicks.sort((a, b) => (parseInt(a.season) - parseInt(b.season)) || (parseInt(a.round) - parseInt(b.round)));
+                // --- 5. PROCESS SCHEDULE ---
+                const scheduleData = parseCsvToObject(scheduleText);
+                const scheduleTbody = document.getElementById('schedule-tbody');
+                const scheduleRowsHTML = [];
+                const renderedGameKeys = new Set();
+
+                const teamSchedule = scheduleData.filter(g => {
+                    const isRelevant = teamNamesToQuery.includes(g.team1 || g['team 1']) || teamNamesToQuery.includes(g.team2 || g['team 2']);
+                    const typeKey = Object.keys(g).find(k => k.includes('type'));
+                    if (typeKey && g[typeKey] && g[typeKey].toLowerCase().includes('preseason')) return false;
+                    return isRelevant;
+                });
+
+                const createScheduleRow = (date, type, opponent, resultData, isHome) => {
+                    let scoreStr = 'Upcoming'; let resBadge = '-';
+                    if (resultData) {
+                        const ourScore = isHome ? resultData.team1score : resultData.team2score;
+                        const oppScore = isHome ? resultData.team2score : resultData.team1score;
+                        const ourSeries = isHome ? resultData.team1SeriesWins : resultData.team2SeriesWins;
+                        const oppSeries = isHome ? resultData.team2SeriesWins : resultData.team1SeriesWins;
+
+                        if (ourSeries !== undefined && oppSeries !== undefined) {
+                            scoreStr = `<span style="color:var(--gold-mid); font-weight:bold;">${ourSeries} - ${oppSeries}</span><br><small style="color: #666; font-weight:normal;">(${ourScore.toFixed(2)} - ${oppScore.toFixed(2)} pts)</small>`;
+                        } else {
+                            scoreStr = `${ourScore.toFixed(2)} - ${oppScore.toFixed(2)}`;
+                        }
                         
-                        teamPicks.forEach(pick => {
-                             draftTbody.innerHTML += `<tr>
-                                <td>${pick.season}</td>
-                                <td>${pick.round}</td>
-                                <td style="color: var(--text-muted);">${pick.notes || '-'}</td>
-                            </tr>`;
-                        });
+                        if (teamNamesToQuery.includes(resultData.winner)) resBadge = '<span class="win">W</span>';
+                        else if (resultData.winner === 'TIE') resBadge = '<span style="color:var(--text-muted)">T</span>';
+                        else resBadge = '<span class="loss">L</span>';
                     }
-                } else {
-                     draftTbody.innerHTML = '<tr><td colspan="3">Draft capital data not available.</td></tr>';
-                }
+                    return `<tr><td>${date}</td><td>${type}</td><td>${opponent}</td><td>${resBadge}</td><td>${scoreStr}</td></tr>`;
+                };
+
+                teamSchedule.forEach(game => {
+                    const dateKey = Object.keys(game).find(k => k.includes('date'));
+                    const t1Key = Object.keys(game).find(k => k.includes('team 1') || k === 'team1');
+                    const t2Key = Object.keys(game).find(k => k.includes('team 2') || k === 'team2');
+                    const typeKey = Object.keys(game).find(k => k.includes('type'));
+                    
+                    const gT1 = game[t1Key]; const gT2 = game[t2Key];
+                    const isHome = teamNamesToQuery.includes(gT1);
+                    const opponent = isHome ? gT2 : gT1;
+                    const date = game[dateKey];
+                    const type = typeKey && game[typeKey] ? game[typeKey] : 'Regular Season';
+
+                    const matchKey1 = `${date}_${gT1}_${gT2}`;
+                    const matchKey2 = `${date}_${gT2}_${gT1}`;
+                    let resultData = completedGames[matchKey1] || completedGames[matchKey2];
+
+                    if (resultData) { renderedGameKeys.add(matchKey1); renderedGameKeys.add(matchKey2); }
+                    scheduleRowsHTML.push(createScheduleRow(date, type, opponent, resultData, isHome));
+                });
+
+                Object.values(completedGames).forEach(game => {
+                    const matchKey = `${game.date}_${game.team1}_${game.team2}`;
+                    if (!renderedGameKeys.has(matchKey)) {
+                        const isHome = teamNamesToQuery.includes(game.team1);
+                        const opponent = isHome ? game.team2 : game.team1;
+                        const type = game.isPlayoff ? 'Playoffs' : 'Regular Season';
+                        scheduleRowsHTML.push(createScheduleRow(game.date, type, opponent, game, isHome));
+                    }
+                });
+
+                scheduleTbody.innerHTML = scheduleRowsHTML.join('') || '<tr><td colspan="5">Schedule not available.</td></tr>';
 
             } catch (e) {
                 console.error("Team Load Error:", e);

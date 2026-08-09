@@ -345,26 +345,25 @@
             dropdown.value = currentVal; // Maintain selection if options were added dynamically
         }
 
-        // --- API FETCH LOGIC ---
-        async function fetchRealStats(userId) {
+        // --- API FETCH LOGIC (FIXED: Preflight Killer Implementation) ---
+        async function fetchRealStats(userId, retries = 0) {
             const token = generateRequestToken();
             const deviceUuid = crypto.randomUUID();
-            
-            const headers = {
-                'real-auth-info': REAL_AUTH_TOKEN,
-                'real-device-name': 'Chrome on Web',
-                'real-device-type': 'desktop_web',
-                'real-device-uuid': deviceUuid,
-                'real-request-token': token,
-                'real-version': REAL_VERSION
-            };
-
             const targetUrl = `https://web.realsports.io/sportbrawluserstats/${userId}`;
             
-            const res = await fetch(workerProxy + '?url=' + encodeURIComponent(targetUrl), {
-                method: 'GET',
-                headers: headers
-            });
+            // Send headers via URL params so the worker intercepts them properly without triggering CORS preflights
+            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(targetUrl)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${deviceUuid}&token=${token}`;
+            
+            const res = await fetch(proxyUrl);
+
+            // Handle Rate Limits gracefully
+            if (res.status === 429 || res.status === 502) {
+                if (retries < 3) {
+                    await new Promise(r => setTimeout(r, 2000 + (Math.random() * 1000))); // Dynamic Backoff
+                    return fetchRealStats(userId, retries + 1);
+                }
+                throw new Error(`API Rate Limit Hit (${res.status})`);
+            }
 
             if (!res.ok) throw new Error(`API Error: ${res.status}`);
             return res.json();
@@ -512,14 +511,32 @@
                     if (jsonRes.ok) jsonData = await jsonRes.json();
                 } catch (e) { console.log('No JSON data found'); }
 
-                // 2. Fetch CSV (Live list)
+                // 2. Fetch CSV (Live list) - Bypassing proxy for Google Sheets to prevent CORS blocks
                 statusMsg.textContent = "Reading Player List...";
-                const csvRes = await fetch(workerProxy + '?url=' + encodeURIComponent(CSV_URL));
+                const csvRes = await fetch(CSV_URL);
                 if (!csvRes.ok) throw new Error("Failed to fetch spreadsheet");
                 const csvText = await csvRes.text();
 
+                // Robust CSV Parser
+                const parseCSVLocal = (csvStr) => {
+                    return csvStr.split('\n').map(line => {
+                        const values = [];
+                        let currentVal = '', inQuotes = false;
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            if (char === '"' && (i === 0 || line[i-1] !== '\\')) inQuotes = !inQuotes;
+                            else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                            else currentVal += char;
+                        }
+                        values.push(currentVal.trim());
+                        return values;
+                    }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+                };
+
                 // 3. Parse CSV
-                const rows = csvText.split('\n').map(r => r.split(','));
+                const rows = parseCSVLocal(csvText);
+                if (rows.length < 2) throw new Error("Empty CSV");
+                
                 const headers = rows[0].map(h => h.toLowerCase().trim());
                 
                 const idxTeam = headers.indexOf('team');
@@ -528,7 +545,8 @@
 
                 const agents = rows.slice(1).filter(r => {
                     if (idxTeam > -1) {
-                        return (r[idxTeam]?.trim().toLowerCase() === 'free agents') && r[idxId];
+                        const tName = r[idxTeam]?.trim().toLowerCase();
+                        return (tName === 'free agents' || tName === 'fa' || tName === '') && r[idxId];
                     }
                     return r.length > 1 && r[idxId];
                 });

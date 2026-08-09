@@ -367,7 +367,11 @@
         const scheduleUrlS4 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv';
         const scheduleUrlS5 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv';
         const draftUrlS4 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?output=csv';
-        const draftUrlS5 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?output=csv'; // Utilizing the provided draft CSV for Season 5
+        const draftUrlS5 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?output=csv';
+
+        // NEW SEASON 6 URLs
+        const scheduleUrlS6 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv';
+        const draftUrlS6 = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?output=csv'; // standard fallback for now
 
         // --- CONFIGURATIONS ---
         const configs = {
@@ -375,7 +379,8 @@
             '2': { status: 'Complete', champion: 'Kings', mvp: '@croze' },
             '3': { status: 'Complete', champion: 'Kings', mvp: '@bc' },
             '4': { status: 'Complete', champion: 'Reapers', mvp: '@balt' },
-            '5': { status: 'Upcoming', champion: 'TBD', mvp: 'TBD' }
+            '5': { status: 'Complete', champion: 'Dragons', mvp: '@nottherealben' },
+            '6': { status: 'Live', champion: 'TBD', mvp: 'TBD' }
         };
 
         // --- IMAGE HELPER ---
@@ -385,7 +390,7 @@
              cleanName = cleanName.replace(/\s+/g, '-');
              
              // Specific extensions
-             const isPng = ['reapers', 'zombies'].includes(cleanName);
+             const isPng = ['reapers', 'zombies', 'saucers'].includes(cleanName);
              return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
         }
 
@@ -393,8 +398,10 @@
         function init() {
             const container = document.getElementById('main-hub-container');
 
-            if (currentSeason === '5') {
-                renderSeason5Hub(container);
+            if (currentSeason === '6') {
+                renderLiveHub(container, '6', scheduleUrlS6, draftUrlS6);
+            } else if (currentSeason === '5') {
+                renderLiveHub(container, '5', scheduleUrlS5, draftUrlS5);
             } else if (currentSeason === '4') {
                 renderSeason4Hub(container);
             } else {
@@ -403,32 +410,44 @@
         }
 
         // ==========================================
-        //  SEASON 5 LOGIC (Upcoming State)
+        //  LIVE & RECENTLY COMPLETED SEASONS LOGIC (S5, S6)
         // ==========================================
-        function renderSeason5Hub(container) {
+        function renderLiveHub(container, season, scheduleUrl, draftUrl) {
+            const config = configs[season] || { status: 'Live', champion: 'TBD' };
+            let topBanner = '';
+            
+            if (config.status === 'Complete') {
+                topBanner = `
+                <div class="game-card" style="text-align: center; margin-bottom: 2rem;">
+                    <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Season ${season}</h2>
+                    <p style="color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Complete</p>
+                    <h3 style="margin-top: 1rem; color: var(--gold-mid);">🏆 Champion: ${config.champion}</h3>
+                </div>`;
+            }
+
             container.innerHTML = `
+                ${topBanner}
                 <!-- Internal Tabs -->
                 <div class="internal-tabs">
-                    <button class="internal-tab-btn active" id="btn-games">Upcoming Games</button>
-                    <button class="internal-tab-btn" id="btn-draft">Season 5 Draft</button>
-                    <button class="internal-tab-btn" id="btn-madness">RDA Madness</button>
+                    <button class="internal-tab-btn active" id="btn-games">${config.status === 'Complete' ? 'Season Games' : 'Upcoming Games'}</button>
+                    <button class="internal-tab-btn" id="btn-draft">Season ${season} Draft</button>
                     <button class="internal-tab-btn" id="btn-bracket">Playoff Bracket</button>
                 </div>
 
                 <!-- Tab 1: Upcoming Games -->
                 <div id="tab-games" class="tab-pane active">
-                    <h2 class="section-title">Upcoming Games</h2>
+                    <h2 class="section-title">${config.status === 'Complete' ? 'Season Games' : 'Upcoming Games'}</h2>
                     <div class="games-grid" id="upcoming-games-container">
                         <div id="loading-message">Loading schedule...</div>
                     </div>
                     <p style="margin-top: 2rem; color: #666; font-size: 0.9rem;">
-                        Full schedule available in the <a href="schedule.html?season=5" style="color: #4CAF50; text-decoration: none;">Schedule</a> tab.
+                        Full schedule available in the <a href="schedule.html?season=${season}" style="color: #4CAF50; text-decoration: none;">Schedule</a> tab.
                     </p>
                 </div>
 
                 <!-- Tab 2: Draft -->
                 <div id="tab-draft" class="tab-pane">
-                    <h2 class="section-title">Season 5 Draft Results</h2>
+                    <h2 class="section-title">Season ${season} Draft Results</h2>
                     <div class="draft-table-container">
                         <table class="draft-table">
                             <thead>
@@ -439,34 +458,180 @@
                                     <th>Selection</th>
                                 </tr>
                             </thead>
-                            <tbody id="draft-table-body-s5">
+                            <tbody id="draft-table-body-s${season}">
                                 <tr><td colspan="4" id="draft-loading-message">Loading draft data...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Tab 3: Madness -->
-                <div id="tab-madness" class="tab-pane">
-                    <h2 class="section-title">RDA Madness</h2>
-                    <div style="padding: 2rem; color: #888; text-align: center;">Bracket will be revealed during the season.</div>
-                </div>
-
-                <!-- Tab 4: League Playoffs -->
+                <!-- Tab 3: League Playoffs -->
                 <div id="tab-bracket" class="tab-pane">
                     <h2 class="section-title">League Playoff Bracket</h2>
-                    <div style="padding: 2rem; color: #888; text-align: center;">Playoff matchups will be determined at the end of the regular season.</div>
+                    <div id="s${season}-bracket-container">
+                        <div style="padding: 2rem; color: #888; text-align: center;">Loading Playoff Bracket...</div>
+                    </div>
                 </div>
             `;
 
             // Bind Tab Events
             document.getElementById('btn-games').onclick = () => switchTab('games');
             document.getElementById('btn-draft').onclick = () => switchTab('draft');
-            document.getElementById('btn-madness').onclick = () => switchTab('madness');
             document.getElementById('btn-bracket').onclick = () => switchTab('bracket');
 
-            loadUpcomingGames(scheduleUrlS5);
-            loadDraft(draftUrlS5, 'draft-table-body-s5');
+            loadUpcomingGames(scheduleUrl, config.status === 'Complete');
+            loadDraft(draftUrl, `draft-table-body-s${season}`);
+            
+            if (season === '5') {
+                renderS5Bracket();
+            } else {
+                renderGenericLiveBracket(`s${season}-bracket-container`, season);
+            }
+        }
+
+        async function renderS5Bracket() {
+            const container = document.getElementById('s5-bracket-container');
+            if (!container) return;
+            
+            // Fetch Playoff Data
+            let playoffGames = [];
+            try {
+                playoffGames = await getSeasonData('playoff-games');
+            } catch (e) {
+                console.warn("Could not fetch playoff games:", e);
+            }
+
+            const seriesData = {};
+            if (playoffGames && playoffGames.length > 0) {
+                playoffGames.forEach(g => {
+                    if(!g.team1 || !g.team2 || !g.winner) return;
+                    const t1 = g.team1.trim(), t2 = g.team2.trim();
+                    const key = [t1.toLowerCase(), t2.toLowerCase()].sort().join('-');
+                    
+                    if(!seriesData[key]) seriesData[key] = { [t1.toLowerCase()]: 0, [t2.toLowerCase()]: 0 };
+                    
+                    // Increment wins for the winner of each specific playoff game
+                    const wKey = g.winner.trim().toLowerCase();
+                    if(seriesData[key][wKey] !== undefined) {
+                        seriesData[key][wKey]++;
+                    }
+                });
+            }
+
+            const buildMatchup = (t1_seeded, t2_seeded) => {
+                const t1 = t1_seeded.replace(/^\d+\.\s*/, '').trim();
+                const t2 = t2_seeded.replace(/^\d+\.\s*/, '').trim();
+                
+                // Allow matching "TBD" or placeholders safely
+                if (t1.includes('TBD') || t1.includes('Champ') || t2.includes('TBD') || t2.includes('Champ')) {
+                    return { team1: t1_seeded, team2: t2_seeded, t1Wins: '', t2Wins: '' };
+                }
+
+                const key = [t1.toLowerCase(), t2.toLowerCase()].sort().join('-');
+                const stats = seriesData[key] || {};
+                
+                return {
+                    team1: t1_seeded, 
+                    team2: t2_seeded,
+                    t1Wins: stats[t1.toLowerCase()] || 0, 
+                    t2Wins: stats[t2.toLowerCase()] || 0
+                };
+            };
+
+            const getWinner = (matchup, winsNeeded) => {
+                if (matchup.t1Wins >= winsNeeded) return matchup.team1;
+                if (matchup.t2Wins >= winsNeeded) return matchup.team2;
+                return null;
+            };
+
+            // EAST
+            const eastR1 = [
+                buildMatchup('1. Bajas', '4. Knights'),
+                buildMatchup('2. Underdogs', '3. Dragons')
+            ];
+            
+            const eR2_t1 = getWinner(eastR1[0], 2) || 'TBD';
+            const eR2_t2 = getWinner(eastR1[1], 2) || 'TBD';
+            const eastR2 = [ buildMatchup(eR2_t1, eR2_t2) ];
+
+            // WEST
+            const westR1 = [
+                buildMatchup('1. Reapers', '4. Zombies'),
+                buildMatchup('2. Tigers', '3. Manatees')
+            ];
+
+            const wR2_t1 = getWinner(westR1[0], 2) || 'TBD';
+            const wR2_t2 = getWinner(westR1[1], 2) || 'TBD';
+            const westR2 = [ buildMatchup(wR2_t1, wR2_t2) ];
+
+            // FINALS
+            const f_t1 = getWinner(eastR2[0], 3) || 'East Champ';
+            const f_t2 = getWinner(westR2[0], 3) || 'West Champ';
+            const championship = buildMatchup(f_t1, f_t2);
+
+            let finalHtml = `<div class="tournament-bracket">`;
+            
+            // Build Left Side (East)
+            finalHtml += generatePlayoffBracketSide(eastR1, eastR2, 'left', 'East');
+            
+            // Build Center (Championship)
+            finalHtml += `
+                <div class="bracket-center">
+                    <div style="width: 100%;">
+                        <h3 style="font-size:0.9rem; color:var(--gold-mid); margin-bottom:10px; text-transform:uppercase; text-align:center;">Finals (BO7)</h3>
+                        <div class="championship-match">
+                            ${renderTreeMatch(championship)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Build Right Side (West)
+            finalHtml += generatePlayoffBracketSide(westR1, westR2, 'right', 'West');
+            
+            finalHtml += `</div>`;
+            container.innerHTML = finalHtml;
+        }
+
+        async function renderGenericLiveBracket(containerId, season) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Use generic TBD structure for future live seasons until seeds are set
+            const buildGenericMatchup = (t1, t2) => {
+                return { team1: t1, team2: t2, t1Wins: '', t2Wins: '' };
+            };
+
+            const eastR1 = [
+                buildGenericMatchup('1. East Seed 1', '4. East Seed 4'),
+                buildGenericMatchup('2. East Seed 2', '3. East Seed 3')
+            ];
+            const eastR2 = [ buildGenericMatchup('TBD', 'TBD') ];
+
+            const westR1 = [
+                buildGenericMatchup('1. West Seed 1', '4. West Seed 4'),
+                buildGenericMatchup('2. West Seed 2', '3. West Seed 3')
+            ];
+            const westR2 = [ buildGenericMatchup('TBD', 'TBD') ];
+
+            const championship = buildGenericMatchup('East Champ', 'West Champ');
+
+            let finalHtml = `<div class="tournament-bracket">`;
+            finalHtml += generatePlayoffBracketSide(eastR1, eastR2, 'left', 'East');
+            finalHtml += `
+                <div class="bracket-center">
+                    <div style="width: 100%;">
+                        <h3 style="font-size:0.9rem; color:var(--gold-mid); margin-bottom:10px; text-transform:uppercase; text-align:center;">Finals (BO7)</h3>
+                        <div class="championship-match">
+                            ${renderTreeMatch(championship)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            finalHtml += generatePlayoffBracketSide(westR1, westR2, 'right', 'West');
+            finalHtml += `</div>`;
+            
+            container.innerHTML = finalHtml;
         }
 
         // ==========================================
@@ -550,7 +715,7 @@
             const s1 = match ? match.t1Wins : '';
             const s2 = match ? match.t2Wins : '';
             
-            // Add gold highlighting for the winner
+            // Add gold highlighting for the winner (safely handling numbers and 'W')
             const c1 = (s1 === 'W' || s1 > s2) ? 'color: var(--gold-mid); font-weight: bold;' : '';
             const c2 = (s2 === 'W' || s2 > s1) ? 'color: var(--gold-mid); font-weight: bold;' : '';
             
@@ -615,9 +780,9 @@
                         </div>
                      </div>`;
             
-            // Round 2 (Semi-Finals - BO5)
+            // Round 2 (Conf. Finals - BO5)
             html += `<div class="bracket-column r2">
-                        <div class="series-label">Semi-Finals (BO5)</div>
+                        <div class="series-label">Conf. Finals (BO5)</div>
                         <div class="matchup-pair single">
                             ${renderTreeMatch(r2[0])}
                         </div>
@@ -738,7 +903,7 @@
             finalHtml += `
                 <div class="bracket-center">
                     <div style="width: 100%;">
-                        <h3 style="font-size:0.9rem; color:var(--gold-mid); margin-bottom:10px; text-transform:uppercase; text-align:center;">Championship (BO7)</h3>
+                        <h3 style="font-size:0.9rem; color:var(--gold-mid); margin-bottom:10px; text-transform:uppercase; text-align:center;">Finals (BO7)</h3>
                         <div class="championship-match">
                             ${renderTreeMatch(championship)}
                         </div>
@@ -822,7 +987,7 @@
             const dateIndex = headers.findIndex(h => h.includes('date'));
             const team1Index = headers.findIndex(h => h.includes('team 1') || h === 'team1');
             const team2Index = headers.findIndex(h => h.includes('team 2') || h === 'team2');
-            const gameTypeIndex = headers.findIndex(h => h.includes('game type'));
+            const gameTypeIndex = headers.findIndex(h => h.includes('game type') || h.includes('matchup type') || h.includes('sport') || h.includes('active'));
 
             if (dateIndex === -1 || team1Index === -1 || team2Index === -1) {
                 container.innerHTML = `<div style="grid-column: 1/-1;">Error: Missing columns.</div>`;
@@ -859,8 +1024,19 @@
                 const team1 = row[team1Index].trim();
                 const team2 = row[team2Index].trim();
                 const date = row[dateIndex];
-                const gameType = gameTypeIndex > -1 ? row[gameTypeIndex] : 'Matchup';
                 
+                const gameTypeRaw = gameTypeIndex > -1 ? row[gameTypeIndex] : '';
+                const gameType = gameTypeRaw ? gameTypeRaw : 'Matchup';
+                
+                let activeSportsHtml = '';
+                if (gameTypeRaw && gameTypeRaw.includes(',')) {
+                    activeSportsHtml = gameTypeRaw.split(',').map(s => `<span style="background: rgba(212, 175, 55, 0.1); border: 1px solid var(--gold-mid); color: var(--gold-light); padding: 2px 8px; border-radius: 12px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin: 0 2px;">${s.trim()}</span>`).join('');
+                } else if (gameTypeRaw) {
+                    activeSportsHtml = `<span style="color: var(--gold-mid); font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">${gameTypeRaw}</span>`;
+                } else {
+                    activeSportsHtml = `<span style="color: #888;">${gameType}</span>`;
+                }
+
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 card.innerHTML = `
@@ -876,7 +1052,7 @@
                             <div class="team-name">${team2}</div>
                         </div>
                     </div>
-                    <div class="game-meta">${gameType}</div>
+                    <div class="game-meta" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; padding-top: 1rem;">${activeSportsHtml}</div>
                 `;
                 container.appendChild(card);
             });
