@@ -171,7 +171,7 @@
              if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
              cleanName = cleanName.replace(/\s+/g, '-');
              
-             const isPng = ['reapers', 'zombies', 'free-agents', 'east', 'west', 'saucers'].includes(cleanName);
+             const isPng = ['reapers', 'zombies', 'free-agents', 'east-all-stars', 'west-all-stars', 'saucers'].includes(cleanName);
              return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
         }
 
@@ -291,7 +291,7 @@
                 <h2>Roster</h2>
                 <div class="table-wrapper">
                     <table class="data-table">
-                        <thead><tr><th>Player</th><th>GP</th><th>Total Pts</th><th>PPG</th></tr></thead>
+                        <thead><tr><th>Player</th><th>Start GP</th><th>Start Pts</th><th>Bench Pts</th></tr></thead>
                         <tbody id="roster-tbody"><tr><td colspan="4">Loading roster...</td></tr></tbody>
                     </table>
                 </div>
@@ -395,15 +395,19 @@
                     if (!sport) return;
                     
                     const score = parseFloat(p.score || 0);
-                    
-                    // Add to League Pool
-                    leagueSportTotals[sport] = (leagueSportTotals[sport] || 0) + score;
-                    leagueSportCounts[sport] = (leagueSportCounts[sport] || 0) + 1;
+                    const isBench = p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true';
 
-                    // Add to Team Pool if they are on this team
-                    if (teamNamesToQuery.includes(p.team)) {
-                        teamSportTotals[sport] = (teamSportTotals[sport] || 0) + score;
-                        teamSportCounts[sport] = (teamSportCounts[sport] || 0) + 1;
+                    // Only count Starters towards the strength index so bench points don't skew the graph
+                    if (score > 0 && !isBench) {
+                        // Add to League Pool
+                        leagueSportTotals[sport] = (leagueSportTotals[sport] || 0) + score;
+                        leagueSportCounts[sport] = (leagueSportCounts[sport] || 0) + 1;
+
+                        // Add to Team Pool if they are on this team
+                        if (teamNamesToQuery.includes(p.team)) {
+                            teamSportTotals[sport] = (teamSportTotals[sport] || 0) + score;
+                            teamSportCounts[sport] = (teamSportCounts[sport] || 0) + 1;
+                        }
                     }
                 });
 
@@ -484,23 +488,29 @@
                     const uid = d.userId || d.userid || d['user id']; 
                     const score = parseFloat(d.score) || parseFloat(d.totalscore) || 0; 
                     const date = d.date; 
+                    const isBench = d.isBench || d.isbench || d.bench === true || String(d.bench).toLowerCase() === 'true';
+
                     if (uid) {
-                        if (!playerStats[uid]) playerStats[uid] = { total: 0, dates: new Set() };
-                        playerStats[uid].total += score;
-                        if (date) playerStats[uid].dates.add(date);
+                        if (!playerStats[uid]) playerStats[uid] = { starterTotal: 0, benchTotal: 0, dates: new Set() };
+                        if (isBench) {
+                            playerStats[uid].benchTotal += score;
+                        } else {
+                            playerStats[uid].starterTotal += score;
+                            if (date) playerStats[uid].dates.add(date);
+                        }
                     }
                 });
 
                 rosterTbody.innerHTML = '';
                 const renderedRoster = rosterList.map(p => {
                     const uid = p['user id'] || p['userid'];
-                    const stats = playerStats[uid] || { total: 0, dates: new Set() };
+                    const stats = playerStats[uid] || { starterTotal: 0, benchTotal: 0, dates: new Set() };
                     const gamesCount = stats.dates.size;
                     return {
                         name: p.username, 
                         games: gamesCount, 
-                        total: stats.total,
-                        ppg: gamesCount > 0 ? (stats.total / gamesCount) : 0,
+                        total: stats.starterTotal,
+                        benchTotal: stats.benchTotal,
                         isRookie: p.rookie && (p.rookie.toLowerCase() === 'yes' || p.rookie.toLowerCase() === 'true')
                     };
                 }).sort((a,b) => b.total - a.total);
@@ -514,7 +524,7 @@
                             <td style="font-weight:600;color:white;">${p.name}${rookieBadge}</td>
                             <td>${p.games}</td>
                             <td class="win">${p.total.toFixed(2)}</td>
-                            <td>${p.ppg.toFixed(2)}</td>
+                            <td style="color:#888;">${p.benchTotal > 0 ? p.benchTotal.toFixed(2) : '-'}</td>
                         </tr>`;
                     });
                 }

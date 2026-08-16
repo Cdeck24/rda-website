@@ -636,13 +636,41 @@
             let html = '';
             dropSelect.innerHTML = '<option value="">Select player to drop...</option>';
 
+            // Helper to normalize dates for matching (e.g. "08/13" -> "8/13")
+            const normalizeMD = (d) => {
+                if (!d) return "";
+                const parts = String(d).split('/');
+                if (parts.length >= 2) return parseInt(parts[0], 10) + "/" + parseInt(parts[1], 10);
+                return String(d).trim().toLowerCase();
+            };
+
+            const targetMD = normalizeMD(dateStr);
+
             roster.forEach(p => {
                 let playVal = '';
-                const dateKey = dateStr ? dateStr.trim().toLowerCase() : null;
+                let targetKey = null;
+
+                // 1. Search for a matching date column in the player's keys from the CSV
+                if (targetMD) {
+                    for (let key in p) {
+                        if (normalizeMD(key) === targetMD) {
+                            targetKey = key;
+                            break;
+                        }
+                        // Try parsing as date just in case it exported weirdly
+                        const parsed = new Date(key);
+                        if (!isNaN(parsed.getTime()) && key.includes('/')) {
+                            if ((parsed.getMonth() + 1) + "/" + parsed.getDate() === targetMD) {
+                                targetKey = key;
+                                break;
+                            }
+                        }
+                    }
+                }
                 
-                // Read from the date-specific column first, fallback to default 'playing?'
-                if (dateKey && p[dateKey] !== undefined && p[dateKey].trim() !== '') {
-                    playVal = p[dateKey];
+                // 2. Read from the date-specific column first, fallback to default 'playing?'
+                if (targetKey && p[targetKey] !== undefined && p[targetKey].trim() !== '') {
+                    playVal = p[targetKey];
                 } else {
                     playVal = p['playing?'] || p['playing'] || '';
                 }
@@ -694,6 +722,28 @@
                 });
                 const data = await res.json();
                 if(data.status === 'error') throw new Error(data.message);
+                
+                // --- UPDATE LOCAL CACHE SO IT DOESN'T REVERT WHEN SWITCHING TABS OR DATES ---
+                const normalizeMD = (d) => {
+                    if (!d) return "";
+                    const parts = String(d).split('/');
+                    if (parts.length >= 2) return parseInt(parts[0], 10) + "/" + parseInt(parts[1], 10);
+                    return String(d).trim().toLowerCase();
+                };
+                const targetMD = normalizeMD(lineupDate);
+                
+                updates.forEach(u => {
+                    const player = allPlayersData.find(p => p.username === u.username);
+                    if (player) {
+                        let foundKey = null;
+                        for (let key in player) {
+                            if (normalizeMD(key) === targetMD) { foundKey = key; break; }
+                        }
+                        if (!foundKey) foundKey = targetMD; // create a new key if it didn't exist in CSV yet
+                        player[foundKey] = u.playing;
+                    }
+                });
+
                 showToast(`Lineup Saved for ${lineupDate}!`);
             } catch (e) {
                 alert(`Failed to save: ${e.message}`);

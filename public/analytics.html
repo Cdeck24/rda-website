@@ -8,9 +8,12 @@
     <style>
         .analytics-content {
             max-width: 1200px;
+            width: 100%;
+            box-sizing: border-box;
             margin: 0 auto;
             padding: 2rem 1rem;
             animation: fadeIn 0.5s ease-out;
+            overflow-x: hidden;
         }
 
         .page-header { text-align: center; margin-bottom: 2rem; }
@@ -25,8 +28,8 @@
         .tab-pane { display: none; animation: fadeIn 0.3s ease-out; }
         .tab-pane.active { display: block; }
 
-        .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 2rem; }
-        .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .table-wrapper { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 2rem; }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
         .data-table th, .data-table td { padding: 1rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .data-table th { color: var(--gold-mid); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; background: rgba(0,0,0,0.4); position: sticky; top: 0; z-index: 10; }
         .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
@@ -66,12 +69,13 @@
         @media (max-width: 768px) {
             .page-header h1 { font-size: 2rem; }
             .page-header p { font-size: 0.95rem; }
-            .tabs { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; }
+            .tabs { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; width: 100%; box-sizing: border-box; }
             .tab-btn { flex: 0 0 auto; font-size: 0.85rem; padding: 0.6rem 1rem; scroll-snap-align: start; }
             .analytics-content { padding: 1rem 0.5rem; }
             .info-card { padding: 1rem; }
-            .data-table th, .data-table td { padding: 0.75rem 0.5rem; font-size: 0.85rem; }
-            .pr-score { font-size: 1.2rem; }
+            .data-table { min-width: 450px; }
+            .data-table th, .data-table td { padding: 0.6rem 0.4rem; font-size: 0.75rem; }
+            .pr-score { font-size: 1.1rem; }
             .rank-col { width: 40px; }
         }
     </style>
@@ -96,6 +100,7 @@
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('power-rankings', this)">Power Rankings</button>
                 <button class="tab-btn" onclick="switchTab('expected-wins', this)">Pythagorean Expected Wins</button>
+                <button class="tab-btn" onclick="switchTab('bench-efficiency', this)">Bench Efficiency</button>
                 <button class="tab-btn" onclick="switchTab('matrix', this)">Head-to-Head Matrix</button>
             </div>
 
@@ -145,6 +150,29 @@
                 </div>
             </div>
 
+            <!-- BENCH EFFICIENCY -->
+            <div id="bench-efficiency" class="tab-pane">
+                <div class="info-card">
+                    <h3 id="bench-title">Current Season Bench Efficiency</h3>
+                    <p>Measures a GM's ability to set the optimal lineup. We calculate the mathematical highest possible score a team could have achieved each day (by summing their top 8 highest-scoring players across all active sports) and compare it against the 8 starters the GM actually played. The closer to 100%, the better the GM is at playing the right matchups.</p>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">Rank</th>
+                                <th class="table-left-align">Team</th>
+                                <th>Optimal Pts Possible</th>
+                                <th>Actual Pts Scored</th>
+                                <th>Pts Left on Bench</th>
+                                <th class="table-right-align">Efficiency %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bench-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- H2H MATRIX -->
             <div id="matrix" class="tab-pane">
                 <div class="info-card">
@@ -163,12 +191,9 @@
 
     <script type="module">
         import { initNav, currentSeason, HISTORICAL_CSVS, TEAM_MAPPINGS_CSV, PLAYER_MAPPINGS_CSV } from './js/app.js';
-        import { db } from './js/firebase-config.js';
-        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
-
+        
         initNav();
 
-        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
         const seasonsToFetch = Object.keys(HISTORICAL_CSVS);
 
         window.switchTab = function(tabId, btn) {
@@ -178,45 +203,81 @@
             if (btn) btn.classList.add('active');
         };
 
+        // --- STREAMING_CHUNK: Replacing slow parser with optimized native fast-split parser ---
         function parseCsvLocal(csvText) {
             if (!csvText || csvText.trim().startsWith('<')) return [];
-            const rows = csvText.trim().split(/\r?\n/);
-            if (rows.length < 2) return [];
-            const delimiter = rows[0].includes('\t') ? '\t' : ',';
-            const headers = rows[0].split(delimiter).map(h => h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase());
-            return rows.slice(1).map(row => {
-                let inQuotes = false; let currentVal = ''; const values = [];
-                for (let i = 0; i < row.length; i++) {
-                    const char = row[i];
-                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
-                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
-                    else currentVal += char;
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length < 2) return [];
+            
+            const delimiter = lines[0].includes('\t') ? '\t' : ',';
+            const headers = lines[0].split(delimiter).map(h => h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase());
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line) continue;
+                
+                // Fast path: Native split if no quotes (99% of rows)
+                if (line.indexOf('"') === -1) {
+                    const values = line.split(delimiter);
+                    const obj = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        obj[headers[j]] = values[j] !== undefined ? values[j].trim() : '';
+                    }
+                    data.push(obj);
+                } else {
+                    // Slow path for complex rows with commas inside quotes
+                    let inQuotes = false; let currentVal = ''; const values = [];
+                    for (let k = 0; k < line.length; k++) {
+                        const char = line[k];
+                        if (char === '"' && (k === 0 || line[k-1] !== '\\')) inQuotes = !inQuotes;
+                        else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                        else currentVal += char;
+                    }
+                    values.push(currentVal.trim());
+                    const obj = {};
+                    for (let j = 0; j < headers.length; j++) {
+                        let val = values[j] !== undefined ? values[j] : '';
+                        obj[headers[j]] = val.replace(/^"|"$/g, '').trim();
+                    }
+                    data.push(obj);
                 }
-                values.push(currentVal.trim());
-                const obj = {};
-                headers.forEach((h, i) => {
-                    let val = values[i] !== undefined ? values[i] : '';
-                    obj[h] = val.replace(/^"|"$/g, '').trim();
-                });
-                return obj;
-            });
+            }
+            return data;
         }
 
+        // Fetching purely from CSVs with Session Caching! No Firestore blocking.
         async function fetchCollection(s, type) {
+            const cacheKey = `rda_analytics_${s}_${type}`;
+            
+            // ONLY use the session cache for historical seasons. Current season needs to be fresh!
+            if (String(s) !== String(currentSeason)) {
+                const cached = sessionStorage.getItem(cacheKey);
+                if (cached) {
+                    return JSON.parse(cached);
+                }
+            }
+
             let data = [];
             const csvUrl = HISTORICAL_CSVS[s]?.[type];
+            
             if (csvUrl) {
                 try {
-                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
+                    // Append a timestamp to force the browser to bypass its local network cache
+                    const cacheBuster = '&nocache=' + Date.now();
+                    const res = await fetch(csvUrl + cacheBuster);
                     if (res.ok) data = parseCsvLocal(await res.text());
                 } catch (e) { console.error(e); }
-            } else {
-                try {
-                    const snaps = await getDocs(collection(db, `s${s}-${type}`));
-                    snaps.forEach(doc => data.push(doc.data()));
-                } catch (e) {}
             }
-            return data.map(d => ({ ...d, _season: s, _type: type }));
+            
+            const finalData = data.map(d => ({ ...d, _season: s, _type: type }));
+            
+            // Save to browser memory ONLY if it is a historical season
+            if (finalData.length > 0 && String(s) !== String(currentSeason)) {
+                try { sessionStorage.setItem(cacheKey, JSON.stringify(finalData)); } catch(e) {}
+            }
+            
+            return finalData;
         }
 
         const getNum = (val) => parseFloat(String(val).replace(/,/g, '')) || 0;
@@ -227,72 +288,23 @@
             return new Date(dateStr).getTime() || 0;
         };
 
-        async function compileAnalytics() {
-            // Mappings
-            let teamMap = {};
-            let activeFranchises = new Set();
-            try {
-                const mapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(TEAM_MAPPINGS_CSV));
-                if (mapRes.ok) {
-                    const mapData = parseCsvLocal(await mapRes.text());
-                    mapData.forEach(row => {
-                        const curr = row['current name'];
-                        const prev = row['previous name'];
-                        if (curr) {
-                            teamMap[curr.toLowerCase().trim()] = curr;
-                            activeFranchises.add(curr);
-                            if (prev) prev.split(',').forEach(p => { if(p.trim()) teamMap[p.trim().toLowerCase()] = curr; });
-                        }
-                    });
-                }
-            } catch (e) {}
+        // --- STREAMING_CHUNK: Historical data loaded lazily in the background ---
+        async function loadHistoricalMatrix(teamMap, activeFranchises, currGames, currPlayoffGames) {
+            const promises = [];
+            for (const s of seasonsToFetch) {
+                if (String(s) === String(currentSeason)) continue;
+                promises.push(fetchCollection(s, 'games'));
+                promises.push(fetchCollection(s, 'playoff-games'));
+            }
+            
+            const histData = (await Promise.all(promises)).flat();
+            const allGames = [...currGames, ...currPlayoffGames, ...histData];
+            
             const getRealTeam = (name) => {
                 if(!name) return 'Unknown';
                 return teamMap[name.trim().toLowerCase()] || name.trim();
             };
 
-            let playerAliasMap = {}; let canonicalDisplayNames = {}; let userIdToCanonical = {}; 
-            try {
-                const pMapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(PLAYER_MAPPINGS_CSV));
-                if (pMapRes.ok) {
-                    const pMapData = parseCsvLocal(await pMapRes.text());
-                    pMapData.forEach(row => {
-                        const currentUname = row['current username'] || row['username'] || row['player'];
-                        const uid = row['user id'] || row['userid'] || row['id'];
-                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || '';
-                        if (currentUname) {
-                            const canonicalKey = uid ? uid.trim() : currentUname.replace(/@/g, '').trim().toLowerCase();
-                            canonicalDisplayNames[canonicalKey] = currentUname.trim();
-                            if (uid) userIdToCanonical[uid.trim()] = canonicalKey;
-                            playerAliasMap[currentUname.replace(/@/g, '').trim().toLowerCase()] = canonicalKey;
-                            if (pastUsernamesStr) pastUsernamesStr.split(',').forEach(pName => {
-                                playerAliasMap[pName.replace(/@/g, '').trim().toLowerCase()] = canonicalKey;
-                            });
-                        }
-                    });
-                }
-            } catch (e) {}
-
-            // Fetch Data
-            const promises = [];
-            for (const s of seasonsToFetch) {
-                promises.push(fetchCollection(s, 'games')); promises.push(fetchCollection(s, 'playoff-games'));
-                promises.push(fetchCollection(s, 'players')); promises.push(fetchCollection(s, 'playoff-players'));
-            }
-            const allData = (await Promise.all(promises)).flat();
-            
-            const games = allData.filter(d => d._type.includes('game'));
-
-            // Update Dynamic Titles to explicitly state the active season
-            document.getElementById('pr-title').innerText = `Season ${currentSeason} Power Rankings`;
-            document.getElementById('luck-title').innerText = `Season ${currentSeason} Expected Wins (Luck vs Skill)`;
-
-            // ==========================================
-            // 2. Team Matchup Parsing (For PR, Luck & Matrix)
-            // ==========================================
-            const chronGames = games.map(g => ({ ...g, sortDate: parseGameDate(g.date, g._season) })).sort((a,b) => a.sortDate - b.sortDate);
-            
-            const currSeasonTeams = {};
             const matrix = {};
             const activeArr = Array.from(activeFranchises).sort();
             
@@ -301,7 +313,7 @@
                 activeArr.forEach(t2 => matrix[t1][t2] = { w: 0, l: 0, t: 0 });
             });
 
-            chronGames.forEach(g => {
+            allGames.forEach(g => {
                 const s1 = getNum(g.team1score) || getNum(g['team 1']) || 0;
                 const s2 = getNum(g.team2score) || getNum(g['team 2']) || 0;
                 const t1 = getRealTeam(g.team1 || g['team 1'] || g.away);
@@ -310,107 +322,12 @@
                 
                 if (s1 === 0 && s2 === 0) return;
 
-                // Matrix Logic (All Time)
                 if (activeFranchises.has(t1) && activeFranchises.has(t2)) {
                     if (winner === t1) { matrix[t1][t2].w++; matrix[t2][t1].l++; }
                     else if (winner === t2) { matrix[t2][t1].w++; matrix[t1][t2].l++; }
                     else { matrix[t1][t2].t++; matrix[t2][t1].t++; }
                 }
-
-                // Current Season Logic (Power Rankings & Expected Wins)
-                if (g._season === currentSeason && !g._type.includes('playoff')) {
-                    if (!currSeasonTeams[t1]) currSeasonTeams[t1] = { w: 0, l: 0, pf: 0, pa: 0, last5: [] };
-                    if (!currSeasonTeams[t2]) currSeasonTeams[t2] = { w: 0, l: 0, pf: 0, pa: 0, last5: [] };
-                    
-                    currSeasonTeams[t1].pf += s1; currSeasonTeams[t1].pa += s2;
-                    currSeasonTeams[t2].pf += s2; currSeasonTeams[t2].pa += s1;
-                    
-                    if (winner === t1) { currSeasonTeams[t1].w++; currSeasonTeams[t2].l++; currSeasonTeams[t1].last5.push(1); currSeasonTeams[t2].last5.push(0); }
-                    else if (winner === t2) { currSeasonTeams[t2].w++; currSeasonTeams[t1].l++; currSeasonTeams[t2].last5.push(1); currSeasonTeams[t1].last5.push(0); }
-                }
             });
-
-            // ==========================================
-            // 3. Power Rankings & Pythagorean Math
-            // ==========================================
-            let maxDiff = -9999, minDiff = 9999;
-            Object.values(currSeasonTeams).forEach(t => {
-                const diff = t.pf - t.pa;
-                if (diff > maxDiff) maxDiff = diff;
-                if (diff < minDiff) minDiff = diff;
-            });
-
-            const powerRankings = [];
-            const expectedWins = [];
-
-            Object.entries(currSeasonTeams).forEach(([team, stats]) => {
-                const gp = stats.w + stats.l;
-                if (gp === 0) return;
-                
-                // Power Rankings
-                const winPct = stats.w / gp;
-                const diff = stats.pf - stats.pa;
-                const diffPctile = maxDiff === minDiff ? 0.5 : (diff - minDiff) / (maxDiff - minDiff);
-                
-                const l5 = stats.last5.slice(-5);
-                const l5WinPct = l5.length > 0 ? l5.reduce((a,b)=>a+b,0) / l5.length : 0;
-                
-                const prScore = (winPct * 40) + (diffPctile * 30) + (l5WinPct * 30);
-                powerRankings.push({ team, winPct, diff, l5WinPct, prScore, l5Form: l5.map(r => r ? 'W':'L').join('-') });
-
-                // Pythagorean
-                const pf4 = Math.pow(stats.pf, 4);
-                const pa4 = Math.pow(stats.pa, 4);
-                const expWinPct = (pf4 + pa4) === 0 ? 0.5 : (pf4 / (pf4 + pa4));
-                const expWins = expWinPct * gp;
-                const luck = stats.w - expWins;
-                expectedWins.push({ team, w: stats.w, l: stats.l, pf: stats.pf, pa: stats.pa, expWins, luck });
-            });
-
-            powerRankings.sort((a,b) => b.prScore - a.prScore);
-            expectedWins.sort((a,b) => b.luck - a.luck);
-
-            // ==========================================
-            // UI RENDERING
-            // ==========================================
-            document.getElementById('loading-area').style.display = 'none';
-            document.getElementById('data-area').style.display = 'block';
-
-            // PR Tab
-            document.getElementById('pr-tbody').innerHTML = powerRankings.map((t, idx) => `
-                <tr>
-                    <td class="rank-col ${idx === 0 ? 'rank-1' : ''}">${idx + 1}</td>
-                    <td class="table-left-align" style="font-weight:bold; color:white;">${t.team}</td>
-                    <td>${(t.winPct * 100).toFixed(1)}%</td>
-                    <td style="color:${t.diff > 0 ? '#4ade80':'#f87171'}">${t.diff > 0 ? '+':''}${t.diff.toFixed(1)}</td>
-                    <td>${t.l5Form}</td>
-                    <td class="table-right-align pr-score">${t.prScore.toFixed(1)}</td>
-                </tr>
-            `).join('');
-
-            // Luck Tab
-            const getLuckBadge = (luck) => {
-                if (luck > 1) return `<span class="badge badge-good">+${luck.toFixed(2)} (Lucky)</span>`;
-                if (luck < -1) return `<span class="badge badge-bad">${luck.toFixed(2)} (Unlucky)</span>`;
-                return `<span class="badge badge-neutral">${luck > 0 ? '+':''}${luck.toFixed(2)} (Neutral)</span>`;
-            };
-
-            document.getElementById('luck-tbody').innerHTML = expectedWins.map(t => `
-                <tr>
-                    <td class="table-left-align" style="font-weight:bold; color:white;">${t.team}</td>
-                    <td>${t.w}-${t.l}</td>
-                    <td>${t.pf.toFixed(1)}</td>
-                    <td>${t.pa.toFixed(1)}</td>
-                    <td style="color:var(--gold-mid); font-weight:bold;">${t.expWins.toFixed(2)}</td>
-                    <td class="table-right-align">${getLuckBadge(t.luck)}</td>
-                </tr>
-            `).join('');
-
-            // Matrix Tab
-            let theadHtml = '<tr><th></th>';
-            activeArr.forEach(t => theadHtml += `<th>${t.substring(0,3).toUpperCase()}</th>`);
-            theadHtml += '</tr>';
-            document.getElementById('matrix-thead').innerHTML = theadHtml;
 
             document.getElementById('matrix-tbody').innerHTML = activeArr.map(t1 => {
                 let row = `<tr><td class="table-left-align" style="font-weight:bold; color:var(--gold-mid);">${t1}</td>`;
@@ -429,6 +346,260 @@
                 });
                 return row + '</tr>';
             }).join('');
+        }
+
+        // --- STREAMING_CHUNK: Refactoring to load current season data instantly ---
+        async function compileAnalytics() {
+            let teamMap = {};
+            let activeFranchises = new Set();
+            let playerAliasMap = {}; 
+            let canonicalDisplayNames = {}; 
+            let userIdToCanonical = {}; 
+
+            try {
+                // Fire ALL current season fetches in parallel
+                const promises = [
+                    fetch(TEAM_MAPPINGS_CSV).then(r => r.ok ? r.text() : ''),
+                    fetch(PLAYER_MAPPINGS_CSV).then(r => r.ok ? r.text() : ''),
+                    fetchCollection(currentSeason, 'games'),
+                    fetchCollection(currentSeason, 'playoff-games'),
+                    fetchCollection(currentSeason, 'players'),
+                    fetchCollection(currentSeason, 'playoff-players')
+                ];
+
+                const [teamMapText, playerMapText, currGames, currPlayoffGames, currPlayers, currPlayoffPlayers] = await Promise.all(promises);
+
+                if (teamMapText) {
+                    const mapData = parseCsvLocal(teamMapText);
+                    mapData.forEach(row => {
+                        const curr = row['current name'];
+                        const prev = row['previous name'];
+                        if (curr) {
+                            teamMap[curr.toLowerCase().trim()] = curr;
+                            activeFranchises.add(curr);
+                            if (prev) prev.split(',').forEach(p => { if(p.trim()) teamMap[p.trim().toLowerCase()] = curr; });
+                        }
+                    });
+                }
+
+                if (playerMapText) {
+                    const pMapData = parseCsvLocal(playerMapText);
+                    pMapData.forEach(row => {
+                        const currentUname = row['current username'] || row['username'] || row['player'];
+                        const uid = row['user id'] || row['userid'] || row['id'];
+                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || '';
+                        if (currentUname) {
+                            const canonicalKey = uid ? uid.trim() : currentUname.replace(/@/g, '').trim().toLowerCase();
+                            canonicalDisplayNames[canonicalKey] = currentUname.trim();
+                            if (uid) userIdToCanonical[uid.trim()] = canonicalKey;
+                            playerAliasMap[currentUname.replace(/@/g, '').trim().toLowerCase()] = canonicalKey;
+                            if (pastUsernamesStr) pastUsernamesStr.split(',').forEach(pName => {
+                                playerAliasMap[pName.replace(/@/g, '').trim().toLowerCase()] = canonicalKey;
+                            });
+                        }
+                    });
+                }
+
+                const getRealTeam = (name) => {
+                    if(!name) return 'Unknown';
+                    return teamMap[name.trim().toLowerCase()] || name.trim();
+                };
+
+                document.getElementById('pr-title').innerText = `Season ${currentSeason} Power Rankings`;
+                document.getElementById('luck-title').innerText = `Season ${currentSeason} Expected Wins (Luck vs Skill)`;
+                document.getElementById('bench-title').innerText = `Season ${currentSeason} Bench Efficiency`;
+
+                // ==========================================
+                // 2. Current Season Matchup Parsing
+                // ==========================================
+                const chronCurrGames = currGames.map(g => ({ ...g, sortDate: parseGameDate(g.date, g._season) })).sort((a,b) => a.sortDate - b.sortDate);
+                
+                const currSeasonTeams = {};
+                
+                chronCurrGames.forEach(g => {
+                    const s1 = getNum(g.team1score) || getNum(g['team 1']) || 0;
+                    const s2 = getNum(g.team2score) || getNum(g['team 2']) || 0;
+                    const t1 = getRealTeam(g.team1 || g['team 1'] || g.away);
+                    const t2 = getRealTeam(g.team2 || g['team 2'] || g.home);
+                    const winner = getRealTeam(g.winner || g.winning_team);
+                    
+                    if (s1 === 0 && s2 === 0) return;
+
+                    if (!currSeasonTeams[t1]) currSeasonTeams[t1] = { w: 0, l: 0, pf: 0, pa: 0, last5: [] };
+                    if (!currSeasonTeams[t2]) currSeasonTeams[t2] = { w: 0, l: 0, pf: 0, pa: 0, last5: [] };
+                    
+                    currSeasonTeams[t1].pf += s1; currSeasonTeams[t1].pa += s2;
+                    currSeasonTeams[t2].pf += s2; currSeasonTeams[t2].pa += s1;
+                    
+                    if (winner === t1) { currSeasonTeams[t1].w++; currSeasonTeams[t2].l++; currSeasonTeams[t1].last5.push(1); currSeasonTeams[t2].last5.push(0); }
+                    else if (winner === t2) { currSeasonTeams[t2].w++; currSeasonTeams[t1].l++; currSeasonTeams[t2].last5.push(1); currSeasonTeams[t1].last5.push(0); }
+                });
+
+                // ==========================================
+                // 3. Power Rankings & Pythagorean Math
+                // ==========================================
+                let maxDiff = -9999, minDiff = 9999;
+                Object.values(currSeasonTeams).forEach(t => {
+                    const diff = t.pf - t.pa;
+                    if (diff > maxDiff) maxDiff = diff;
+                    if (diff < minDiff) minDiff = diff;
+                });
+
+                const powerRankings = [];
+                const expectedWins = [];
+
+                Object.entries(currSeasonTeams).forEach(([team, stats]) => {
+                    const gp = stats.w + stats.l;
+                    if (gp === 0) return;
+                    
+                    const winPct = stats.w / gp;
+                    const diff = stats.pf - stats.pa;
+                    const diffPctile = maxDiff === minDiff ? 0.5 : (diff - minDiff) / (maxDiff - minDiff);
+                    
+                    const l5 = stats.last5.slice(-5);
+                    const l5WinPct = l5.length > 0 ? l5.reduce((a,b)=>a+b,0) / l5.length : 0;
+                    
+                    const prScore = (winPct * 40) + (diffPctile * 30) + (l5WinPct * 30);
+                    powerRankings.push({ team, winPct, diff, l5WinPct, prScore, l5Form: l5.map(r => r ? 'W':'L').join('-') });
+
+                    const pf4 = Math.pow(stats.pf, 4);
+                    const pa4 = Math.pow(stats.pa, 4);
+                    const expWinPct = (pf4 + pa4) === 0 ? 0.5 : (pf4 / (pf4 + pa4));
+                    const expWins = expWinPct * gp;
+                    const luck = stats.w - expWins;
+                    expectedWins.push({ team, w: stats.w, l: stats.l, pf: stats.pf, pa: stats.pa, expWins, luck });
+                });
+
+                powerRankings.sort((a,b) => b.prScore - a.prScore);
+                expectedWins.sort((a,b) => b.luck - a.luck);
+
+                // ==========================================
+                // 4. Bench Efficiency Math
+                // ==========================================
+                const dailyRosters = {}; 
+                const currentPlayers = [...currPlayers, ...currPlayoffPlayers];
+
+                currentPlayers.forEach(p => {
+                    if (!p.date || !p.team || String(p.team).toLowerCase().includes('free agent') || p.team === 'Unknown') return;
+
+                    const team = getRealTeam(p.team);
+                    const date = p.date;
+                    const user = p.username || 'Unknown';
+                    const score = getNum(p.score);
+                    
+                    let isBench = false;
+                    const benchVal = p.isBench !== undefined ? p.isBench : (p.isbench !== undefined ? p.isbench : p.bench);
+                    if (benchVal === true || String(benchVal).toLowerCase() === 'true' || String(benchVal).toLowerCase() === 'yes' || String(benchVal) === '1') {
+                        isBench = true;
+                    }
+
+                    if (!dailyRosters[date]) dailyRosters[date] = {};
+                    if (!dailyRosters[date][team]) dailyRosters[date][team] = {};
+                    if (!dailyRosters[date][team][user]) dailyRosters[date][team][user] = { score: 0, isBench: isBench };
+
+                    dailyRosters[date][team][user].score += score;
+                });
+
+                const teamBenchStats = {};
+                Object.keys(currSeasonTeams).forEach(team => {
+                    teamBenchStats[team] = { actual: 0, optimal: 0, daysCounted: 0 };
+                });
+
+                for (const date in dailyRosters) {
+                    for (const team in dailyRosters[date]) {
+                        if (!teamBenchStats[team]) teamBenchStats[team] = { actual: 0, optimal: 0, daysCounted: 0 };
+
+                        const dayPlayers = Object.values(dailyRosters[date][team]);
+                        
+                        let actualDay = 0;
+                        dayPlayers.forEach(p => {
+                            if (!p.isBench) actualDay += p.score;
+                        });
+
+                        dayPlayers.sort((a, b) => b.score - a.score);
+                        let optimalDay = 0;
+                        const top8 = dayPlayers.slice(0, 8);
+                        top8.forEach(p => { optimalDay += p.score; });
+
+                        teamBenchStats[team].actual += actualDay;
+                        teamBenchStats[team].optimal += optimalDay;
+                        teamBenchStats[team].daysCounted++;
+                    }
+                }
+
+                const benchEfficiencyData = [];
+                for (const team in teamBenchStats) {
+                    const stats = teamBenchStats[team];
+                    if (stats.daysCounted > 0) {
+                        const missed = stats.optimal - stats.actual;
+                        const eff = stats.optimal > 0 ? (stats.actual / stats.optimal) * 100 : 0;
+                        benchEfficiencyData.push({
+                            team, actual: stats.actual, optimal: stats.optimal, missed: missed > 0 ? missed : 0, eff: eff
+                        });
+                    }
+                }
+                benchEfficiencyData.sort((a, b) => b.eff - a.eff);
+
+                // ==========================================
+                // UI RENDERING (Phase 1)
+                // ==========================================
+                document.getElementById('loading-area').style.display = 'none';
+                document.getElementById('data-area').style.display = 'block';
+
+                document.getElementById('pr-tbody').innerHTML = powerRankings.map((t, idx) => `
+                    <tr>
+                        <td class="rank-col ${idx === 0 ? 'rank-1' : ''}">${idx + 1}</td>
+                        <td class="table-left-align" style="font-weight:bold; color:white;">${t.team}</td>
+                        <td>${(t.winPct * 100).toFixed(1)}%</td>
+                        <td style="color:${t.diff > 0 ? '#4ade80':'#f87171'}">${t.diff > 0 ? '+':''}${t.diff.toFixed(1)}</td>
+                        <td>${t.l5Form}</td>
+                        <td class="table-right-align pr-score">${t.prScore.toFixed(1)}</td>
+                    </tr>
+                `).join('');
+
+                const getLuckBadge = (luck) => {
+                    if (luck > 1) return `<span class="badge badge-good">+${luck.toFixed(2)} (Lucky)</span>`;
+                    if (luck < -1) return `<span class="badge badge-bad">${luck.toFixed(2)} (Unlucky)</span>`;
+                    return `<span class="badge badge-neutral">${luck > 0 ? '+':''}${luck.toFixed(2)} (Neutral)</span>`;
+                };
+
+                document.getElementById('luck-tbody').innerHTML = expectedWins.map(t => `
+                    <tr>
+                        <td class="table-left-align" style="font-weight:bold; color:white;">${t.team}</td>
+                        <td>${t.w}-${t.l}</td>
+                        <td>${t.pf.toFixed(1)}</td>
+                        <td>${t.pa.toFixed(1)}</td>
+                        <td style="color:var(--gold-mid); font-weight:bold;">${t.expWins.toFixed(2)}</td>
+                        <td class="table-right-align">${getLuckBadge(t.luck)}</td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('bench-tbody').innerHTML = benchEfficiencyData.map((t, idx) => `
+                    <tr>
+                        <td class="rank-col ${idx === 0 ? 'rank-1' : ''}">${idx + 1}</td>
+                        <td class="table-left-align" style="font-weight:bold; color:white;">${t.team}</td>
+                        <td>${t.optimal.toFixed(2)}</td>
+                        <td>${t.actual.toFixed(2)}</td>
+                        <td style="color:var(--text-muted); font-weight: bold;">-${t.missed.toFixed(2)}</td>
+                        <td class="table-right-align" style="font-weight:900; color:var(--gold-mid); font-size:1.1rem;">${t.eff.toFixed(1)}%</td>
+                    </tr>
+                `).join('');
+
+                // Pre-render Matrix Headers
+                const activeArr = Array.from(activeFranchises).sort();
+                let theadHtml = '<tr><th></th>';
+                activeArr.forEach(t => theadHtml += `<th>${t.substring(0,3).toUpperCase()}</th>`);
+                theadHtml += '</tr>';
+                document.getElementById('matrix-thead').innerHTML = theadHtml;
+                document.getElementById('matrix-tbody').innerHTML = `<tr><td colspan="${activeArr.length + 1}" style="text-align:center; padding: 3rem; color: var(--gold-mid); font-style: italic;">Loading Historical Head-to-Head Records...</td></tr>`;
+
+                // Fire Phase 2 (Historical Data) non-blocking
+                loadHistoricalMatrix(teamMap, activeFranchises, currGames, currPlayoffGames);
+
+            } catch (e) {
+                console.error("Compilation error:", e);
+                document.getElementById('loading-area').innerHTML = `<h3 style="color:var(--danger);">Error Loading Analytics</h3><p>${e.message}</p>`;
+            }
         }
 
         compileAnalytics();

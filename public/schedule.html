@@ -552,20 +552,40 @@
                             const p1Sport = p1All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
                             const p2Sport = p2All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
 
-                            const s1 = p1Sport.reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
-                            const s2 = p2Sport.reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
+                            // CALCULATE STARTERS ONLY
+                            const s1 = p1Sport.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true')).reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
+                            const s2 = p2Sport.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true')).reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
 
                             const s1Class = s1 > s2 ? 'winning-score' : '';
                             const s2Class = s2 > s1 ? 'winning-score' : '';
 
                             const renderPlayers = (plist) => {
-                                if (plist.length === 0) return `<div class="box-player-row"><span class="box-player-name" style="color:#888;">No Data</span></div>`;
-                                return plist.map(p => `
-                                    <div class="box-player-row">
-                                        <span class="box-player-name">${p.username}</span>
-                                        <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
-                                    </div>
-                                `).join('');
+                                // SEPARATE STARTERS FROM BENCH
+                                const starters = plist.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true'));
+                                const bench = plist.filter(p => p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true');
+
+                                let html = '';
+                                if (starters.length === 0) {
+                                    html += `<div class="box-player-row"><span class="box-player-name" style="color:#888;">No Starters</span></div>`;
+                                } else {
+                                    html += starters.map(p => `
+                                        <div class="box-player-row">
+                                            <span class="box-player-name">${p.username}</span>
+                                            <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
+                                        </div>
+                                    `).join('');
+                                }
+
+                                if (bench.length > 0) {
+                                    html += `<div style="text-align:center; font-size:0.65rem; color:#666; margin: 6px 0; border-top: 1px dashed #333; padding-top: 6px; letter-spacing: 1px;">BENCH</div>`;
+                                    html += bench.map(p => `
+                                        <div class="box-player-row" style="opacity:0.5;">
+                                            <span class="box-player-name">${p.username}</span>
+                                            <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
+                                        </div>
+                                    `).join('');
+                                }
+                                return html;
                             };
 
                             return `

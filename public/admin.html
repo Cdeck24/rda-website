@@ -102,7 +102,7 @@
         
         <!-- Easy Navigation Links -->
         <div style="text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);">
-            <a href="index.html" style="color: var(--gold-mid); text-decoration: none; font-weight: bold; margin-right: 1.5rem;">&larr; League Selection</a>
+            <a href="index.html" style="color: var(--gold-mid); text-decoration: none; font-weight: bold; margin-right: 1.5rem;">&larr; Live Scores</a>
             <span style="color: var(--text-muted);">|</span>
             <a href="hub.html" style="color: var(--gold-mid); text-decoration: none; font-weight: bold; margin-left: 1.5rem;">Hub &rarr;</a>
         </div>
@@ -160,8 +160,10 @@
 
             <div class="btn-group">
                 <button id="btn-fetch" class="btn-primary">Fetch & Write Scores</button>
-                <button id="btn-recap" class="btn-primary" style="background: var(--gold-mid); color: #000; border: none;">Generate Recap</button>
+                <button id="btn-rewrite" class="btn-primary" style="background: #f97316; border-color: #f97316;">Undo & Rewrite</button>
                 <button id="btn-undo" class="btn-danger">Undo Writes for Date</button>
+                <button id="btn-report" class="btn-primary" style="background: #10b981; border-color: #10b981;">Generate Report</button>
+                <button id="btn-sync-fa" class="btn-primary" style="background: #8b5cf6; border-color: #8b5cf6;">Sync Free Agents</button>
             </div>
 
             <pre id="output">Waiting for command...</pre>
@@ -170,13 +172,15 @@
     </div>
 
     <script type="module">
-        import { initNav, HISTORICAL_CSVS } from './js/app.js';
-        import { db, auth } from './js/firebase-config.js';
+        import { initNav } from './js/app.js';
+        import { auth } from './js/firebase-config.js';
         import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
-        import { doc, setDoc, deleteDoc, getDoc, collection, query, where, getDocs, writeBatch, increment } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
 
         // Initialize Global Nav
         initNav();
+
+        // THE TARGET APPS SCRIPT FOR YOUR HISTORICAL SCORES SHEET
+        const APPS_SCRIPT_URL_SCORES = 'https://script.google.com/macros/s/AKfycbyY4rz_46uk2JnqO4y7Os-0LHSU4TL43jPrtG-GXYUC61XU2o1QXoK0qMpdTdwzmenG/exec';
 
         // --- AUTH LOGIC ---
         const userDisplay = document.getElementById('user-display');
@@ -230,18 +234,21 @@
         const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f'; 
         const REAL_VERSION = '27';
         
-        // Configuration mapping for Seasons (Mapped precisely to app.js)
+        // This targets the Roster/GM Script specifically for the add_players action
+        const APPS_SCRIPT_URL_ROSTERS = 'https://script.google.com/macros/s/AKfycbxCThTL5b8sgFBlEuebH0yPt4w6ESR4fh16v22obah9toHXPTtLmYOG1iuoE_AD9s5qiQ/exec';
+
+        // Configuration mapping for Seasons
         const seasonConfigs = {
             '4': {
-                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=561111419&single=true&output=csv',
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                 schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv'
             },
             '5': {
-                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=292583226&single=true&output=csv',
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                 schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv'
             },
             '6': {
-                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=386743668&single=true&output=csv',
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                 schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv'
             }
         };
@@ -251,33 +258,60 @@
         const seasonSelect = document.getElementById('seasonSelect');
 
         document.getElementById('btn-fetch').addEventListener('click', performFetchAndWrite);
-        document.getElementById('btn-undo').addEventListener('click', performUndo);
-        document.getElementById('btn-recap').addEventListener('click', generateRecap);
+        document.getElementById('btn-undo').addEventListener('click', () => performUndo(false));
+        document.getElementById('btn-report').addEventListener('click', generateReport);
+        document.getElementById('btn-sync-fa').addEventListener('click', syncFreeAgents);
 
-        // Bulletproof CSV Parser required for schedule & player data
-        function parseCsvLocal(csvText) {
-            if (!csvText || csvText.trim().startsWith('<')) return [];
+        document.getElementById('btn-rewrite').addEventListener('click', async () => {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
+            if (!confirm(`WARNING: Are you sure you want to UNDO and REWRITE all data for ${selectedDate} in Season ${season}?`)) return;
+
+            const success = await performUndo(true);
+            if (success) {
+                output.textContent += "\n-----------------------\nStarting Rewrite process...\n";
+                await performFetchAndWrite();
+            }
+        });
+
+        // --- STREAMING_CHUNK: Setting up Robust Parsers and Helpers ---
+        function parseCSVLocal(csvText) {
+            if (!csvText) return [];
             const rows = csvText.trim().split(/\r?\n/);
-            if (rows.length < 2) return [];
-            const delimiter = rows[0].includes('\t') ? '\t' : ',';
-            const headers = rows[0].split(delimiter).map(h => h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase());
-            return rows.slice(1).map(row => {
-                let inQuotes = false; let currentVal = ''; const values = [];
-                for (let i = 0; i < row.length; i++) {
-                    const char = row[i];
-                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
-                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+            return rows.map(r => {
+                let inQuotes = false;
+                let currentVal = '';
+                const values = [];
+                for (let i = 0; i < r.length; i++) {
+                    const char = r[i];
+                    if (char === '"' && (i === 0 || r[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
                     else currentVal += char;
                 }
                 values.push(currentVal.trim());
-                const obj = {};
-                headers.forEach((h, i) => {
-                    let val = values[i] !== undefined ? values[i] : '';
-                    obj[h] = val.replace(/^"|"$/g, '').trim();
-                });
-                return obj;
+                return values;
             });
         }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        // Bulletproof Date Matcher (Handles "7/28" vs "7/28/2026")
+        const isSameDate = (csvDate, targetStr) => {
+            if (!csvDate) return false;
+            const cleanDate = String(csvDate).trim();
+            if (cleanDate === targetStr) return true;
+            
+            const parsed = new Date(cleanDate);
+            if (!isNaN(parsed.getTime())) {
+                if (`${parsed.getMonth() + 1}/${parsed.getDate()}` === targetStr) return true;
+            }
+            
+            const partsSlash = cleanDate.split('/');
+            if (partsSlash.length >= 2 && `${parseInt(partsSlash[0])}/${parseInt(partsSlash[1])}` === targetStr) return true;
+            
+            return false;
+        };
 
         // Make it accessible globally for the select onchange attribute
         window.loadScheduleDates = async function() {
@@ -290,11 +324,18 @@
                 if (!res.ok) throw new Error("Network response was not ok");
                 const text = await res.text();
                 
-                const data = parseCsvLocal(text);
-                const uniqueDates = new Set();
+                const rows = parseCSVLocal(text).filter(r => r.length > 0 && r[0] !== '');
+                const headers = rows[0].map(h => h.toLowerCase());
+                const dIdx = headers.findIndex(h => h.includes('date'));
                 
-                data.forEach(r => {
-                    const d = r['date'];
+                if (dIdx === -1) {
+                    dateSelect.innerHTML = '<option value="">Error: Date column not found</option>';
+                    return;
+                }
+
+                const uniqueDates = new Set();
+                rows.slice(1).forEach(r => {
+                    const d = r[dIdx]?.trim();
                     if (d) uniqueDates.add(d);
                 });
 
@@ -323,9 +364,7 @@
                     dateSelect.appendChild(opt);
                 });
 
-                if (sortedDates.length === 0) {
-                    dateSelect.innerHTML = '<option value="">No dates found in schedule</option>';
-                }
+                if (sortedDates.length === 0) dateSelect.innerHTML = '<option value="">No dates found in schedule</option>';
             } catch (e) {
                 dateSelect.innerHTML = '<option value="">Error loading schedule</option>';
                 console.error("Failed to load dates:", e);
@@ -340,32 +379,8 @@
             const hasher = new Hashids("realwebapp", 16);
             return hasher.encode(timestampMs);
         }
-        
-        async function fetchSingleData(url, retries = 0) {
-            const token = generateRequestToken();
-            const uuid = crypto.randomUUID();
-            
-            // Sending credentials via URL parameter to bypass preflight requests securely
-            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${uuid}&token=${token}`;
-            
-            try {
-                const res = await fetch(proxyUrl);
-                if (res.status === 429 || res.status === 502) {
-                    if (retries < 3) {
-                        await new Promise(r => setTimeout(r, 2000));
-                        return fetchSingleData(url, retries + 1);
-                    }
-                }
-                if (res.ok) {
-                    const data = await res.json();
-                    return { status: res.status, data: data };
-                }
-                return { status: res.status, data: null };
-            } catch (error) {
-                return { status: 500, data: null };
-            }
-        }
 
+        // --- STREAMING_CHUNK: Handling Fetch and Google Sheets Write Process ---
         async function performFetchAndWrite() {
             const selectedDate = dateSelect.value.trim();
             const season = seasonSelect.value;
@@ -375,8 +390,6 @@
             if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
             
             output.textContent = `Initializing fetch for Season ${season} on ${selectedDate}...\n`;
-            const logs = [];
-            const batch = writeBatch(db);
 
             try {
                 // 1. Fetch CSVs
@@ -388,27 +401,17 @@
                 const playersCsvText = await playersRes.text();
                 const scheduleCsvText = await scheduleRes.text();
 
-                // 2. Parse Schedule and Extract "Active Sports" Filter
-                const scheduleData = parseCsvLocal(scheduleCsvText);
-                const activeSports = new Set();
-                const todayGames = [];
-                
-                // Inspect headers to find all dynamic Sport columns
-                const schedSampleHeaders = Object.keys(scheduleData[0] || {});
-                const sportCols = schedSampleHeaders.filter(h => h.startsWith('sport') || h.includes('active'));
+                // 2. Parse Schedule
+                const scheduleRows = parseCSVLocal(scheduleCsvText);
+                const schedHeaders = scheduleRows[0].map(h => h.trim().toLowerCase());
+                const dIdx = schedHeaders.findIndex(h => h.includes('date'));
+                const t1Idx = schedHeaders.findIndex(h => h.includes('team1') || h.includes('team 1'));
+                const t2Idx = schedHeaders.findIndex(h => h.includes('team2') || h.includes('team 2'));
 
-                scheduleData.forEach(r => {
-                    if (r['date'] === selectedDate) {
-                        const t1 = r['team 1'] || r['team1'];
-                        const t2 = r['team 2'] || r['team2'];
-                        todayGames.push({ team1: t1, team2: t2 });
-                        
-                        // Collect active sports dynamically
-                        sportCols.forEach(col => {
-                            if (r[col] && r[col].trim() !== '') {
-                                activeSports.add(r[col].trim().toUpperCase());
-                            }
-                        });
+                const todayGames = [];
+                scheduleRows.slice(1).forEach(r => {
+                    if (isSameDate(r[dIdx], selectedDate)) {
+                        todayGames.push({ team1: r[t1Idx]?.trim(), team2: r[t2Idx]?.trim() });
                     }
                 });
 
@@ -417,128 +420,207 @@
                     return;
                 }
 
-                // If schedule doesn't use dynamic sport columns, fallback to fetching all.
                 const activeTeamsLower = new Set();
                 todayGames.forEach(g => { 
                     if (g.team1) activeTeamsLower.add(g.team1.toLowerCase());
                     if (g.team2) activeTeamsLower.add(g.team2.toLowerCase());
                 });
-                
-                logs.push(`Found ${todayGames.length} games.`);
-                if (activeSports.size > 0) logs.push(`Active Sports Today: ${Array.from(activeSports).join(', ')}`);
 
                 // 3. Parse Players
-                const playersData = parseCsvLocal(playersCsvText);
-                const pSampleHeaders = Object.keys(playersData[0] || {});
+                const playersRows = parseCSVLocal(playersCsvText);
+                const pHeaders = playersRows[0].map(h => h.trim().toLowerCase());
+                const uIdx = pHeaders.findIndex(h => h === 'username');
+                const uidIdx = pHeaders.findIndex(h => h.includes('user id') || h.includes('userid'));
+                const teamIdx = pHeaders.findIndex(h => h === 'team');
+                const playIdx = pHeaders.findIndex(h => h.includes('playing'));
                 
-                const sportIdMap = {};
-                pSampleHeaders.forEach(h => {
+                // Determine Date Specific Column (Crucial for backfilling)
+                const specificDateIdx = pHeaders.findIndex(h => h === selectedDate.toLowerCase());
+
+                const sportIdIndices = {};
+                pHeaders.forEach((h, i) => {
                     const m = h.match(/^([a-z]+) id$/);
-                    if (m && h !== 'user id' && h !== 'draft id') sportIdMap[m[1].toUpperCase()] = h;
+                    if (m && h !== 'user id' && h !== 'draft id') sportIdIndices[m[1].toUpperCase()] = i;
                 });
 
                 const allPlayerDataForDay = {};
                 const fetchUrls = [];
 
-                // 4. Build Queue (Only Queueing Active Sports!)
-                playersData.forEach(row => {
-                    const teamLower = row['team']?.toLowerCase();
-                    const isPlaying = (row['playing?'] || row['playing'])?.toLowerCase() === 'yes';
+                playersRows.slice(1).forEach(row => {
+                    const originalTeam = row[teamIdx]?.trim();
+                    const teamLower = originalTeam?.toLowerCase();
                     
-                    if (teamLower && activeTeamsLower.has(teamLower) && isPlaying) {
-                        const userId = row['user id'] || row['userid'];
-                        const username = row['username'];
+                    let isPlaying = true;
+                    if (specificDateIdx > -1 && row[specificDateIdx] !== undefined && row[specificDateIdx].trim() !== '') {
+                        const val = row[specificDateIdx].trim().toLowerCase();
+                        isPlaying = val === 'yes' || val === 'true' || val === '1';
+                    } else if (playIdx > -1 && row[playIdx] !== undefined && row[playIdx].trim() !== '') {
+                        const val = row[playIdx].trim().toLowerCase();
+                        isPlaying = val === 'yes' || val === 'true' || val === '1';
+                    }
+                    
+                    if (teamLower && activeTeamsLower.has(teamLower)) {
+                        const userId = row[uidIdx]?.trim();
+                        const username = row[uIdx]?.trim();
                         if (!userId) return;
 
                         if (!allPlayerDataForDay[userId]) {
-                            allPlayerDataForDay[userId] = { userId, username, team: row['team'], scoresBySport: {}, totalScore: 0 };
+                            allPlayerDataForDay[userId] = { 
+                                userId, username, team: originalTeam, 
+                                isPlaying: isPlaying, 
+                                scoresBySport: {}, lineupsBySport: {}, totalScore: 0 
+                            };
                         }
 
-                        for (const sport in sportIdMap) {
-                            // CRITICAL FIX: Only fetch the sport if it is explicitly active today!
-                            if (activeSports.size > 0 && !activeSports.has(sport)) continue;
-                            
-                            const draftId = row[sportIdMap[sport]];
+                        for (const sport in sportIdIndices) {
+                            const draftId = row[sportIdIndices[sport]]?.trim();
                             if (draftId) {
                                 fetchUrls.push({
                                     url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${userId}?contestType=sport&source=home`,
-                                    userId, sport, team: row['team'], retries: 0
+                                    userId, sport, team: originalTeam, retries: 0
                                 });
                             }
                         }
                     }
                 });
 
-                output.textContent += `\nQueueing ${fetchUrls.length} specific stat requests to Real API...\n`;
+                output.textContent += `\nQueueing ${fetchUrls.length} stat requests to Real API...\n`;
 
-                // 5. Fetch Stats via API Worker (Sequential Pacing)
+                // 4. Sequential Fetch via Proxy (Matches Node Pacing)
                 let loaded = 0;
-
                 for (let i = 0; i < fetchUrls.length; i++) {
                     const req = fetchUrls[i];
                     const pData = allPlayerDataForDay[req.userId];
                     
                     try {
-                        const res = await fetchSingleData(req.url);
+                        const token = generateRequestToken();
+                        const proxyUrl = `${workerProxy}?url=${encodeURIComponent(req.url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
                         
-                        if (res.status === 200 && res.data) {
-                            const data = res.data;
-                            
-                            // Robust Score & Rank extraction
-                            let scoreDisplay = '0';
-                            if (data.info?.rankDisplayInfos?.length > 0) {
-                                scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
-                            } else if (data.rankDisplayInfos?.length > 0) {
-                                scoreDisplay = data.rankDisplayInfos[0].scoreDisplay || '0';
-                            } else if (data.scoreDisplay) {
-                                scoreDisplay = data.scoreDisplay;
-                            } else if (data.info?.score !== undefined) {
-                                scoreDisplay = data.info.score;
-                            } else if (data.score !== undefined) {
-                                scoreDisplay = data.score;
-                            }
-                            
-                            // CRITICAL FIX: Strip commas from large scores (e.g. 1,234.50 -> 1234.50)
-                            pData.scoresBySport[req.sport] = parseFloat(String(scoreDisplay).replace(/,/g, '')) || 0;
-                            
-                            if (data.info?.user?.userName || data.user?.userName) {
-                                pData.username = data.info?.user?.userName || data.user?.userName;
-                            }
-                        } else {
-                            pData.scoresBySport[req.sport] = 'Error';
+                        const res = await fetch(proxyUrl);
+                        
+                        if (res.status === 429 && req.retries < 3) {
+                            req.retries++;
+                            fetchUrls.push(req); // Try again at the end
+                            await sleep(3000);
+                            continue;
                         }
+
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        
+                        const data = await res.json();
+                        
+                        let scoreDisplay = '0';
+                        if (data.info?.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
+                        else if (data.rankDisplayInfos?.length > 0) scoreDisplay = data.rankDisplayInfos[0].scoreDisplay || '0';
+                        else if (data.scoreDisplay) scoreDisplay = data.scoreDisplay;
+                        else if (data.info?.score !== undefined) scoreDisplay = data.info.score;
+                        else if (data.score !== undefined) scoreDisplay = data.score;
+                        
+                        const finalScore = parseFloat(String(scoreDisplay).replace(/,/g, '')) || 0;
+                        pData.scoresBySport[req.sport] = finalScore;
+
+                        let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
+                        if (!Array.isArray(extractedLineup)) {
+                            if (extractedLineup.players) extractedLineup = extractedLineup.players;
+                            else if (extractedLineup.items) extractedLineup = extractedLineup.items;
+                            else extractedLineup = [];
+                        }
+                        pData.lineupsBySport[req.sport] = extractedLineup;
+
+                        if (data.info?.user?.userName || data.user?.userName) {
+                            pData.username = data.info?.user?.userName || data.user?.userName;
+                        }
+
+                        loaded++;
+                        if (loaded % 5 === 0 || loaded === fetchUrls.length) output.textContent = `Fetched ${loaded}/${fetchUrls.length}...\n`;
+
                     } catch (e) {
                         pData.scoresBySport[req.sport] = 'Error';
+                        loaded++;
+                        output.textContent = `Fetched ${loaded}/${fetchUrls.length} (Failed ${pData.username})...\n`;
                     }
                     
-                    loaded++;
-                    output.textContent = `Fetched ${loaded}/${fetchUrls.length}...\n`;
-                    await new Promise(r => setTimeout(r, 350)); // Standard pacing
+                    await sleep(350);
                 }
 
-                // 6. Prepare Player Database Writes
-                output.textContent = `\nPreparing database writes...\n`;
-                const playerColl = isPlayoff ? `s${season}-playoff-players` : `s${season}-players`;
-                
-                Object.values(allPlayerDataForDay).forEach(player => {
-                    player.totalScore = Object.values(player.scoresBySport).reduce((sum, s) => sum + (typeof s === 'number' ? s : 0), 0);
-                    
-                    for (const sport in player.scoresBySport) {
-                        const score = player.scoresBySport[sport];
-                        if (typeof score === 'number') {
-                            const docId = `${selectedDate.replace(/\//g, '.')}-${player.userId}-${sport}`;
-                            batch.set(doc(db, playerColl, docId), {
-                                username: player.username, userId: player.userId, team: player.team, score, date: selectedDate, sport
-                            });
-                            logs.push(`✓ Queued write for Player: ${player.username} (${sport}) -> ${score}`);
-                        }
+                // 5. Duplicate Logic
+                output.textContent += "\nApplying duplicate rules...\n";
+                const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'R37kAWO3', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn']);
+                const hashes = new Map();
+
+                Object.values(allPlayerDataForDay).forEach(p => {
+                    if (!p.isPlaying) return;
+                    for (const s in p.lineupsBySport) {
+                        const l = p.lineupsBySport[s];
+                        if (!Array.isArray(l) || !l.length) continue;
+                        const h = `${s}:${l.map(x => {
+                            const lp = x.player || x;
+                            return (lp.displayName || x.displayName || lp.name || x.name || '').trim();
+                        }).join(',')}`;
+                        if (!hashes.has(h)) hashes.set(h, []);
+                        hashes.get(h).push({ player: p, sport: s, score: p.scoresBySport[s] || 0 });
                     }
                 });
 
-                // 7. Game & Team Standings Writes
-                const gameColl = isPlayoff ? `s${season}-playoff-games` : `s${season}-games`;
-                const teamColl = `s${season}-teams`;
-                const playoffsColl = `s${season}-playoffs`;
+                for (const entries of hashes.values()) {
+                    if (entries.length <= 1) continue;
+                    
+                    const draftAccounts = entries.filter(e => draftUserIds.has(e.player.userId));
+                    const teamGroups = {};
+                    
+                    entries.forEach(e => {
+                        if (!teamGroups[e.player.team]) teamGroups[e.player.team] = [];
+                        teamGroups[e.player.team].push(e);
+                    });
+
+                    Object.values(teamGroups).forEach(teamEntries => {
+                        if (teamEntries.length > 1) {
+                            teamEntries.sort((a, b) => b.score - a.score);
+                            for (let j = 1; j < teamEntries.length; j++) {
+                                if (teamEntries[j].player.scoresBySport[teamEntries[j].sport] > 0) {
+                                    teamEntries[j].player.scoresBySport[teamEntries[j].sport] = 0;
+                                    output.textContent += `Voided: ${teamEntries[j].player.username} (${teamEntries[j].sport}) - Same Team Dup\n`;
+                                }
+                            }
+                        }
+                    });
+
+                    if (draftAccounts.length > 0) {
+                        entries.forEach(e => {
+                            if (!draftUserIds.has(e.player.userId)) {
+                                let voided = false;
+                                draftAccounts.forEach(da => {
+                                    if (da.player.userId !== 'WJqLyqAn' || e.sport === 'NHL') voided = true;
+                                });
+                                if (voided && e.player.scoresBySport[e.sport] > 0) {
+                                    e.player.scoresBySport[e.sport] = 0;
+                                    output.textContent += `Voided: ${e.player.username} (${e.sport}) - Draft Account Dup\n`;
+                                }
+                            }
+                        });
+                    }
+                }
+
+                // 6. Prepare Payload for Google Sheets
+                output.textContent += `\nPreparing to write to Google Sheets...\n`;
+                const gamesToLog = [];
+                const playerStatsToLog = [];
+
+                Object.values(allPlayerDataForDay).forEach(player => {
+                    for (const sport in player.scoresBySport) {
+                        const score = player.scoresBySport[sport];
+                        if (typeof score === 'number') {
+                            playerStatsToLog.push({
+                                username: player.username, 
+                                userId: player.userId, 
+                                team: player.team, 
+                                score: score, 
+                                sport: sport,
+                                isBench: !player.isPlaying
+                            });
+                        }
+                    }
+                });
 
                 todayGames.forEach(game => {
                     const t1 = game.team1, t2 = game.team2;
@@ -548,12 +630,13 @@
                     const p1 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t1.toLowerCase());
                     const p2 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t2.toLowerCase());
 
-                    const allSportsThisMatchup = new Set();
-                    [...p1, ...p2].forEach(p => Object.keys(p.scoresBySport).forEach(s => allSportsThisMatchup.add(s)));
+                    const allSports = new Set();
+                    [...p1, ...p2].forEach(p => Object.keys(p.scoresBySport).forEach(s => allSports.add(s)));
 
-                    [...allSportsThisMatchup].forEach(sport => {
-                        const s1 = p1.reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
-                        const s2 = p2.reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
+                    // ONLY CALCULATE SCORES USING STARTERS
+                    [...allSports].forEach(sport => {
+                        const s1 = p1.filter(p => p.isPlaying).reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
+                        const s2 = p2.filter(p => p.isPlaying).reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
                         
                         if (s1 > s2) t1SeriesWins++;
                         else if (s2 > s1) t2SeriesWins++;
@@ -562,58 +645,33 @@
                     });
 
                     let winner = t1SeriesWins > t2SeriesWins ? t1 : (t2SeriesWins > t1SeriesWins ? t2 : (t1Score > t2Score ? t1 : t2));
-                    let loser = winner === t1 ? t2 : t1;
-
-                    const gameId = `${selectedDate.replace(/\//g, '.')}-${t1}-vs-${t2}`.replace(/\s+/g, '');
-                    batch.set(doc(db, gameColl, gameId), {
-                        date: selectedDate, team1: t1, team2: t2, team1score: parseFloat(t1Score.toFixed(2)), team2score: parseFloat(t2Score.toFixed(2)),
-                        winner, team1SeriesWins: t1SeriesWins, team2SeriesWins: t2SeriesWins
-                    });
-                    logs.push(`✓ Queued write for Game: ${t1} vs ${t2} | Winner: ${winner}`);
-
-                    if (!isPlayoff) {
-                        batch.set(doc(db, teamColl, winner), { wins: increment(1), gamesPlayed: increment(1), pointsFor: increment(winner === t1 ? t1Score : t2Score), pointsAgainst: increment(winner === t1 ? t2Score : t1Score), name: winner }, { merge: true });
-                        batch.set(doc(db, teamColl, loser), { losses: increment(1), gamesPlayed: increment(1), pointsFor: increment(loser === t1 ? t1Score : t2Score), pointsAgainst: increment(loser === t1 ? t2Score : t1Score), name: loser }, { merge: true });
-                        logs.push(`✓ Team standings updated for ${winner} and ${loser}`);
-                    } else {
-                        const sId = document.getElementById('playoffSeries').value;
-                        if (sId) {
-                            batch.set(doc(db, playoffsColl, sId), { [winner]: increment(1) }, { merge: true });
-                            logs.push(`✓ Playoff series [${sId}] win incremented for ${winner}`);
-                        }
-                    }
+                
+                gamesToLog.push({ 
+                    team1: t1, 
+                    team2: t2, 
+                    team1score: parseFloat(t1Score.toFixed(2)), 
+                    team2score: parseFloat(t2Score.toFixed(2)), 
+                    winner: winner, 
+                    team1SeriesWins: t1SeriesWins, 
+                    team2SeriesWins: t2SeriesWins 
                 });
+            });
 
-                // 8. Commit batch
-                await batch.commit();
-                output.textContent = "SUCCESS! All writes committed to Database.\n\n" + logs.join('\n');
+            // Store globally for report generation
+            window.lastLoggedGames = gamesToLog;
+            window.lastPlayerStats = playerStatsToLog;
+            window.lastLoggedDate = selectedDate;
 
-            } catch (e) {
-                output.textContent = `CRITICAL ERROR: ${e.message}\nCheck console for details.`;
-                console.error(e);
-            }
-        }
-
-        async function performUndo() {
-            const selectedDate = dateSelect.value.trim();
-            const season = seasonSelect.value;
-            const isPlayoff = gameTypeSelect.value === 'playoff';
-
-            if (!selectedDate) { output.textContent = 'Error: Please select a date to undo.'; return; }
-            if (!confirm(`WARNING: Are you sure you want to UNDO all database writes for ${selectedDate} in Season ${season}?`)) return;
-
-            output.textContent = `Reverting writes for ${selectedDate}...\n`;
-            
-            try {
-                // Now targeting the Google Apps Script to delete rows in the Google Sheet
-                const payload = {
-                    action: 'undo_games',
+            const payload = {
+                action: 'log_games',
                     date: selectedDate,
                     season: season,
-                    isPlayoff: isPlayoff
+                    isPlayoff: isPlayoff,
+                    games: gamesToLog,
+                    playerStats: playerStatsToLog
                 };
 
-                const postRes = await fetch('https://script.google.com/macros/s/AKfycbyY4rz_46uk2JnqO4y7Os-0LHSU4TL43jPrtG-GXYUC61XU2o1QXoK0qMpdTdwzmenG/exec', {
+                const postRes = await fetch(APPS_SCRIPT_URL_SCORES, {
                     method: 'POST',
                     redirect: 'follow',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -621,149 +679,337 @@
                 });
 
                 const rawResponse = await postRes.text();
-                output.textContent += "SUCCESS! Undo complete.\n" + rawResponse;
+                let data;
+                try {
+                    data = JSON.parse(rawResponse);
+                } catch(err) {
+                    throw new Error(`Google Script Error: ${rawResponse.substring(0, 100)}`);
+                }
+
+                if (data.status === 'error') throw new Error(data.message);
+
+                output.textContent += `\nSUCCESS! ${data.message}\n`;
+
             } catch (e) {
-                output.textContent = `ERROR during undo: ${e.message}\nCheck console.`;
+                output.textContent += `\nCRITICAL ERROR: ${e.message}\nCheck console for details.`;
                 console.error(e);
             }
         }
 
-        async function generateRecap() {
+        async function performUndo(skipConfirm = false) {
             const selectedDate = dateSelect.value.trim();
             const season = seasonSelect.value;
             const isPlayoff = gameTypeSelect.value === 'playoff';
 
-            if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
-            
-            output.textContent = `Generating recap for ${selectedDate} from Historical CSVs...\n`;
+            if (!selectedDate) { output.textContent = 'Error: Please select a date to undo.'; return false; }
+            if (!skipConfirm && !confirm(`WARNING: Are you sure you want to UNDO all Google Sheet writes for ${selectedDate} in Season ${season}?`)) return false;
+
+            output.textContent = `Reverting writes for ${selectedDate} in Google Sheets...\n`;
             
             try {
-                const gameType = isPlayoff ? 'playoff-games' : 'games';
-                const playerType = isPlayoff ? 'playoff-players' : 'players';
+                const payload = {
+                    action: 'undo_games',
+                    season: season,
+                    isPlayoff: isPlayoff,
+                    date: selectedDate
+                };
 
-                const gamesUrl = HISTORICAL_CSVS[season]?.[gameType];
-                const playersUrl = HISTORICAL_CSVS[season]?.[playerType];
-
-                if (!gamesUrl || !playersUrl) {
-                    output.textContent = `Error: Missing CSV links for Season ${season} in app.js`;
-                    return;
-                }
-
-                const [gamesRes, playersRes] = await Promise.all([
-                    fetch(workerProxy + '?url=' + encodeURIComponent(gamesUrl)),
-                    fetch(workerProxy + '?url=' + encodeURIComponent(playersUrl))
-                ]);
-
-                const gamesData = parseCsvLocal(await gamesRes.text());
-                const playersData = parseCsvLocal(await playersRes.text());
-
-                const dayGames = gamesData.filter(g => g.date === selectedDate);
-                const dayPlayers = playersData.filter(p => p.date === selectedDate);
-
-                if (dayGames.length === 0) {
-                    output.textContent = `No games found in the historical file for ${selectedDate}. Make sure the automated script has pushed them to Google Sheets!`;
-                    return;
-                }
-
-                let recapText = `📅 **RDA Game Day Recap - ${selectedDate}** 📅\n\n`;
-                recapText += `🏆 **OVERALL MATCHUPS** 🏆\n`;
-
-                dayGames.forEach(data => {
-                    const team1 = data.team1 || data['team 1'] || '';
-                    const team2 = data.team2 || data['team 2'] || '';
-                    const t1Score = parseFloat(data.team1score || data['team 1 score'] || data['score 1'] || 0);
-                    const t2Score = parseFloat(data.team2score || data['team 2 score'] || data['score 2'] || 0);
-                    const winner = data.winner || data['winning team'] || '';
-                    const t1SeriesWins = parseFloat(data.team1serieswins || data['team 1 series wins'] || 0);
-                    const t2SeriesWins = parseFloat(data.team2serieswins || data['team 2 series wins'] || 0);
-                    
-                    const t1Class = winner === team1 ? '👑' : '';
-                    const t2Class = winner === team2 ? '👑' : '';
-                    
-                    if (t1SeriesWins > 0 || t2SeriesWins > 0) {
-                        recapText += `${t1Class} ${team1} [${t1SeriesWins}] vs [${t2SeriesWins}] ${team2} ${t2Class}\n`;
-                        recapText += `   *(Pts: ${t1Score.toFixed(2)} - ${t2Score.toFixed(2)})*\n`;
-                    } else {
-                        recapText += `${t1Class} ${team1} [${t1Score.toFixed(2)}] vs [${t2Score.toFixed(2)}] ${team2} ${t2Class}\n`;
-                    }
+                const res = await fetch(APPS_SCRIPT_URL_SCORES, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
                 });
 
-                // Calculate Overall Top 3
-                const playerTotals = {};
-                dayPlayers.forEach(data => {
-                    const uname = data.username || data.user || data.name || data.player || 'Unknown';
-                    const team = data.team || '';
-                    const score = parseFloat(data.score || data.points || 0);
-                    
-                    if (!playerTotals[uname]) {
-                        playerTotals[uname] = { team: team, score: 0 };
-                    }
-                    playerTotals[uname].score += score;
-                });
-
-                const sortedOverallPlayers = Object.entries(playerTotals)
-                    .map(([username, data]) => ({ username, team: data.team, score: data.score }))
-                    .sort((a, b) => b.score - a.score);
-
-                const top3Overall = sortedOverallPlayers.slice(0, 3);
-                if (top3Overall.length > 0 && top3Overall[0].score > 0) {
-                    recapText += `\n🌟 **OVERALL PLAYERS OF THE DAY** 🌟\n`;
-                    top3Overall.forEach((p, i) => {
-                        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
-                        if (p.score > 0) recapText += `${medal} ${p.username} (${p.team}) - ${p.score.toFixed(2)} pts\n`;
-                    });
+                const rawResponse = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawResponse);
+                } catch(err) {
+                    throw new Error(`Google Script Error: ${rawResponse.substring(0, 100)}`);
                 }
 
-                // Breakdown by Sport
-                const sportsList = [...new Set(dayPlayers.map(p => (p.sport || 'Unknown').toUpperCase()))].filter(s => s !== 'UNKNOWN' && s !== 'USER' && s !== 'DRAFT');
-                
-                if (sportsList.length > 0) {
-                    recapText += `\n\n📊 **SPORT BREAKDOWNS** 📊\n`;
-                    
-                    sportsList.sort().forEach(sport => {
-                        recapText += `\n🔹 **${sport}** 🔹\n`;
-                        
-                        const sportPlayers = dayPlayers.filter(p => (p.sport || '').toUpperCase() === sport);
-                        const teamTotals = {};
-                        sportPlayers.forEach(p => {
-                            const t = p.team || 'Unknown';
-                            teamTotals[t] = (teamTotals[t] || 0) + parseFloat(p.score || 0);
-                        });
-                        
-                        // Sport Matchups
-                        dayGames.forEach(data => {
-                            const team1 = data.team1 || data['team 1'] || '';
-                            const team2 = data.team2 || data['team 2'] || '';
-                            const t1S = teamTotals[team1] || 0;
-                            const t2S = teamTotals[team2] || 0;
-                            
-                            if (t1S > 0 || t2S > 0) {
-                                const t1Class = t1S > t2S ? '✅ ' : '❌ ';
-                                const t2Class = t2S > t1S ? ' ✅' : ' ❌';
-                                recapText += `${t1Class}${team1} [${t1S.toFixed(2)}] vs [${t2S.toFixed(2)}] ${team2}${t2Class}\n`;
+                if (data.status === 'error') throw new Error(data.message);
+
+                output.textContent += `SUCCESS! ${data.message}\n`;
+                return true;
+            } catch (e) {
+                output.textContent = `ERROR during undo: ${e.message}\nCheck console.`;
+                console.error(e);
+                return false;
+            }
+        }
+
+        // --- REPORT & SYNC LOGIC ---
+        async function generateReport() {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            
+            if (!selectedDate) {
+                output.textContent = "Error: Please select a date to generate the report.\n";
+                return;
+            }
+
+            output.textContent = `Fetching saved games for ${selectedDate}...\n`;
+
+            // If we literally just fetched these games manually, use the local cache to bypass the 5-min CSV delay
+            let gamesToReport = [];
+            let playersToReport = [];
+
+            if (window.lastLoggedGames && window.lastLoggedGames.length > 0 && window.lastLoggedDate === selectedDate) {
+                gamesToReport = window.lastLoggedGames;
+                playersToReport = window.lastPlayerStats.filter(p => !p.isBench); // Ensure we only report starters
+            } else {
+                try {
+                    // Configs for the saved databases
+                    const dbLinks = {
+                        '4': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=912328044&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=561111419&single=true&output=csv' },
+                        '5': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=556843426&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=292583226&single=true&output=csv' },
+                        '6': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=755000020&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=386743668&single=true&output=csv' }
+                    };
+
+                    const links = dbLinks[season];
+                    if (!links) throw new Error("No database links configured for Season " + season);
+
+                    const [gamesRes, playersRes] = await Promise.all([
+                        fetch(workerProxy + '?url=' + encodeURIComponent(links.g)),
+                        fetch(workerProxy + '?url=' + encodeURIComponent(links.p))
+                    ]);
+
+                    const gamesText = await gamesRes.text();
+                    const playersText = await playersRes.text();
+
+                    const gamesRows = parseCSVLocal(gamesText);
+                    const playersRows = parseCSVLocal(playersText);
+
+                    if (gamesRows.length > 1) {
+                        const gHeaders = gamesRows[0].map(h => h.trim().toLowerCase());
+                        const dIdx = gHeaders.indexOf('date');
+                        const t1Idx = gHeaders.indexOf('team1');
+                        const t2Idx = gHeaders.indexOf('team2');
+                        const t1ScoreIdx = gHeaders.findIndex(h => h === 'team1score' || h === 'team 1 score');
+                        const t2ScoreIdx = gHeaders.findIndex(h => h === 'team2score' || h === 'team 2 score');
+                        const t1SeriesIdx = gHeaders.findIndex(h => h.includes('team1series') || h.includes('team 1 series'));
+                        const t2SeriesIdx = gHeaders.findIndex(h => h.includes('team2series') || h.includes('team 2 series'));
+                        const winIdx = gHeaders.indexOf('winner');
+
+                        gamesRows.slice(1).forEach(r => {
+                            if (isSameDate(r[dIdx], selectedDate)) {
+                                gamesToReport.push({
+                                    team1: r[t1Idx],
+                                    team2: r[t2Idx],
+                                    team1score: parseFloat(r[t1ScoreIdx]) || 0,
+                                    team2score: parseFloat(r[t2ScoreIdx]) || 0,
+                                    team1SeriesWins: parseInt(r[t1SeriesIdx]) || 0,
+                                    team2SeriesWins: parseInt(r[t2SeriesIdx]) || 0,
+                                    winner: r[winIdx]
+                                });
                             }
                         });
+                    }
 
-                        // Top 3 for this Sport
-                        const sortedSportPlayers = sportPlayers
-                            .map(p => ({ username: p.username || p.player || 'Unknown', team: p.team || '', score: parseFloat(p.score || 0) }))
-                            .sort((a,b) => b.score - a.score)
-                            .slice(0, 3);
+                    if (playersRows.length > 1) {
+                        const pHeaders = playersRows[0].map(h => h.trim().toLowerCase());
+                        const dIdx = pHeaders.indexOf('date');
+                        const uIdx = pHeaders.indexOf('username');
+                        const sIdx = pHeaders.indexOf('score');
+                        const bIdx = pHeaders.findIndex(h => h.includes('isbench') || h.includes('bench'));
+                        const tIdx = pHeaders.indexOf('team');
+                        const spIdx = pHeaders.indexOf('sport');
+
+                        playersRows.slice(1).forEach(r => {
+                            if (isSameDate(r[dIdx], selectedDate)) {
+                                const isBench = r[bIdx] && (r[bIdx].toLowerCase() === 'true' || r[bIdx].toLowerCase() === 'yes' || r[bIdx] === '1');
+                                if (!isBench) {
+                                    playersToReport.push({
+                                        username: r[uIdx],
+                                        score: parseFloat(r[sIdx]) || 0,
+                                        team: tIdx > -1 ? r[tIdx] : 'Unknown',
+                                        sport: spIdx > -1 ? r[spIdx] : 'Unknown'
+                                    });
+                                }
+                            }
+                        });
+                    }
+
+                } catch (e) {
+                    output.textContent = "Error fetching saved games: " + e.message;
+                    return;
+                }
+            }
+
+            if (gamesToReport.length === 0) {
+                output.textContent = `Error: No saved games found for ${selectedDate}. Note: If the auto-fetcher just ran, Google Sheets can take 5 minutes to update its public CSV cache.`;
+                return;
+            }
+
+            let report = `🏀 **RDA DAILY RECAP - ${selectedDate}** 🏀\n\n`;
+            
+            // 1. GAME BREAKDOWNS
+            gamesToReport.forEach(g => {
+                let wScore = Math.max(g.team1score, g.team2score);
+                let lScore = Math.min(g.team1score, g.team2score);
+                let wSeries = Math.max(g.team1SeriesWins, g.team2SeriesWins);
+                let lSeries = Math.min(g.team1SeriesWins, g.team2SeriesWins);
+                
+                let scoreText = (wSeries > 0 || lSeries > 0) ? `${wSeries}-${lSeries} (${wScore.toFixed(2)} - ${lScore.toFixed(2)})` : `${wScore.toFixed(2)} - ${lScore.toFixed(2)}`;
+                let loser = g.winner === g.team1 ? g.team2 : g.team1;
+                
+                report += `**${g.winner}** def. ${loser} | ${scoreText}\n`;
+
+                // Calculate sport breakdown for this game
+                const t1 = g.team1;
+                const t2 = g.team2;
+                const gamePlayers = playersToReport.filter(p => p.team === t1 || p.team === t2);
+                const sports = [...new Set(gamePlayers.map(p => p.sport).filter(s => s))].sort();
+
+                if (sports.length > 0) {
+                    sports.forEach(sport => {
+                        const t1SportScore = gamePlayers.filter(p => p.team === t1 && p.sport === sport).reduce((sum, p) => sum + p.score, 0);
+                        const t2SportScore = gamePlayers.filter(p => p.team === t2 && p.sport === sport).reduce((sum, p) => sum + p.score, 0);
                         
-                        if (sortedSportPlayers.length > 0 && sortedSportPlayers[0].score > 0) {
-                            recapText += `   Top Performers:\n`;
-                            sortedSportPlayers.forEach((p, i) => {
-                                if (p.score > 0) recapText += `   ${i+1}. ${p.username} (${p.team}) - ${p.score.toFixed(2)} pts\n`;
-                            });
+                        if (t1SportScore > 0 || t2SportScore > 0) {
+                            let sportWinner = t1SportScore > t2SportScore ? t1 : (t2SportScore > t1SportScore ? t2 : 'TIE');
+                            let sportWinnerScore = Math.max(t1SportScore, t2SportScore);
+                            let sportLoserScore = Math.min(t1SportScore, t2SportScore);
+                            
+                            if (sportWinner === 'TIE') {
+                                 report += `> ${sport}: TIE (${t1SportScore.toFixed(2)} - ${t2SportScore.toFixed(2)})\n`;
+                            } else {
+                                 report += `> ${sport}: **${sportWinner}** ${sportWinnerScore.toFixed(2)} - ${sportLoserScore.toFixed(2)}\n`;
+                            }
                         }
                     });
                 }
+                report += `\n`;
+            });
+            
+            // 2. TOP 3 PLAYERS
+            if (playersToReport && playersToReport.length > 0) {
+                const playerTotals = {};
+                const playerSports = {};
+                
+                playersToReport.forEach(p => {
+                    if (!playerTotals[p.username]) {
+                        playerTotals[p.username] = 0;
+                        playerSports[p.username] = {};
+                    }
+                    playerTotals[p.username] += p.score;
+                    if (p.sport) {
+                        playerSports[p.username][p.sport] = (playerSports[p.username][p.sport] || 0) + p.score;
+                    }
+                });
+                
+                const sortedPlayers = Object.entries(playerTotals)
+                    .map(([username, score]) => ({ username, score, sports: playerSports[username] }))
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 3);
+                
+                if (sortedPlayers.length > 0) {
+                    report += `🌟 **TOP 3 PLAYERS OF THE DAY** 🌟\n`;
+                    sortedPlayers.forEach((p, idx) => {
+                        const sportText = Object.entries(p.sports)
+                            .filter(([s, sc]) => sc > 0)
+                            .map(([s, sc]) => `${s}: ${sc.toFixed(2)}`)
+                            .join(', ');
+                        
+                        let sportDisplay = sportText ? ` (${sportText})` : '';
+                        report += `${idx + 1}. **${p.username}** - ${p.score.toFixed(2)} pts${sportDisplay}\n`;
+                    });
+                    report += `\n`;
+                }
+            }
 
-                output.textContent = recapText;
+            // 3. TOP PERFORMERS BY SPORT
+            if (playersToReport && playersToReport.length > 0) {
+                const sportLeaders = {};
+                
+                playersToReport.forEach(p => {
+                    if (p.sport && p.score > 0) {
+                        if (!sportLeaders[p.sport]) sportLeaders[p.sport] = [];
+                        sportLeaders[p.sport].push({ username: p.username, score: p.score, team: p.team });
+                    }
+                });
+                
+                const sortedSports = Object.keys(sportLeaders).sort();
+                
+                if (sortedSports.length > 0) {
+                    report += `🏅 **TOP PERFORMERS BY SPORT** 🏅\n`;
+                    sortedSports.forEach(sport => {
+                        const topInSport = sportLeaders[sport].sort((a, b) => b.score - a.score).slice(0, 3);
+                        report += `**${sport}:**\n`;
+                        topInSport.forEach((p, idx) => {
+                            report += `> ${idx + 1}. **${p.username}** - ${p.score.toFixed(2)}\n`;
+                        });
+                        report += `\n`;
+                    });
+                }
+            }
+            
+            output.textContent = "--- DISCORD REPORT ---\n\n" + report + "----------------------\n";
+        }
 
+        async function syncFreeAgents() {
+            output.textContent = `Fetching replies from Free Agency Thread...\n`;
+            try {
+                // Hardcoded comment thread URL including the Group ID (46567) and limit=100
+                const url = `https://web.realsports.io/comments/groups/46567/replies/178458037514000001?limit=100`;
+                const token = generateRequestToken();
+                const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
+                
+                const res = await fetch(proxyUrl);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                
+                // Safely extract the array of replies regardless of the exact API model used
+                let replies = data.replies || data.items || data;
+                if (!Array.isArray(replies)) {
+                    if (data.comments) replies = data.comments; 
+                    else if (data.data) replies = data.data;
+                    else throw new Error("Invalid response format from Real App.");
+                }
+                
+                // Deduplicate based on userId and ignore the specific admin account
+                const uniquePlayers = new Map();
+                replies.forEach(r => {
+                    const user = r.author || r.user || r; // Real App sometimes nests under 'author' for comments
+                    const userId = user.userId || user.id;
+                    const username = user.userName || user.username || user.name;
+                    
+                    if (userId && username && userId !== 'xnr5VpW3') {
+                        uniquePlayers.set(userId, { userId, username });
+                    }
+                });
+                
+                const playersArray = Array.from(uniquePlayers.values());
+                output.textContent += `Found ${playersArray.length} unique applicants. Sending to database...\n`;
+                
+                const payload = {
+                    action: 'add_players',
+                    players: playersArray
+                };
+                
+                const postRes = await fetch(APPS_SCRIPT_URL_ROSTERS, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const rawResponse = await postRes.text();
+                let result;
+                try {
+                    result = JSON.parse(rawResponse);
+                } catch(err) {
+                    throw new Error(`Google Script Error: ${rawResponse.substring(0, 100)}`);
+                }
+
+                if (result.status === 'error') throw new Error(result.message);
+                
+                output.textContent += `SUCCESS: ${result.message}\n`;
+                
             } catch (e) {
-                output.textContent = `Error generating recap: ${e.message}`;
-                console.error(e);
+                output.textContent += `ERROR: ${e.message}\n`;
             }
         }
     </script>
