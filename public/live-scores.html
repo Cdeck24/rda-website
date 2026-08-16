@@ -204,8 +204,33 @@
         .header-record { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 1px;}
         .header-record .loading-text { font-size: 0.7rem; color: var(--text-muted); animation: pulse 1.5s ease-in-out infinite alternate; }
         
-        .header-toggle-icon { font-size: 0.8rem; font-weight: 400; color: var(--text-muted); transition: transform 0.3s ease; display: inline-block; margin-left: 4px;}
+        .header-toggle-icon { font-size: 0.8rem; font-weight: 400; color: var(--text-muted); transition: transform 0.3s ease; display: inline-block;}
         .dropdown-header.open .header-toggle-icon { transform: rotate(45deg); }
+
+        /* Refresh Button Styles */
+        .refresh-matchup-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            margin-left: 6px;
+            border-radius: 50%;
+        }
+        .refresh-matchup-btn:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        .refresh-matchup-btn.spinning {
+            animation: spinIcon 1s linear infinite;
+            color: var(--gold-mid);
+            pointer-events: none;
+        }
 
         .dropdown-content { display: none; padding: 1rem; padding-top: 0; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border-subtle); }
         .dropdown-content.open { display: block; }
@@ -690,6 +715,7 @@
             .h2h-logo { width: 28px; height: 28px; }
         }
 
+        @keyframes spinIcon { 100% { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes pulse { 0% { opacity: .7 } 100% { opacity: 1 } }
         @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -779,6 +805,22 @@
         initNav();
         
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+
+        // Globals
+        window.teamsDataCache = {};
+        window.playersToFetch = {};
+        window.dailyMatchups = [];
+        window.sessionCache = {};
+
+        const modal = document.getElementById('lineup-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const closeModalBtn = modal.querySelector('.close-btn');
+
+        const duplicateModal = document.getElementById('duplicate-modal');
+        const duplicateModalTitle = document.getElementById('duplicate-modal-title');
+        const duplicateModalBody = document.getElementById('duplicate-modal-body');
+        const closeDuplicateModalBtn = document.getElementById('close-duplicate-modal');
 
         // --- H2H TEXT AUTO-FIT ---
         function autoFitText(el, minSizePx, widthEl) {
@@ -888,21 +930,6 @@
 
         const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
 
-        // Globals
-        const modal = document.getElementById('lineup-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalBody = document.getElementById('modal-body');
-        const closeModalBtn = modal.querySelector('.close-btn');
-
-        const duplicateModal = document.getElementById('duplicate-modal');
-        const duplicateModalTitle = document.getElementById('duplicate-modal-title');
-        const duplicateModalBody = document.getElementById('duplicate-modal-body');
-        const closeDuplicateModalBtn = document.getElementById('close-duplicate-modal');
-
-        let teamsDataCache = {};
-        let playersToFetch = {};
-        let dailyMatchups = [];
-
         window.currentLeaderboardFilter = 'ALL';
         window.updateLeaderboardFilter = (val) => {
             window.currentLeaderboardFilter = val;
@@ -959,107 +986,182 @@
             document.body.classList.add('modal-open');
         };
 
+        // --- Individual Matchup Refresh Logic ---
+        window.refreshMatchup = async (team1, team2, event) => {
+            event.stopPropagation();
+            const btn = event.currentTarget;
+            if (btn.classList.contains('spinning')) return; // Prevent double click
+            btn.classList.add('spinning');
+            
+            // 1. Collect all pending fetch requests for the two specific teams
+            const reqsToFetch = [];
+            [...(window.teamsDataCache[team1] || []), ...(window.teamsDataCache[team2] || [])].forEach(p => {
+                if(p.fetchRequests) {
+                    p.fetchRequests.forEach(r => { r.retries = 0; reqsToFetch.push(r); });
+                }
+            });
+
+            if (reqsToFetch.length === 0) {
+                btn.classList.remove('spinning');
+                return;
+            }
+
+            let queue = [...reqsToFetch];
+            
+            // 2. Mini queue processor specific to this match
+            async function processMiniQueue() {
+                while (queue.length > 0) {
+                    const reqData = queue.shift();
+                    if (!reqData) break;
+                    
+                    try {
+                        const res = await fetchSingleData(reqData.url);
+                        if (res.status === 200 && res.data) {
+                            const data = res.data;
+                            const pData = window.playersToFetch[reqData.userId];
+                            if (!pData) continue;
+
+                            let rankDisplay = '';
+                            if (data.info?.rankDisplayInfos?.length > 0) rankDisplay = data.info.rankDisplayInfos[0].rankDisplay || '';
+                            else if (data.rankDisplayInfos?.length > 0) rankDisplay = data.rankDisplayInfos[0].rankDisplay || '';
+                            else if (data.info?.rankDisplay) rankDisplay = data.info.rankDisplay || '';
+                            else if (data.rankDisplay) rankDisplay = data.rankDisplay || '';
+
+                            let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
+                            if (!Array.isArray(extractedLineup)) {
+                                if (extractedLineup.players) extractedLineup = extractedLineup.players;
+                                else if (extractedLineup.items) extractedLineup = extractedLineup.items;
+                                else extractedLineup = [];
+                            }
+
+                            const parseScoreStr = (str) => parseFloat(String(str).replace(/,/g, '')) || 0;
+                            let finalScore = 0;
+
+                            if (data.info?.rankDisplayInfos?.length > 0) finalScore = parseScoreStr(data.info.rankDisplayInfos[0].scoreDisplay);
+                            else if (data.rankDisplayInfos?.length > 0) finalScore = parseScoreStr(data.rankDisplayInfos[0].scoreDisplay);
+                            else if (data.info?.scoreDisplay) finalScore = parseScoreStr(data.info.scoreDisplay);
+                            else if (data.scoreDisplay) finalScore = parseScoreStr(data.scoreDisplay);
+                            else if (data.info?.score !== undefined) finalScore = parseFloat(data.info.score) || 0;
+                            else if (data.score !== undefined) finalScore = parseFloat(data.score) || 0;
+
+                            pData.scoresBySport[reqData.sport] = finalScore;
+                            pData.ranksBySport[reqData.sport] = rankDisplay;
+                            pData.lineupsBySport[reqData.sport] = extractedLineup;
+                            pData.error = false;
+                            
+                            if (data.info?.user?.userName || data.user?.userName) {
+                                pData.username = data.info?.user?.userName || data.user?.userName;
+                            }
+                            
+                            // Update our session cache dynamically
+                            if (window.sessionCache) {
+                                window.sessionCache[reqData.url] = { ts: Date.now(), data: data };
+                            }
+                            
+                            // Mandatory pacing to prevent 429s on successful requests
+                            await new Promise(r => setTimeout(r, 400));
+                            
+                        } else if (res.status === 429 || res.status === 502) {
+                            reqData.retries = (reqData.retries || 0) + 1;
+                            if (reqData.retries < 5) {
+                                queue.push(reqData);
+                                // Severe penalty delay to let the API cooldown
+                                await new Promise(r => setTimeout(r, 2500));
+                            } else {
+                                const pData = window.playersToFetch[reqData.userId];
+                                if (pData) pData.scoresBySport[reqData.sport] = 'Error';
+                            }
+                        } else {
+                            const pData = window.playersToFetch[reqData.userId];
+                            if (pData) {
+                                pData.scoresBySport[reqData.sport] = 'Error';
+                                pData.error = true;
+                            }
+                            await new Promise(r => setTimeout(r, 400));
+                        }
+                    } catch (e) {
+                        reqData.retries = (reqData.retries || 0) + 1;
+                        if (reqData.retries < 5) {
+                            queue.push(reqData);
+                            await new Promise(r => setTimeout(r, 2500));
+                        } else {
+                            const pData = window.playersToFetch[reqData.userId];
+                            if (pData) pData.scoresBySport[reqData.sport] = 'Error';
+                        }
+                    }
+                }
+            }
+
+            const workers = [];
+            // Reduced to 2 streams to bypass burst limits
+            for (let i = 0; i < 2; i++) workers.push(processMiniQueue()); 
+            await Promise.all(workers);
+
+            // 3. Recalculate Totals
+            [...(window.teamsDataCache[team1] || []), ...(window.teamsDataCache[team2] || [])].forEach(p => {
+                p.totalScore = Object.entries(p.scoresBySport).reduce((sum, [s, sc]) => {
+                    return sum + (s.toUpperCase() !== 'USER' && s.toUpperCase() !== 'DRAFT' && s.toUpperCase() !== 'SPORT' && typeof sc === 'number' ? sc : 0);
+                }, 0);
+            });
+
+            // 4. Re-run Global Duplicate Logic
+            const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'R37kAWO3', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn', '9JmXRKDn']);
+            const hashes = new Map();
+            
+            Object.values(window.playersToFetch).forEach(p => {
+                p.isDuplicate = {};
+                p.duplicateWith = {};
+                if (p.isBench) return;
+                
+                for (const s in p.lineupsBySport) {
+                    if (s.toUpperCase() === 'DRAFT' || s.toUpperCase() === 'SPORT' || s.toUpperCase() === 'USER') continue;
+                    const l = p.lineupsBySport[s];
+                    if (!Array.isArray(l) || !l.length) continue;
+                    
+                    const h = `${s}:${l.map(x => {
+                        const lp = x.player || x;
+                        return (lp.displayName || x.displayName || lp.name || x.name || '').trim();
+                    }).join(',')}`;
+                    
+                    if (!hashes.has(h)) hashes.set(h, []);
+                    hashes.get(h).push({player: p, sport: s});
+                }
+            });
+
+            for (const entries of hashes.values()) {
+                if (entries.length <= 1) continue;
+                for (let i = 0; i < entries.length; i++) {
+                    const curr = entries[i], violators = new Set();
+                    for (let j = 0; j < entries.length; j++) {
+                        if (i === j) continue;
+                        const other = entries[j];
+                        if (curr.player.team === other.player.team) violators.add(other.player.username);
+                        if (draftUserIds.has(other.player.userId)) {
+                            if (other.player.userId !== 'WJqLyqAn' || curr.sport === 'NHL') violators.add(other.player.username);
+                        }
+                    }
+                    if (violators.size > 0) {
+                        curr.player.isDuplicate[curr.sport] = true;
+                        curr.player.duplicateWith[curr.sport] = [...violators];
+                    }
+                }
+            }
+
+            // Save our newly updated local memory
+            sessionStorage.setItem('rda_live_cache', JSON.stringify(window.sessionCache));
+            
+            // Re-render
+            renderTeamMatchupUI(false, false);
+            btn.classList.remove('spinning');
+        };
+
         // --- Calculate Max Score Function ---
         const calcMaxScore = (team) => {
-            const allPlayers = teamsDataCache[team] || [];
+            const allPlayers = window.teamsDataCache[team] || [];
             const sorted = [...allPlayers].sort((a, b) => b.totalScore - a.totalScore);
             const top8 = sorted.slice(0, 8);
             return top8.reduce((sum, p) => sum + p.totalScore, 0);
         };
-
-        function showLineupModal(team1, team2) {
-            modalTitle.textContent = `${team1} vs ${team2} (Total Score)`;
-            const team1Players = teamsDataCache[team1] || [];
-            const team2Players = teamsDataCache[team2] || [];
-
-            const t1Starters = team1Players.filter(p => !p.isBench).sort((a, b) => b.totalScore - a.totalScore);
-            const t1Bench = team1Players.filter(p => p.isBench).sort((a, b) => b.totalScore - a.totalScore);
-            const t1Total = t1Starters.reduce((sum, p) => sum + p.totalScore, 0);
-
-            const t2Starters = team2Players.filter(p => !p.isBench).sort((a, b) => b.totalScore - a.totalScore);
-            const t2Bench = team2Players.filter(p => p.isBench).sort((a, b) => b.totalScore - a.totalScore);
-            const t2Total = t2Starters.reduce((sum, p) => sum + p.totalScore, 0);
-
-            const renderPlayer = (player) => {
-                let sportScoresHtml = '<div class="player-sport-scores">';
-                let hasAnyDuplicate = false;
-
-                if (player.scoresBySport && Object.keys(player.scoresBySport).length > 0) {
-                    const sortedSports = Object.keys(player.scoresBySport)
-                        .filter(s => {
-                            const upperS = s.toUpperCase();
-                            return upperS !== 'USER' && upperS !== 'DRAFT' && upperS !== 'SPORT';
-                        })
-                        .sort();
-                    
-                    for (const sport of sortedSports) {
-                        const score = player.scoresBySport[sport];
-                        if (player.isDuplicate && player.isDuplicate[sport]) {
-                            hasAnyDuplicate = true;
-                            const usernamesJSON = JSON.stringify(player.duplicateWith[sport] || []).replace(/"/g, '&quot;');
-                            sportScoresHtml += `<span class="sport-score duplicate-clickable" style="color: #F44336;" onclick="showDuplicateInfo('${sport}', ${usernamesJSON}); event.stopPropagation();">${sport}: ${typeof score === 'number' ? score.toFixed(2) : '0.00'} (D)</span>`;
-                        } else if (typeof score === 'number') {
-                            sportScoresHtml += `<span class="sport-score">${sport}: ${score.toFixed(2)}</span>`;
-                        } else {
-                            sportScoresHtml += `<span class="sport-score error">${sport}: 0.00</span>`;
-                        }
-                    }
-                } else if (player.error) {
-                    sportScoresHtml += '<span class="sport-score error">Error loading scores</span>';
-                } else {
-                    sportScoresHtml += 'No scores available';
-                }
-                sportScoresHtml += '</div>';
-
-                const duplicateClass = hasAnyDuplicate ? 'duplicate-lineup' : '';
-                const duplicateIcon = hasAnyDuplicate ? '<span style="color: #F44336; font-size: 0.8rem; margin-left: 5px;">(D)</span>' : '';
-                const teamLogoImg = `<img src="${window.getTeamLogoPath(player.team)}" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;border-radius:4px;object-fit:contain;" onerror="this.style.display='none'">`;
-                
-                const benchClass = player.isBench ? 'bench-cell' : '';
-                const benchBadge = player.isBench ? '<span class="bench-badge">BENCH</span>' : '';
-
-                return `
-                    <div class="player-card-modal ${duplicateClass} ${benchClass}">
-                        <div class="player-summary">
-                            <div class="player-info-modal" style="display:flex;align-items:center;">
-                                <span class="player-name">${teamLogoImg}${player.username}${benchBadge}${duplicateIcon}</span>
-                            </div>
-                            <span class="player-total-score">${player.totalScore.toFixed(2)}</span>
-                        </div>
-                        ${sportScoresHtml}
-                    </div>`;
-            }
-
-            const renderTeamBlock = (teamName, starters, bench, totalScore) => {
-                const startersHtml = starters.map(renderPlayer).join('');
-                const benchHtml = bench.map(renderPlayer).join('');
-                const benchSection = bench.length > 0 ? `<div class="bench-divider" style="margin: 0.5rem 0; border-radius: 4px;">BENCH</div>${benchHtml}` : '';
-
-                return `
-                <div class="lineup-team">
-                    <div class="team-header-block" style="cursor: default;">
-                        <div class="team-header-info">
-                            <img src="${window.getTeamLogoPath(teamName)}" class="team-header-logo" onerror="this.src='https://placehold.co/40x40/222/fff?text=?'">
-                            <div class="team-header-text">
-                                <span class="team-header-name">${teamName}</span>
-                                <span class="team-header-score-container">Total: <span class="team-header-score">${totalScore.toFixed(2)}</span></span>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="padding: 1rem; border-top: 1px solid var(--border-subtle);">
-                        ${startersHtml || '<p style="text-align:center; color:#888;">No starters found.</p>'}
-                        ${benchSection}
-                    </div>
-                </div>`;
-            };
-
-            modalBody.innerHTML = `
-                ${renderTeamBlock(team1, t1Starters, t1Bench, t1Total)}
-                ${renderTeamBlock(team2, t2Starters, t2Bench, t2Total)}
-            `;
-            modal.style.display = "flex";
-            document.body.classList.add('modal-open');
-        }
 
         async function fetchSingleData(url) {
             const token = generateRequestToken();
@@ -1123,8 +1225,6 @@
             
             if (hour === 24) hour = 0;
             
-            // Change "12" to whichever hour (in 24-hour military time) you want the day to roll over.
-            // For example, 9 means the site switches to today's games at 9:00 AM EST.
             if (hour < 10) {
                 const estDate = new Date(Date.UTC(parseInt(partValue('year')), month - 1, day));
                 estDate.setUTCDate(estDate.getUTCDate() - 1);
@@ -1139,8 +1239,7 @@
             const filterSelect = document.getElementById('leaderboard-sport-filter');
             
             let allPlayers = [];
-            // Omit benched players from leaderboard
-            Object.values(teamsDataCache).forEach(tp => allPlayers = allPlayers.concat(tp.filter(p => !p.isBench)));
+            Object.values(window.teamsDataCache).forEach(tp => allPlayers = allPlayers.concat(tp.filter(p => !p.isBench)));
 
             const discoveredSports = new Set();
             allPlayers.forEach(p => {
@@ -1248,7 +1347,7 @@
                 resultsDiv.parentElement.insertBefore(errorBanner, resultsDiv);
             }
             
-            for (const matchup of dailyMatchups) {
+            for (const matchup of window.dailyMatchups) {
                 const { team1, team2, id } = matchup;
                 let dropdown = document.getElementById(id);
                 
@@ -1273,9 +1372,12 @@
                                     <span class="header-dash">-</span>
                                     <span class="header-series-score" id="${id}-t2-series"></span>
                                 </div>
-                                <div class="header-record" id="${id}-record">
+                                <div class="header-record" id="${id}-record" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
                                     <span></span> <span class="loading-text">Loading...</span>
-                                    <span class="header-toggle-icon">+</span>
+                                    <div style="display: flex; align-items: center;">
+                                        <span class="header-toggle-icon">+</span>
+                                        <button class="refresh-matchup-btn" title="Refresh Matchup" onclick="refreshMatchup('${team1.replace(/'/g, "\\'")}', '${team2.replace(/'/g, "\\'")}', event)">↻</button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1295,8 +1397,8 @@
                     resultsDiv.appendChild(dropdown);
                 }
 
-                const team1Players = teamsDataCache[team1] || [];
-                const team2Players = teamsDataCache[team2] || [];
+                const team1Players = window.teamsDataCache[team1] || [];
+                const team2Players = window.teamsDataCache[team2] || [];
                 const allSports = new Set();
                 
                 [...team1Players, ...team2Players].forEach(p => {
@@ -1310,13 +1412,13 @@
                 const sortedSports = [...allSports].sort();
 
                 const calcTotal = (team, sport) => {
-                    return (teamsDataCache[team] || [])
+                    return (window.teamsDataCache[team] || [])
                         .filter(p => !p.isBench)
                         .reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
                 };
                 
                 const calcGrand = (team) => {
-                    return (teamsDataCache[team] || [])
+                    return (window.teamsDataCache[team] || [])
                         .filter(p => !p.isBench)
                         .reduce((sum, p) => sum + p.totalScore, 0);
                 };
@@ -1582,11 +1684,11 @@
             let globalAuthErrorEncountered = false;
         
             // --- SESSION CACHE LOGIC ---
-            let sessionCache = JSON.parse(sessionStorage.getItem('rda_live_cache') || '{}');
+            window.sessionCache = JSON.parse(sessionStorage.getItem('rda_live_cache') || '{}');
             const CACHE_EXPIRY = 3 * 60 * 1000;
         
-            for(let k in sessionCache) {
-                if(Date.now() - sessionCache[k].ts > CACHE_EXPIRY) delete sessionCache[k];
+            for(let k in window.sessionCache) {
+                if(Date.now() - window.sessionCache[k].ts > CACHE_EXPIRY) delete window.sessionCache[k];
             }
         
             try {
@@ -1643,7 +1745,7 @@
                     }
                 }
                 
-                dailyMatchups = scheduleCsv.slice(scheduleStartRow)
+                window.dailyMatchups = scheduleCsv.slice(scheduleStartRow)
                     .filter(r => isSameDate(r[dIdx], todayDateString))
                     .map((r, i) => ({ 
                         team1: r[t1Idx] ? String(r[t1Idx]).trim() : '', 
@@ -1652,7 +1754,7 @@
                         id: `matchup-${i}` 
                     })).filter(m => m.team1 !== '' && m.team2 !== '');
                     
-                if (dailyMatchups.length === 0) {
+                if (window.dailyMatchups.length === 0) {
                     document.getElementById('results').innerHTML = `<div class="no-games">No games scheduled for today (${todayDateString}).</div>`;
                 }
         
@@ -1683,7 +1785,7 @@
                     }
                 }
         
-                playersToFetch = {};
+                window.playersToFetch = {};
                 const allScoreUrls = [];
         
                 playersCsv.slice(playerStartRow).forEach(row => {
@@ -1705,8 +1807,8 @@
                     const isRookie = rookieIdx > -1 ? row[rookieIdx]?.trim().toLowerCase() === 'yes' : false;
                     const team = row[teamIdx]?.trim() || 'Free Agent';
         
-                    if(!playersToFetch[userId]) {
-                        if(!teamsDataCache[team]) teamsDataCache[team] = [];
+                    if(!window.playersToFetch[userId]) {
+                        if(!window.teamsDataCache[team]) window.teamsDataCache[team] = [];
                         const pData = { 
                             csvUsername: csvUsername, 
                             username: csvUsername || `User_${userId.substr(0,4)}`, 
@@ -1721,21 +1823,24 @@
                             duplicateWith: {}, 
                             totalScore: 0, 
                             error: false, 
-                            errorDetails: {} 
+                            errorDetails: {},
+                            fetchRequests: []
                         };
-                        teamsDataCache[team].push(pData); 
-                        playersToFetch[userId] = pData;
+                        window.teamsDataCache[team].push(pData); 
+                        window.playersToFetch[userId] = pData;
                     }
                     
                     for(const s in sportIndices) {
                         const did = row[sportIndices[s]]?.trim();
                         if(did) {
-                            allScoreUrls.push({
+                            const reqObj = {
                                 url: `https://web.realsports.io/games/playerratingcontest/${did}/view/${userId}?contestType=sport&source=home`,
                                 userId,
                                 sport: s,
                                 retries: 0
-                            });
+                            };
+                            allScoreUrls.push(reqObj);
+                            window.playersToFetch[userId].fetchRequests.push(reqObj);
                         }
                     }
                 });
@@ -1767,7 +1872,7 @@
         
                     const now = Date.now();
                     if (now - lastRenderTime > 2000 || loaded === totalRequests) {
-                        Object.values(playersToFetch).forEach(p => {
+                        Object.values(window.playersToFetch).forEach(p => {
                             p.totalScore = Object.entries(p.scoresBySport).reduce((sum, [s, sc]) => {
                                 return sum + (s.toUpperCase() !== 'USER' && s.toUpperCase() !== 'DRAFT' && s.toUpperCase() !== 'SPORT' && typeof sc === 'number' ? sc : 0);
                             }, 0);
@@ -1778,11 +1883,11 @@
                 }
         
                 function processSuccessfulData(reqData, data, isFromCache) {
-                    const pData = playersToFetch[reqData.userId];
+                    const pData = window.playersToFetch[reqData.userId];
                     if (!pData) return;
                     
                     if (!isFromCache) {
-                        sessionCache[reqData.url] = { ts: Date.now(), data: data };
+                        window.sessionCache[reqData.url] = { ts: Date.now(), data: data };
                         newCacheEntries = true;
                     }
         
@@ -1828,7 +1933,7 @@
                 }
         
                 function handleFailedRequest(reqData, status) {
-                    const pData = playersToFetch[reqData.userId];
+                    const pData = window.playersToFetch[reqData.userId];
                     if (!pData) return;
                     pData.scoresBySport[reqData.sport] = 'Error';
                     pData.error = true;
@@ -1858,8 +1963,8 @@
                         const reqData = queue.shift();
                         if (!reqData) break;
                         
-                        if (sessionCache[reqData.url]) {
-                            processSuccessfulData(reqData, sessionCache[reqData.url].data, true);
+                        if (window.sessionCache[reqData.url]) {
+                            processSuccessfulData(reqData, window.sessionCache[reqData.url].data, true);
                             continue;
                         }
         
@@ -1908,12 +2013,12 @@
                 await Promise.all(workers);
                 
                 if (newCacheEntries) {
-                    sessionStorage.setItem('rda_live_cache', JSON.stringify(sessionCache));
+                    sessionStorage.setItem('rda_live_cache', JSON.stringify(window.sessionCache));
                 }
         
                 // Duplicate Check 
                 const hashes = new Map();
-                Object.values(playersToFetch).forEach(p => {
+                Object.values(window.playersToFetch).forEach(p => {
                     if (p.isBench) return; // Skip bench players from duplicate detection
                     for(const s in p.lineupsBySport) {
                         if(s.toUpperCase() === 'DRAFT' || s.toUpperCase() === 'SPORT' || s.toUpperCase() === 'USER') continue;
