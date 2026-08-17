@@ -553,6 +553,16 @@
 
         .no-games { background: var(--bg-card); border-radius: 12px; padding: 3rem; color: var(--text-muted); font-size: 1.2rem; text-align: center; }
 
+        /* --- Matchup Analytics Pill Styles --- */
+        .athlete-pill { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid var(--border-subtle); 
+            padding: 6px 8px; 
+            border-radius: 6px; 
+            transition: background 0.2s; 
+        }
+        .athlete-pill:hover { background: rgba(255,255,255,0.08); }
+
         /* --- Total Matchup Modal Styles --- */
         .modal-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85);
@@ -729,6 +739,7 @@
     <!-- Sub-Navigation for Tabs -->
     <div class="sub-nav-container">
         <button class="sub-nav-btn active" id="tab-live" onclick="switchTab('live')">Team Matchups</button>
+        <button class="sub-nav-btn" id="tab-analytics" onclick="switchTab('analytics')">Matchup Analytics</button>
         <button class="sub-nav-btn" id="tab-leaderboard" onclick="switchTab('leaderboard')">Daily Leaderboard</button>
     </div>
 
@@ -743,7 +754,12 @@
     <!-- View 1: Team Matchups -->
     <div id="results" class="content-view active"></div>
 
-    <!-- View 2: Leaderboard -->
+    <!-- View 2: Analytics -->
+    <div id="analytics-results" class="content-view">
+        <!-- Rendered via JS -->
+    </div>
+
+    <!-- View 3: Leaderboard -->
     <div id="leaderboard-results" class="content-view">
         <div class="leaderboard-card">
             <div class="leaderboard-header">
@@ -947,6 +963,9 @@
             } else if (tabName === 'leaderboard') {
                 document.getElementById('leaderboard-results').classList.add('active');
                 renderLeaderboardUI();
+            } else if (tabName === 'analytics') {
+                document.getElementById('analytics-results').classList.add('active');
+                window.renderAnalyticsUI();
             }
             
             document.querySelectorAll('.sub-nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -1675,7 +1694,154 @@
                         </div>`;
                 }
             }
+            
+            // Re-render Analytics to keep names in sync
+            window.renderAnalyticsUI();
         }
+
+        window.renderAnalyticsUI = function() {
+            const container = document.getElementById('analytics-results');
+            container.innerHTML = '';
+
+            if (window.dailyMatchups.length === 0) {
+                container.innerHTML = '<div class="no-games">No matchups scheduled for today.</div>';
+                return;
+            }
+
+            window.dailyMatchups.forEach(matchup => {
+                const { team1, team2 } = matchup;
+                const team1Players = window.teamsDataCache[team1] || [];
+                const team2Players = window.teamsDataCache[team2] || [];
+                
+                const allSports = new Set();
+                [...team1Players, ...team2Players].forEach(p => {
+                    if (p.isBench) return;
+                    Object.keys(p.scoresBySport).forEach(s => {
+                        const upperS = s.toUpperCase();
+                        if(upperS !== 'USER' && upperS !== 'DRAFT' && upperS !== 'SPORT') allSports.add(s);
+                    });
+                });
+                const sortedSports = [...allSports].sort();
+                
+                if(sortedSports.length === 0) return;
+
+                let cardHtml = `
+                <div class="matchup-dropdown" style="margin-bottom: 1.5rem; background: var(--bg-navy-light);">
+                    <div class="dropdown-header" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('open');">
+                        <div class="header-logo-container"><img src="${window.getTeamLogoPath(team1)}" class="header-team-logo" onerror="this.src='https://placehold.co/45x45/222/fff?text=?'"></div>
+                        <div class="header-team-name away">${team1}</div>
+                        <div class="header-center-block">
+                            <span style="color:var(--text-muted); font-weight:bold; font-size: 1.2rem;">VS</span>
+                            <div class="header-record" style="margin-top: 2px;"><span class="header-toggle-icon" style="margin:0;">+</span></div>
+                        </div>
+                        <div class="header-team-name home">${team2}</div>
+                        <div class="header-logo-container"><img src="${window.getTeamLogoPath(team2)}" class="header-team-logo" onerror="this.src='https://placehold.co/45x45/222/fff?text=?'"></div>
+                    </div>
+                    <div class="dropdown-content" style="background: rgba(0,0,0,0.2);">
+                `;
+
+                sortedSports.forEach(sport => {
+                    const validT1 = team1Players.filter(p => p.scoresBySport[sport] !== undefined && !p.isBench);
+                    const validT2 = team2Players.filter(p => p.scoresBySport[sport] !== undefined && !p.isBench);
+                    
+                    const getAthletes = (gms) => {
+                        let realTeams = {};
+                        gms.forEach(gm => {
+                            const lineup = Array.isArray(gm.lineupsBySport[sport]) ? gm.lineupsBySport[sport] : [];
+                            lineup.forEach(item => {
+                                const lp = item.player || item;
+                                const name = lp.displayName || item.displayName || lp.name || item.name || '';
+                                const avatar = lp.avatar || item.avatar || '';
+                                
+                                // Safely extract real-life team from various Real App API models
+                                let rTeam = 'Unspecified Team';
+                                const tId = lp.teamId || item.teamId;
+                                
+                                // 1. Try to map the teamId to your CSV list first
+                                if (tId && window.realLifeTeamMap && window.realLifeTeamMap[String(tId).trim()]) {
+                                    rTeam = window.realLifeTeamMap[String(tId).trim()];
+                                } 
+                                // 2. Fallback to API strings if the ID isn't in your CSV yet
+                                else if (lp.team && lp.team.name) rTeam = lp.team.name;
+                                else if (typeof lp.team === 'string') rTeam = lp.team;
+                                else if (lp.teamName) rTeam = lp.teamName;
+                                else if (item.teamName) rTeam = item.teamName;
+                                
+                                if (!realTeams[rTeam]) realTeams[rTeam] = {};
+                                if (!realTeams[rTeam][name]) realTeams[rTeam][name] = { avatar, gms: new Set() };
+                                
+                                realTeams[rTeam][name].gms.add(gm.username);
+                            });
+                        });
+                        return realTeams;
+                    };
+
+                    const t1Athletes = getAthletes(validT1);
+                    const t2Athletes = getAthletes(validT2);
+                    
+                    let t1PickCount = 0; Object.values(t1Athletes).forEach(team => Object.values(team).forEach(a => t1PickCount += a.gms.size));
+                    let t2PickCount = 0; Object.values(t2Athletes).forEach(team => Object.values(team).forEach(a => t2PickCount += a.gms.size));
+                    
+                    const renderAthleteList = (teamsMap, align) => {
+                        const teamKeys = Object.keys(teamsMap).sort();
+                        if (teamKeys.length === 0) return `<div style="color:#666; font-style:italic; font-size: 0.85rem; text-align: center; width: 100%; padding: 1rem 0;">No picks active</div>`;
+                        
+                        let html = '';
+                        teamKeys.forEach(tName => {
+                            const athletes = Object.keys(teamsMap[tName]).sort();
+                            if (athletes.length === 0) return;
+                            
+                            html += `<div style="width: 100%; margin-bottom: 1rem;">`;
+                            html += `<div style="font-size: 0.65rem; color: #888; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; margin-bottom: 8px; text-align: ${align}; letter-spacing: 1px;">${tName}</div>`;
+                            
+                            athletes.forEach(aName => {
+                                const data = teamsMap[tName][aName];
+                                const gmList = Array.from(data.gms).join(', ');
+                                const countBadge = data.gms.size > 1 ? `<span style="background: rgba(212, 175, 55, 0.2); color: var(--gold-mid); padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: bold; margin-right: 4px;">x${data.gms.size}</span>` : '';
+                                
+                                html += `
+                                    <div class="athlete-pill" style="display: flex; align-items: center; gap: 8px; flex-direction: ${align === 'right' ? 'row-reverse' : 'row'}; text-align: ${align}; width: 100%; box-sizing: border-box; margin-bottom: 6px;">
+                                        <img src="${data.avatar ? `https://media.realapp.link/assets/players/default/large/${data.avatar}.webp` : 'https://placehold.co/28x28/222/fff?text=?'}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid var(--border-subtle); flex-shrink: 0;" onerror="this.src='https://placehold.co/28x28/222/fff?text=?';">
+                                        <div style="display: flex; flex-direction: column; overflow: hidden; width: 100%;">
+                                            <div style="display: flex; align-items: center; justify-content: ${align === 'right' ? 'flex-end' : 'flex-start'}; gap: 4px;">
+                                                ${align === 'right' ? countBadge : ''}
+                                                <span style="font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">${aName}</span>
+                                                ${align === 'left' ? countBadge : ''}
+                                            </div>
+                                            <span style="font-size: 0.65rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${gmList}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            html += `</div>`;
+                        });
+                        return html;
+                    };
+
+                    cardHtml += `
+                        <div class="sport-card" style="margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px;">
+                            <div style="text-align: center; color: var(--gold-mid); font-weight: 800; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px; font-size: 1rem;">
+                                ${sport}
+                                <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-top: 4px;">
+                                    ${t1PickCount} PICKS VS ${t2PickCount} PICKS
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div style="display: flex; flex-direction: column; align-items: flex-start; border-right: 1px solid rgba(255,255,255,0.05); padding-right: 0.5rem;">
+                                    ${renderAthleteList(t1Athletes, 'left')}
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; padding-left: 0.5rem;">
+                                    ${renderAthleteList(t2Athletes, 'right')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                cardHtml += `</div></div>`;
+                container.innerHTML += cardHtml;
+            });
+        };
         
         async function main() {
             const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'R37kAWO3', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn', '9JmXRKDn']);
@@ -1692,9 +1858,10 @@
             }
         
             try {
-                const [playersCsv, scheduleCsv] = await Promise.all([
+                const [playersCsv, scheduleCsv, teamIdsCsv] = await Promise.all([
                     fetchCSV(config.players),
-                    fetchCSV(config.schedule)
+                    fetchCSV(config.schedule),
+                    fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSP_llBNyBhMymlG-XfKDzGAaCt6IFWRHYSL5zrCjDupUXd_ADO8nPFWGhi59B2x2gBwjJimVXE9p9K/pub?gid=824904797&single=true&output=csv')
                 ]);
                 const todayDateString = getCurrentDateStringEST();
         
@@ -1730,6 +1897,19 @@
                     } 
                     return -1; 
                 };
+
+                window.realLifeTeamMap = {};
+                if (teamIdsCsv && teamIdsCsv.length > 1) {
+                    const tHeaders = teamIdsCsv[0].map(h => typeof h === 'string' ? h.toLowerCase().trim() : '');
+                    const tidIdx = findIndex(tHeaders, ["team id"]);
+                    const tnameIdx = findIndex(tHeaders, ["team name"]);
+                    if (tidIdx !== -1 && tnameIdx !== -1) {
+                        teamIdsCsv.slice(1).forEach(row => {
+                            const tid = cleanId(row[tidIdx]);
+                            if (tid) window.realLifeTeamMap[tid] = row[tnameIdx]?.trim();
+                        });
+                    }
+                }
                 
                 let dIdx = -1, t1Idx = -1, t2Idx = -1, activeSportsIdx = -1;
                 let scheduleStartRow = 1;

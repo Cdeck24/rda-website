@@ -548,6 +548,35 @@
                     const sortedSports = Array.from(sportsSet).sort();
 
                     if (sortedSports.length > 0) {
+                        const renderPlayers = (plist) => {
+                            // SEPARATE STARTERS FROM BENCH
+                            const starters = plist.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true'));
+                            const bench = plist.filter(p => p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true');
+
+                            let html = '';
+                            if (starters.length === 0) {
+                                html += `<div class="box-player-row"><span class="box-player-name" style="color:#888;">No Starters</span></div>`;
+                            } else {
+                                html += starters.map(p => `
+                                    <div class="box-player-row">
+                                        <span class="box-player-name">${p.username}</span>
+                                        <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
+                                    </div>
+                                `).join('');
+                            }
+
+                            if (bench.length > 0) {
+                                html += `<div style="text-align:center; font-size:0.65rem; color:#666; margin: 6px 0; border-top: 1px dashed #333; padding-top: 6px; letter-spacing: 1px;">BENCH</div>`;
+                                html += bench.map(p => `
+                                    <div class="box-player-row" style="opacity:0.5;">
+                                        <span class="box-player-name">${p.username}</span>
+                                        <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
+                                    </div>
+                                `).join('');
+                            }
+                            return html;
+                        };
+
                         dropdownContentHtml = sortedSports.map(sport => {
                             const p1Sport = p1All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
                             const p2Sport = p2All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
@@ -558,35 +587,6 @@
 
                             const s1Class = s1 > s2 ? 'winning-score' : '';
                             const s2Class = s2 > s1 ? 'winning-score' : '';
-
-                            const renderPlayers = (plist) => {
-                                // SEPARATE STARTERS FROM BENCH
-                                const starters = plist.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true'));
-                                const bench = plist.filter(p => p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true');
-
-                                let html = '';
-                                if (starters.length === 0) {
-                                    html += `<div class="box-player-row"><span class="box-player-name" style="color:#888;">No Starters</span></div>`;
-                                } else {
-                                    html += starters.map(p => `
-                                        <div class="box-player-row">
-                                            <span class="box-player-name">${p.username}</span>
-                                            <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
-                                        </div>
-                                    `).join('');
-                                }
-
-                                if (bench.length > 0) {
-                                    html += `<div style="text-align:center; font-size:0.65rem; color:#666; margin: 6px 0; border-top: 1px dashed #333; padding-top: 6px; letter-spacing: 1px;">BENCH</div>`;
-                                    html += bench.map(p => `
-                                        <div class="box-player-row" style="opacity:0.5;">
-                                            <span class="box-player-name">${p.username}</span>
-                                            <span class="box-player-score">${parseFloat(p.score).toFixed(2)}</span>
-                                        </div>
-                                    `).join('');
-                                }
-                                return html;
-                            };
 
                             return `
                             <div class="sport-card">
@@ -613,6 +613,54 @@
                             </div>
                             `;
                         }).join('');
+
+                        const groupPlayers = (pList) => {
+                            const map = {};
+                            pList.forEach(p => {
+                                const isBench = p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true';
+                                if (!map[p.username]) {
+                                    map[p.username] = { username: p.username, score: 0, isBench: isBench };
+                                }
+                                map[p.username].score += parseFloat(p.score || 0);
+                                if (!isBench) map[p.username].isBench = false;
+                            });
+                            return Object.values(map).sort((a,b) => b.score - a.score);
+                        };
+
+                        const p1Totals = groupPlayers(p1All);
+                        const p2Totals = groupPlayers(p2All);
+
+                        const totalS1 = p1Totals.filter(p => !p.isBench).reduce((sum, p) => sum + p.score, 0);
+                        const totalS2 = p2Totals.filter(p => !p.isBench).reduce((sum, p) => sum + p.score, 0);
+
+                        const s1ClassTotal = totalS1 > totalS2 ? 'winning-score' : '';
+                        const s2ClassTotal = totalS2 > totalS1 ? 'winning-score' : '';
+
+                        dropdownContentHtml += `
+                        <div class="sport-card total-card" style="border-top: 2px solid var(--border-gold); background: rgba(212, 175, 55, 0.05); margin-top: 1rem;">
+                            <div class="sport-header-row" onclick="this.parentElement.classList.toggle('open'); const t = this.querySelector('.sport-toggle'); t.textContent = this.parentElement.classList.contains('open') ? '-' : '+';">
+                                <div class="sport-team-name">${game.team1}</div>
+                                <div class="sport-center-block">
+                                    <div class="sport-scores-row">
+                                        <span class="team-score ${s1ClassTotal}">${totalS1.toFixed(2)}</span>
+                                        <span class="header-dash">-</span>
+                                        <span class="team-score ${s2ClassTotal}">${totalS2.toFixed(2)}</span>
+                                    </div>
+                                    <div class="sport-game-status" style="color: var(--gold-mid);">TOTAL <span class="sport-toggle">+</span></div>
+                                </div>
+                                <div class="sport-team-name right">${game.team2}</div>
+                            </div>
+                            <div class="box-score-container">
+                                <div class="box-team-col">
+                                    ${renderPlayers(p1Totals)}
+                                </div>
+                                <div class="box-team-col">
+                                    ${renderPlayers(p2Totals)}
+                                </div>
+                            </div>
+                        </div>
+                        `;
+
                     } else {
                         dropdownContentHtml = `<div class="no-data-msg">Completed but no individual sport data available.</div>`;
                     }
