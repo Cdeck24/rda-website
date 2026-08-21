@@ -153,14 +153,20 @@
             </select>
             <input type="text" id="search" placeholder="Search Player or Team..." onkeyup="filter()">
             
-            <select id="rookie-filter" onchange="filter()">
+            <select id="sport-filter" onchange="filter()">
+                <option value="ALL">Sport: All Sports</option>
+            </select>
+
+        `   <select id="rookie-filter" onchange="filter()">
                 <option value="ALL">Status: All Players</option>
                 <option value="ROOKIES">Rookies Only</option>
                 <option value="VETERANS">Veterans Only</option>
+                <option value="BENCH_ONLY">Has Bench Points</option>
             </select>
             
             <select id="sort-metric" onchange="filter()">
                 <option value="total">Sort: Total Points</option>
+                <option value="bench">Sort: Bench Points</option>
                 <option value="avg">Sort: Points Per Game</option>
                 <option value="paa">Sort: Points Above Avg (PAA)</option>
                 <option value="peak">Sort: Peak Score</option>
@@ -273,20 +279,19 @@
              return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
         }
 
-        // --- Standard Deviation Math for Consistency ---
-        function getConsistencyInfo(scoresArray) {
-            if (scoresArray.length < 2) return { text: 'N/A', color: '#888' };
+        // --- Normalized Per-Sport Consistency Engine ---
+        function getConsistencyInfo(perSportAverages) {
+            if (!perSportAverages || perSportAverages.length < 2) return { text: 'N/A', color: '#888' };
             
-            const mean = scoresArray.reduce((a, b) => a + b, 0) / scoresArray.length;
-            const variance = scoresArray.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / scoresArray.length;
+            const mean = perSportAverages.reduce((a, b) => a + b, 0) / perSportAverages.length;
+            const variance = perSportAverages.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / perSportAverages.length;
             const stdDev = Math.sqrt(variance);
 
-            // Lower StdDev = Higher Consistency. 
-            // Tweaked thresholds based on Real App scoring scales.
-            if (stdDev < 15) return { text: 'Elite', color: '#4ade80' }; // Green
-            if (stdDev < 25) return { text: 'High', color: '#60a5fa' }; // Blue
-            if (stdDev < 40) return { text: 'Average', color: '#facc15' }; // Yellow
-            return { text: 'Volatile', color: '#f87171' }; // Red
+            // Standard deviation based on per-sport output (independent of slate size)
+            if (stdDev < 3.5) return { text: 'Elite', color: '#4ade80' };   // < ±3.5 pts/sport
+            if (stdDev < 6.0) return { text: 'High', color: '#60a5fa' };    // < ±6.0 pts/sport
+            if (stdDev < 9.0) return { text: 'Average', color: '#facc15' }; // < ±9.0 pts/sport
+            return { text: 'Volatile', color: '#f87171' };                  // >= ±9.0 pts/sport
         }
 
         // Robust CSV Parser
@@ -355,40 +360,64 @@
                 } catch(e) { console.warn("Failed to fetch rookie data:", e); }
             }
 
-            // Calculate League Sport Averages for Radar Chart normalization
+            // Calculate League Sport Averages & Populate Sport Filter Dropdown
             const sportTotals = {};
             const sportCounts = {};
+            const discoveredSports = new Set();
+
             allRawData.forEach(d => {
-                const s = d.sport ? d.sport.toUpperCase() : null;
+                const s = d.sport ? d.sport.trim().toUpperCase() : null;
                 const sc = parseFloat(d.score) || 0;
-                // Exclude bench points from radar chart average logic so it strictly reflects starter strength
-                const isBench = d.isBench || d.isbench || d.bench === true || String(d.bench).toLowerCase() === 'true';
-                if(s && sc > 0 && !isBench) {
-                    sportTotals[s] = (sportTotals[s] || 0) + sc;
-                    sportCounts[s] = (sportCounts[s] || 0) + 1;
+                const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
+                                String(d.isBench || '').toLowerCase() === 'true' || 
+                                String(d.isbench || '').toLowerCase() === 'true' || 
+                                String(d.bench || '').toLowerCase() === 'true';
+                
+                if (s && s !== 'USER' && s !== 'DRAFT' && s !== 'SPORT') {
+                    discoveredSports.add(s);
+                    if (sc > 0 && !isBench) {
+                        sportTotals[s] = (sportTotals[s] || 0) + sc;
+                        sportCounts[s] = (sportCounts[s] || 0) + 1;
+                    }
                 }
             });
+
             leagueSportAvgs = {};
-            for(let s in sportTotals) leagueSportAvgs[s] = sportTotals[s] / sportCounts[s];
+            for (let s in sportTotals) leagueSportAvgs[s] = sportTotals[s] / sportCounts[s];
+
+            // Populate #sport-filter dropdown options
+            const sportSelect = document.getElementById('sport-filter');
+            if (sportSelect) {
+                const currentVal = sportSelect.value || 'ALL';
+                let optionsHtml = '<option value="ALL">Sport: All Sports</option>';
+                [...discoveredSports].sort().forEach(sport => {
+                    optionsHtml += `<option value="${sport}" ${currentVal === sport ? 'selected' : ''}>${sport}</option>`;
+                });
+                sportSelect.innerHTML = optionsHtml;
+            }
 
             filter();
         }
 
-        // --- Filter, Sort & Render Table ---
+// --- Filter, Sort & Render Table ---
         window.filter = () => {
             const term = document.getElementById('search').value.toLowerCase();
+            const sportFilter = document.getElementById('sport-filter')?.value || 'ALL';
             const rookieFilter = document.getElementById('rookie-filter').value;
             const sortMetric = document.getElementById('sort-metric').value;
 
             let teamTotals = {};
             globalPlayerMap = {}; // Reset global map
 
-            allRawData.forEach(d => {
+allRawData.forEach(d => {
                 const id = d.userId || d.username;
                 const score = parseFloat(d.score) || 0;
-                const sport = d.sport || 'Unknown';
+                const sport = (d.sport || 'Unknown').trim().toUpperCase();
                 const date = d.date || 'Unknown';
-                const isBench = d.isBench || d.isbench || d.bench === true || String(d.bench).toLowerCase() === 'true';
+                const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
+                                String(d.isBench || '').toLowerCase() === 'true' || 
+                                String(d.isbench || '').toLowerCase() === 'true' || 
+                                String(d.bench || '').toLowerCase() === 'true';
                 
                 if (!globalPlayerMap[id]) {
                     const cleanDbName = d.username ? d.username.replace(/@/g, '').toLowerCase() : null;
@@ -402,10 +431,10 @@
                         benchScore: 0,
                         games: 0,
                         benchGames: 0,
-                        gamedays: {}, // Group totals by date for starters
-                        benchGamedays: {}, // Group totals by date for bench
+                        gamedays: {}, 
+                        benchGamedays: {}, 
                         scoresArray: [],
-                        sportScores: {}, // Only tracks starter sports for radar chart
+                        sportScores: {}, 
                         isRookie: isRookie
                     };
                 } else if (d.username && globalPlayerMap[id].username.startsWith('User_')) {
@@ -413,16 +442,27 @@
                 }
 
                 if (score > 0) {
-                    // Separate starter vs bench points
+                    // Populate overall sport profiles for modal
+                    if (!isBench) {
+                        if (!globalPlayerMap[id].sportScores[sport]) globalPlayerMap[id].sportScores[sport] = [];
+                        globalPlayerMap[id].sportScores[sport].push(score);
+                    }
+
+                    // Filter out unselected sports from the main table
+                    if (sportFilter !== 'ALL' && sport !== sportFilter) {
+                        return;
+                    }
+
                     if (isBench) {
                         globalPlayerMap[id].benchGamedays[date] = (globalPlayerMap[id].benchGamedays[date] || 0) + score;
                     } else {
-                        globalPlayerMap[id].gamedays[date] = (globalPlayerMap[id].gamedays[date] || 0) + score;
+                        if (!globalPlayerMap[id].gamedays[date]) {
+                            globalPlayerMap[id].gamedays[date] = { total: 0, sportsCount: 0 };
+                        }
+                        globalPlayerMap[id].gamedays[date].total += score;
+                        globalPlayerMap[id].gamedays[date].sportsCount += 1;
+
                         teamTotals[d.team] = (teamTotals[d.team] || 0) + score;
-                        
-                        // Track individual sports for the Radar Chart (starters only)
-                        if(!globalPlayerMap[id].sportScores[sport]) globalPlayerMap[id].sportScores[sport] = [];
-                        globalPlayerMap[id].sportScores[sport].push(score);
                     }
                 }
             });
@@ -430,20 +470,39 @@
             let totalLeagueScore = 0;
             let totalPlayerGames = 0;
 
-            // Finalize player stats based on the grouped dates
+            // Finalize player stats with slate-normalized per-sport averages
             Object.values(globalPlayerMap).forEach(p => {
-                p.scoresArray = Object.values(p.gamedays);
+                p.gamedayDetails = [];
+                p.scoresArray = [];
+                p.perSportAverages = [];
+
+                for (let d in p.gamedays) {
+                    const dayData = p.gamedays[d];
+                    const dayTotal = dayData.total;
+                    const count = dayData.sportsCount || 1;
+                    const avgPerSport = dayTotal / count;
+
+                    p.scoresArray.push(dayTotal);
+                    p.perSportAverages.push(avgPerSport);
+                    p.gamedayDetails.push({
+                        date: d,
+                        total: dayTotal,
+                        sportsCount: count,
+                        avgPerSport: avgPerSport
+                    });
+                }
+
                 p.games = p.scoresArray.length;
                 p.score = p.scoresArray.reduce((a, b) => a + b, 0);
-                
                 p.benchScore = Object.values(p.benchGamedays).reduce((a, b) => a + b, 0);
 
                 // Find Peak Gameday (Starter points only)
                 p.currentPeak = 0;
                 p.peakDate = 'Unknown';
                 for (let d in p.gamedays) {
-                    if (p.gamedays[d] > p.currentPeak) {
-                        p.currentPeak = p.gamedays[d];
+                    const dayTotal = p.gamedays[d].total !== undefined ? p.gamedays[d].total : p.gamedays[d];
+                    if (dayTotal > p.currentPeak) {
+                        p.currentPeak = dayTotal;
                         p.peakDate = d;
                     }
                 }
@@ -475,13 +534,16 @@
             mappedList.forEach(p => globalPlayerMap[p.id] = p);
 
             // Apply Filters
+            if (sportFilter !== 'ALL') mappedList = mappedList.filter(p => p.games > 0 || p.currentBenchScore > 0);
             if (term) mappedList = mappedList.filter(p => p.username.toLowerCase().includes(term) || p.team.toLowerCase().includes(term));
             if (rookieFilter === 'ROOKIES') mappedList = mappedList.filter(p => p.isRookie);
             else if (rookieFilter === 'VETERANS') mappedList = mappedList.filter(p => !p.isRookie);
+            else if (rookieFilter === 'BENCH_ONLY') mappedList = mappedList.filter(p => p.currentBenchScore > 0);
 
-            // Sort (Starter scores drive rankings)
+            // Sort
             mappedList.sort((a, b) => {
                 if (sortMetric === 'total') return b.currentScore - a.currentScore;
+                if (sortMetric === 'bench') return b.currentBenchScore - a.currentBenchScore;
                 if (sortMetric === 'avg') return b.currentPPG - a.currentPPG;
                 if (sortMetric === 'paa') return b.currentPAA - a.currentPAA;
                 if (sortMetric === 'peak') return b.currentPeak - a.currentPeak;
@@ -491,7 +553,7 @@
 
             // Render Header dynamically based on sort
             const headerDict = {
-                'total': 'Total Pts', 'avg': 'Points/Game', 'paa': 'Pts Above Avg', 'peak': 'Peak Score', 'share': 'Team % Share'
+                'total': 'Total Pts', 'bench': 'Bench Pts', 'avg': 'Points/Game', 'paa': 'Pts Above Avg', 'peak': 'Peak Score', 'share': 'Team % Share'
             };
             document.getElementById('dynamic-header').innerText = headerDict[sortMetric];
 
@@ -504,15 +566,15 @@
             tbody.innerHTML = mappedList.map((p, index) => {
                 const rank = index + 1;
                 let rankIcon = `#${rank}`; let rankColorStyle = '';
-                if (rank === 1 && sortMetric === 'total') { rankIcon = '👑 #1'; rankColorStyle = 'color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);'; }
-                else if (rank === 2 && sortMetric === 'total') { rankColorStyle = 'color: #C0C0C0;'; }
-                else if (rank === 3 && sortMetric === 'total') { rankColorStyle = 'color: #CD7F32;'; }
+                if (rank === 1 && (sortMetric === 'total' || sortMetric === 'bench')) { rankIcon = '👑 #1'; rankColorStyle = 'color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);'; }
+                else if (rank === 2 && (sortMetric === 'total' || sortMetric === 'bench')) { rankColorStyle = 'color: #C0C0C0;'; }
+                else if (rank === 3 && (sortMetric === 'total' || sortMetric === 'bench')) { rankColorStyle = 'color: #CD7F32;'; }
 
                 let dynamicStatHtml = '';
-                // Add Greyed out Bench Status indicator if they have bench points
                 const benchHtml = p.currentBenchScore > 0 ? `<div style="font-size:0.75rem; color:#888; font-weight:normal; margin-top:2px;">+${p.currentBenchScore.toFixed(2)} Bench</div>` : '';
                 
                 if (sortMetric === 'total') dynamicStatHtml = `<td class="num-cell"><span class="highlight-cell">${p.currentScore.toFixed(2)}</span>${benchHtml}</td>`;
+                else if (sortMetric === 'bench') dynamicStatHtml = `<td class="num-cell highlight-cell" style="color: #94a3b8;">${p.currentBenchScore.toFixed(2)}</td>`;
                 else if (sortMetric === 'avg') dynamicStatHtml = `<td class="num-cell highlight-cell">${p.currentPPG.toFixed(2)}</td>`;
                 else if (sortMetric === 'paa') dynamicStatHtml = `<td class="num-cell" style="color: ${p.currentPAA > 0 ? '#4ade80' : '#f87171'}">${p.currentPAA > 0 ? '+' : ''}${p.currentPAA.toFixed(2)}</td>`;
                 else if (sortMetric === 'peak') dynamicStatHtml = `<td class="num-cell highlight-cell">${p.currentPeak.toFixed(2)}</td>`;
@@ -552,7 +614,7 @@
             paaEl.textContent = `${p.currentPAA > 0 ? '+' : ''}${p.currentPAA.toFixed(2)}`;
             paaEl.style.color = p.currentPAA > 0 ? '#4ade80' : '#f87171';
 
-            const cons = getConsistencyInfo(p.scoresArray);
+            const cons = getConsistencyInfo(p.perSportAverages || []);
             const consEl = document.getElementById('modal-consistency');
             consEl.textContent = cons.text;
             consEl.style.color = cons.color;
@@ -561,9 +623,10 @@
             if (formChartInstance) formChartInstance.destroy();
             if (radarChartInstance) radarChartInstance.destroy();
 
-            // --- Render Form Bar Chart (Last 5 Games) ---
-            const last5Scores = p.scoresArray.slice(-5);
-            const formLabels = last5Scores.map((_, i) => `G${p.scoresArray.length - last5Scores.length + i + 1}`);
+            // --- Render Slate-Normalized Form Bar Chart (Last 5 Slates) ---
+            const last5Slates = (p.gamedayDetails || []).slice(-5);
+            const formLabels = last5Slates.map(d => `${d.date} (${d.sportsCount}S)`);
+            const formAvgs = last5Slates.map(d => d.avgPerSport.toFixed(2));
             
             const formCtx = document.getElementById('formChart').getContext('2d');
             formChartInstance = new Chart(formCtx, {
@@ -571,8 +634,8 @@
                 data: {
                     labels: formLabels,
                     datasets: [{
-                        label: 'Score',
-                        data: last5Scores,
+                        label: 'Avg Pts / Sport',
+                        data: formAvgs,
                         backgroundColor: '#d4af37',
                         borderRadius: 4
                     }]
@@ -580,10 +643,28 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const slate = last5Slates[ctx.dataIndex];
+                                    return [
+                                        ` Avg / Sport: ${slate.avgPerSport.toFixed(2)} pts`,
+                                        ` Slate Total: ${slate.total.toFixed(2)} pts (${slate.sportsCount} Sports)`
+                                    ];
+                                }
+                            }
+                        }
+                    },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
-                        x: { grid: { display: false }, ticks: { color: '#888' } }
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Pts / Sport', color: '#888', font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#888' } 
+                        },
+                        x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } }
                     }
                 }
             });

@@ -209,7 +209,7 @@
                         <option value="">Select Team 1...</option>
                     </select>
                     <table class="data-table">
-                        <thead><tr><th>Player</th><th>GP</th><th>Pts</th><th>PPG</th></tr></thead>
+                        <thead><tr><th>Player</th><th>Start GP</th><th>Start Pts</th><th>Bench Pts</th><th>PPG</th></tr></thead>
                         <tbody id="trade-roster-1"></tbody>
                     </table>
                 </div>
@@ -218,7 +218,7 @@
                         <option value="">Select Team 2...</option>
                     </select>
                     <table class="data-table">
-                        <thead><tr><th>Player</th><th>GP</th><th>Pts</th><th>PPG</th></tr></thead>
+                        <thead><tr><th>Player</th><th>Start GP</th><th>Start Pts</th><th>Bench Pts</th><th>PPG</th></tr></thead>
                         <tbody id="trade-roster-2"></tbody>
                     </table>
                 </div>
@@ -758,7 +758,7 @@
             return parseFloat(String(val).replace(/,/g, '')) || 0;
         };
 
-        async function loadPlayerStatsForTrades() {
+async function loadPlayerStatsForTrades() {
             try {
                 let playersData = [];
                 const csvUrl = HISTORICAL_CSVS[currentSeason]?.['players'];
@@ -767,7 +767,6 @@
                     const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
                     if (res.ok) playersData = parseCsvLocal(await res.text());
                 } else {
-                    // Fallback to Firestore only if no CSV link is provided for the season
                     const targetCollection = `s${currentSeason}-players`;
                     const snaps = await getDocs(collection(db, targetCollection));
                     snaps.forEach(doc => playersData.push(doc.data()));
@@ -786,20 +785,27 @@
                     const key = cleanUid || cleanNameKey;
 
                     if (!playerStatsCache[key]) {
-                        playerStatsCache[key] = { total: 0, games: 0 };
+                        playerStatsCache[key] = { total: 0, benchTotal: 0, games: 0 };
                         tempDates[key] = new Set();
                     }
                     
-                    // Safely parse the score float value across various potential CSV header names
                     const scoreVal = getNum(d.score) || getNum(d['overall raw average']) || getNum(d['overall adjusted average']) || getNum(d['adjusted average']) || getNum(d['raw average']) || getNum(d['points']) || getNum(d['total points']) || getNum(d['total score']) || getNum(d.total) || getNum(d.pts) || getNum(d.avg) || 0;
                     
-                    playerStatsCache[key].total += scoreVal;
-                    
-                    if (d.date) {
-                        tempDates[key].add(d.date);
+                    const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
+                                    String(d.isBench || '').toLowerCase() === 'true' || 
+                                    String(d.isbench || '').toLowerCase() === 'true' || 
+                                    String(d.bench || '').toLowerCase() === 'true';
+
+                    if (isBench) {
+                        playerStatsCache[key].benchTotal += scoreVal;
                     } else {
-                        const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
-                        playerStatsCache[key].games += gp;
+                        playerStatsCache[key].total += scoreVal;
+                        if (d.date) {
+                            tempDates[key].add(d.date);
+                        } else {
+                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
+                            playerStatsCache[key].games += gp;
+                        }
                     }
                 });
 
@@ -853,7 +859,7 @@
             } catch (e) { console.warn("Failed to fetch player mappings in GM Dashboard.", e); }
             
             // Helper function to process both regular season and playoff arrays identically
-            const processDataList = (playersData, seasonPrefix) => {
+const processDataList = (playersData, seasonPrefix) => {
                 playersData.forEach(d => {
                     const rawName = d.username || d.user || d.name || d.player || d['player name'] || d.discord || d['discord name'] || d['discord username'];
                     if (!rawName) return;
@@ -862,7 +868,6 @@
                     const cleanUid = uidRaw ? String(uidRaw).trim() : null;
                     const cleanNameKey = cleanName(rawName);
                     
-                    // Determine canonical key via Player Mapping CSV
                     let key = null;
                     if (cleanUid && userIdToCanonical[cleanUid]) {
                         key = userIdToCanonical[cleanUid];
@@ -875,20 +880,27 @@
                     }
 
                     if (!careerStatsCache[key]) {
-                        careerStatsCache[key] = { total: 0, games: 0 };
+                        careerStatsCache[key] = { total: 0, benchTotal: 0, games: 0 };
                         tempDates[key] = new Set();
                     }
                     
-                    // Robust score fallback for different CSV headers from old seasons & thousands separators
                     const scoreVal = getNum(d.score) || getNum(d['overall raw average']) || getNum(d['overall adjusted average']) || getNum(d['adjusted average']) || getNum(d['raw average']) || getNum(d['points']) || getNum(d['total points']) || getNum(d['total score']) || getNum(d.total) || getNum(d.pts) || getNum(d.avg) || 0;
                     
-                    careerStatsCache[key].total += scoreVal;
-                    
-                    if (d.date) {
-                        tempDates[key].add(`${seasonPrefix}-${d.date}`);
+                    const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
+                                    String(d.isBench || '').toLowerCase() === 'true' || 
+                                    String(d.isbench || '').toLowerCase() === 'true' || 
+                                    String(d.bench || '').toLowerCase() === 'true';
+
+                    if (isBench) {
+                        careerStatsCache[key].benchTotal += scoreVal;
                     } else {
-                        const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
-                        careerStatsCache[key].games += gp;
+                        careerStatsCache[key].total += scoreVal;
+                        if (d.date) {
+                            tempDates[key].add(`${seasonPrefix}-${d.date}`);
+                        } else {
+                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
+                            careerStatsCache[key].games += gp;
+                        }
                     }
                 });
             };
@@ -955,7 +967,7 @@
             window.loadTradeSide(2);
         };
 
-        window.loadTradeSide = (sideNum) => {
+window.loadTradeSide = (sideNum) => {
             const team = document.getElementById(`trade-team-${sideNum}`).value;
             const tbody = document.getElementById(`trade-roster-${sideNum}`);
             
@@ -963,7 +975,9 @@
 
             const roster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === team.trim().toLowerCase());
             let html = '';
-            let teamTotalPts = 0; let teamTotalGames = 0;
+            let teamTotalPts = 0; 
+            let teamTotalBench = 0; 
+            let teamTotalGames = 0;
 
             const cacheToUse = isCareerMode ? careerStatsCache : playerStatsCache;
 
@@ -973,27 +987,32 @@
                 const cleanUid = uidRaw ? String(uidRaw).trim() : null;
                 
                 let total = 0;
+                let benchTotal = 0;
                 let games = 0;
 
-                // Safely sum up stats from UserID and Username matching to catch legacy rows
                 if (cleanUid && cacheToUse[cleanUid]) {
-                    total += cacheToUse[cleanUid].total;
-                    games += cacheToUse[cleanUid].games;
-                }
-                if (cacheToUse[keyName]) {
-                    total += cacheToUse[keyName].total;
-                    games += cacheToUse[keyName].games;
+                    total = cacheToUse[cleanUid].total || 0;
+                    benchTotal = cacheToUse[cleanUid].benchTotal || 0;
+                    games = cacheToUse[cleanUid].games || 0;
+                } else if (cacheToUse[keyName]) {
+                    total = cacheToUse[keyName].total || 0;
+                    benchTotal = cacheToUse[keyName].benchTotal || 0;
+                    games = cacheToUse[keyName].games || 0;
                 }
 
+                // PPG is calculated strictly on starter points / starter games played
                 const ppg = games > 0 ? (total / games).toFixed(2) : '0.00';
                 
-                teamTotalPts += total; teamTotalGames += games;
+                teamTotalPts += total; 
+                teamTotalBench += benchTotal;
+                teamTotalGames += games;
                 
                 html += `<tr>
                     <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);"><strong>${p.username}</strong></td>
                     <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted);">${games}</td>
                     <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);">${total.toFixed(2)}</td>
-                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);">${ppg}</td>
+                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #888;">${benchTotal > 0 ? benchTotal.toFixed(2) : '-'}</td>
+                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--gold-mid); font-weight: 600;">${ppg}</td>
                 </tr>`;
             });
 
@@ -1002,6 +1021,7 @@
                 <td style="padding: 0.75rem 0.5rem; color: var(--gold-light);"><strong>TOTALS</strong></td>
                 <td style="padding: 0.75rem 0; color: var(--gold-light);">${teamTotalGames}</td>
                 <td style="padding: 0.75rem 0; color:var(--gold-mid); font-weight:bold;">${teamTotalPts.toFixed(2)}</td>
+                <td style="padding: 0.75rem 0; color: #888;">${teamTotalBench > 0 ? teamTotalBench.toFixed(2) : '-'}</td>
                 <td style="padding: 0.75rem 0; color:var(--gold-mid); font-weight:bold;">${teamPPG}</td>
             </tr>`;
 
