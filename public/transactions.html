@@ -121,14 +121,16 @@
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
         
         // --- TRANSACTIONS CONFIGURATION ---
+        // --- TRANSACTIONS CONFIGURATION ---
         const transactionUrls = {
             '4': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=0&single=true&output=csv',
-            '5': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=639125657&single=true&output=csv'
+            '5': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=639125657&single=true&output=csv',
+            '6': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1112857810&single=true&output=csv'
         };
 
         async function loadTransactions() {
             const container = document.getElementById('transactions-container');
-            const url = transactionUrls[currentSeason] || transactionUrls['5'];
+            const url = transactionUrls[currentSeason] || transactionUrls['6'];
             
             try {
                 const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));

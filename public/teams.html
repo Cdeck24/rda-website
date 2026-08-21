@@ -97,6 +97,46 @@
         .data-table th { color: var(--gold-mid); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.3); }
         .data-table tr:hover { background: rgba(255, 255, 255, 0.03); }
 
+        /* Draft Capital Section */
+        .draft-capital-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        .draft-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        .draft-card h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1rem;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 0.5rem;
+        }
+        .draft-pick-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .draft-pick-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        .draft-pick-name { font-weight: 600; color: #fff; }
+        .draft-pick-detail { font-size: 0.75rem; color: var(--gold-light); }
+
         @media (max-width: 768px) {
             .main-content { padding: 0 1rem 4rem 1rem; }
             .team-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
@@ -288,6 +328,22 @@
                     </div>
                 </div>
 
+                <h2>Draft Capital</h2>
+                <div class="draft-capital-grid" id="draft-capital-grid">
+                    <div class="draft-card">
+                        <h3>Season 6 Picks</h3>
+                        <div class="draft-pick-list" id="s6-draft-picks">
+                            <div style="color: #666; font-style: italic; font-size: 0.85rem;">Loading Season 6 picks...</div>
+                        </div>
+                    </div>
+                    <div class="draft-card">
+                        <h3>Season 7 Picks</h3>
+                        <div class="draft-pick-list" id="s7-draft-picks">
+                            <div style="color: #666; font-style: italic; font-size: 0.85rem;">Loading Season 7 picks...</div>
+                        </div>
+                    </div>
+                </div>
+
                 <h2>Roster</h2>
                 <div class="table-wrapper">
                     <table class="data-table">
@@ -318,14 +374,79 @@
                 }
             } catch(e) { console.warn("Team Mapping fetch failed", e); }
 
+            const S6_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1325728230&single=true&output=csv';
+            const S7_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1306361585&single=true&output=csv';
+
             try {
-                const [scheduleText, allGames, allPlayoffGames, playersText, allPlayers] = await Promise.all([
+                const [scheduleText, allGames, allPlayoffGames, playersText, allPlayers, s6DraftText, s7DraftText] = await Promise.all([
                     fetchViaWorker(activeConfig.scheduleUrl),
                     getSeasonData('games'),
                     getSeasonData('playoff-games'),
                     fetchViaWorker(activeConfig.playersUrl),
-                    getSeasonData('players') // Raw stats log
+                    getSeasonData('players'),
+                    fetchViaWorker(S6_DRAFT_URL),
+                    fetchViaWorker(S7_DRAFT_URL)
                 ]);
+
+                // Helper to extract picks across horizontal or vertical sheets
+                const extractTeamPicks = (csvText) => {
+                    if (!csvText) return [];
+                    const rows = parseCsvToObject(csvText);
+                    if (!rows.length) return [];
+                    const picks = [];
+
+                    // 1. Horizontal format (Team row with round columns)
+                    rows.forEach(r => {
+                        const teamVal = (r.team || r.owner || r['team name'] || Object.values(r)[0] || '').trim().toLowerCase();
+                        const isMatch = teamNamesToQuery.some(t => t.toLowerCase() === teamVal || teamVal.includes(t.toLowerCase()));
+                        if (isMatch) {
+                            Object.entries(r).forEach(([k, val]) => {
+                                const keyLower = k.toLowerCase();
+                                if (!['team', 'owner', 'team name'].includes(keyLower) && val && val.trim() !== '') {
+                                    if (keyLower.includes('round') || keyLower.includes('rd') || keyLower.includes('pick') || keyLower.startsWith('r')) {
+                                        picks.push({ label: k.toUpperCase(), detail: val.trim() });
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    // 2. Vertical format (Individual pick per row)
+                    if (picks.length === 0) {
+                        rows.forEach(r => {
+                            const teamVal = (r.team || r.owner || r['current owner'] || r['current team'] || '').trim().toLowerCase();
+                            const isMatch = teamNamesToQuery.some(t => t.toLowerCase() === teamVal || teamVal.includes(t.toLowerCase()));
+                            if (isMatch) {
+                                const round = r.round || r.rd || '';
+                                const pick = r.pick || r['pick #'] || '';
+                                const orig = r['original team'] || r['orig team'] || r['original owner'] || r['from'] || '';
+                                const desc = r.description || r.details || r.name || '';
+                                const label = desc || (round ? `Round ${round}${pick ? ` (Pick ${pick})` : ''}` : 'Pick');
+                                const detail = orig ? `via ${orig}` : 'Own';
+                                picks.push({ label, detail });
+                            }
+                        });
+                    }
+                    return picks;
+                };
+
+                const renderPickList = (elementId, picks) => {
+                    const el = document.getElementById(elementId);
+                    if (!el) return;
+                    if (!picks.length) {
+                        el.innerHTML = '<div style="color: #666; font-style: italic; font-size: 0.85rem;">No picks held.</div>';
+                        return;
+                    }
+                    el.innerHTML = picks.map(p => `
+                        <div class="draft-pick-item">
+                            <span class="draft-pick-name">${p.label}</span>
+                            <span class="draft-pick-detail">${p.detail}</span>
+                        </div>
+                    `).join('');
+                };
+
+                renderPickList('s6-draft-picks', extractTeamPicks(s6DraftText));
+                renderPickList('s7-draft-picks', extractTeamPicks(s7DraftText));
 
                 // --- 1. PROCESS GAMES & BASIC STATS ---
                 let regWins = 0, regLosses = 0, playoffWins = 0, playoffLosses = 0, pf = 0, pa = 0;
