@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA All-Star Weekend</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <!-- Required for Hashids Token Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    <style>
+        .allstar-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 4rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* Sub-Navigation Tabs */
+        .sub-nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .sub-nav-btn {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.6rem 1.25rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sub-nav-btn:hover {
+            color: var(--text-main);
+            border-color: var(--gold-mid);
+        }
+
+        .sub-nav-btn.active {
+            background: linear-gradient(180deg, var(--bg-navy-light) 0%, var(--bg-navy) 100%);
+            color: var(--gold-light);
+            border-color: var(--border-gold);
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+        }
+
+        .tab-view { display: none; }
+        .tab-view.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+        /* Loading Indicator */
+        #loading-status {
+            text-align: center;
+            color: var(--gold-mid);
+            font-weight: 600;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            display: none;
+        }
+
+        /* Event Header Cards */
+        .event-header-card {
+            background: linear-gradient(180deg, var(--bg-navy-light) 0%, var(--bg-navy) 100%);
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .event-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--gold-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .event-subtitle {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.4rem;
+        }
+
+        /* Champion Spotlight */
+        .champion-spotlight {
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid var(--gold-mid);
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            margin-top: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .champion-badge { font-size: 1.5rem; }
+        .champion-info { text-align: left; }
+        .champion-name { font-weight: 800; color: #fff; font-size: 1.05rem; }
+
+        /* Contest Rounds Grid */
+        .rounds-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .round-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .round-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .round-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .round-rule {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Contest User Card & Inline Lineup (HRD & 3PT) */
+        .contest-player-card {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contest-player-card:last-child { border-bottom: none; }
+
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+        }
+
+        .player-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-rank {
+            font-size: 0.8rem;
+            font-weight: 800;
+            width: 22px;
+            color: var(--text-muted);
+        }
+
+        .player-rank.rank-1 { color: #ffd700; }
+        .player-rank.rank-2 { color: #c0c0c0; }
+        .player-rank.rank-3 { color: #cd7f32; }
+
+        .player-team-logo {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #fff;
+        }
+
+        .advanced-badge {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            font-size: 0.55rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+        }
+
+        .player-score {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--gold-light);
+            font-family: monospace;
+        }
+
+        .player-score.winner-score {
+            color: #4ade80;
+            text-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
+        }
+
+        /* Lineup Chips (Inline / Below) */
+        .lineup-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 0.4rem 1rem 0.75rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .athlete-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 3px 6px;
+            font-size: 0.75rem;
+        }
+
+        .athlete-avatar-wrap {
+            position: relative;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .athlete-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--border-subtle);
+            background: #000;
+        }
+
+        .athlete-mult {
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            background: var(--bg-navy);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 0.5rem;
+            font-weight: bold;
+            padding: 1px 3px;
+            line-height: 1;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .athlete-name {
+            font-weight: 500;
+            color: #e2e8f0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90px;
+        }
+
+        /* ASG Dropdown Roster Items */
+        .asg-user-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .asg-user-item:last-child { border-bottom: none; }
+
+        .asg-user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .asg-user-header:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .asg-toggle-icon {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-left: 6px;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .asg-user-header.open .asg-toggle-icon {
+            transform: rotate(45deg);
+        }
+
+        .asg-user-drawer {
+            display: none;
+            padding: 0.6rem 1rem 0.85rem;
+            background: rgba(0, 0, 0, 0.35);
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .asg-user-drawer.open { display: block; }
+
+        /* H2H Game Banner */
+        .asg-banner-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        .asg-score-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .asg-team-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .asg-team-logo {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+            margin-bottom: 0.5rem;
+        }
+
+        .asg-team-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .asg-total-score {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            font-family: monospace;
+            margin-top: 0.25rem;
+        }
+
+        .asg-center-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .asg-vs-badge {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.5);
+            padding: 0.3rem 0.75rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .asg-rosters-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .rounds-container, .asg-rosters-grid { grid-template-columns: 1fr; }
+            .asg-total-score { font-size: 1.6rem; }
+            .asg-team-title { font-size: 0.9rem; }
+            .asg-team-logo { width: 40px; height: 40px; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; margin-top: 2rem;">All-Star Weekend</h1>
+
+    <div class="allstar-content">
+        <div id="loading-status">Syncing live All-Star scores & lineups...</div>
+
+        <!-- Navigation Tabs -->
+        <div class="sub-nav-container">
+            <button class="sub-nav-btn active" onclick="switchEventTab('hr-derby')">Home Run Derby</button>
+            <button class="sub-nav-btn" onclick="switchEventTab('three-pt')">3-Point Shootout</button>
+            <button class="sub-nav-btn" onclick="switchEventTab('asg-game')">All-Star Game</button>
+            <button class="sub-nav-btn" onclick="switchEventTab('matchup-2')">Showcase Challenge</button>
+        </div>
+
+        <!-- 1. HOME RUN DERBY -->
+        <div id="tab-hr-derby" class="tab-view active">
+            <div class="event-header-card">
+                <h2 class="event-title">Home Run Derby</h2>
+                <div class="event-subtitle">8 Hitters &bull; Top 4 Advance to Championship Round</div>
+                <div class="champion-spotlight" id="hr-champion-spotlight" style="display:none;">
+                    <div class="champion-badge">🏆</div>
+                    <div class="champion-info">
+                        <div style="font-size:0.7rem; color:var(--gold-mid); font-weight:700; text-transform:uppercase;">Derby Champion</div>
+                        <div class="champion-name" id="hr-champion-name">TBD</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounds-container">
+                <div class="round-box">
+                    <div class="round-header">
+                        <span class="round-title">Round 1 (8 Hitters)</span>
+                        <span class="round-rule">Top 4 Advance</span>
+                    </div>
+                    <div id="hr-r1-list"></div>
+                </div>
+
+                <div class="round-box">
+                    <div class="round-header">
+                        <span class="round-title">Championship Round</span>
+                        <span class="round-rule">Final 4</span>
+                    </div>
+                    <div id="hr-final-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 3-POINT CONTEST -->
+        <div id="tab-three-pt" class="tab-view">
+            <div class="event-header-card">
+                <h2 class="event-title">3-Point Shootout</h2>
+                <div class="event-subtitle">8 Shooters &bull; Top 4 Advance to Final Round</div>
+                <div class="champion-spotlight" id="three-champion-spotlight" style="display:none;">
+                    <div class="champion-badge">🏆</div>
+                    <div class="champion-info">
+                        <div style="font-size:0.7rem; color:var(--gold-mid); font-weight:700; text-transform:uppercase;">Shootout Champion</div>
+                        <div class="champion-name" id="three-champion-name">TBD</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounds-container">
+                <div class="round-box">
+                    <div class="round-header">
+                        <span class="round-title">Round 1 (8 Shooters)</span>
+                        <span class="round-rule">Top 4 Advance</span>
+                    </div>
+                    <div id="three-r1-list"></div>
+                </div>
+
+                <div class="round-box">
+                    <div class="round-header">
+                        <span class="round-title">Final Round</span>
+                        <span class="round-rule">Final 4</span>
+                    </div>
+                    <div id="three-final-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. ALL-STAR GAME (EAST VS WEST) -->
+        <div id="tab-asg-game" class="tab-view">
+            <div class="asg-banner-card">
+                <div class="asg-score-grid">
+                    <div class="asg-team-block">
+                        <img src="images/teams/east-logo.png" class="asg-team-logo" onerror="this.src='https://placehold.co/55x55/222/fff?text=EAST'">
+                        <div class="asg-team-title">East All-Stars</div>
+                        <div class="asg-total-score" id="asg-east-score">0.00</div>
+                    </div>
+
+                    <div class="asg-center-status">
+                        <div class="asg-vs-badge">VS</div>
+                        <div style="font-size: 0.7rem; color: var(--gold-dark); font-weight: bold; margin-top: 0.4rem; text-transform: uppercase;">10 v 10 SHOWDOWN</div>
+                    </div>
+
+                    <div class="asg-team-block">
+                        <img src="images/teams/west-logo.png" class="asg-team-logo" onerror="this.src='https://placehold.co/55x55/222/fff?text=WEST'">
+                        <div class="asg-team-title">West All-Stars</div>
+                        <div class="asg-total-score" id="asg-west-score">0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="asg-rosters-grid">
+                <div class="round-box">
+                    <div class="round-header">
+                        <span class="round-title">East Roster</span>
+                        <span class="round-rule">Click for Lineups</span>
+                    </div>
+                    <div id="asg-east-list"></div>
+                </div>
+
+                <div class="round-box">
+                    <div class="round-header">
+                        <span class="round-title">West Roster</span>
+                        <span class="round-rule">Click for Lineups</span>
+                    </div>
+                    <div id="asg-west-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. SHOWCASE CHALLENGE / H2H 2 -->
+        <div id="tab-matchup-2" class="tab-view">
+            <div class="event-header-card">
+                <h2 class="event-title">Showcase Challenge</h2>
+                <div class="event-subtitle">Head-to-Head Exhibition</div>
+            </div>
+            <div style="text-align: center; color: var(--text-muted); padding: 3rem; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-subtle);">
+                Event details and matchups will be announced shortly.
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav } from './js/app.js';
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
+
+        const ALL_STAR_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=1097347745&single=true&output=csv';
+
+        window.switchEventTab = function(tabKey) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sub-nav-btn').forEach(el => el.classList.remove('active'));
+
+            const targetTab = document.getElementById(`tab-${tabKey}`);
+            if (targetTab) targetTab.classList.add('active');
+
+            const btn = Array.from(document.querySelectorAll('.sub-nav-btn')).find(b => b.getAttribute('onclick')?.includes(tabKey));
+            if (btn) btn.classList.add('active');
+        };
+
+        window.toggleAsgDrawer = function(headerEl) {
+            headerEl.classList.toggle('open');
+            const drawer = headerEl.nextElementSibling;
+            if (drawer) {
+                drawer.classList.toggle('open');
+            }
+        };
+
+        function getTeamLogoPath(name) {
+            if (!name) return 'https://placehold.co/50x50/0a0a0a/fff?text=?';
+            let cleanName = name.trim().toLowerCase();
+            if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
+            if (cleanName.includes('east')) return 'images/teams/east-logo.png';
+            if (cleanName.includes('west')) return 'images/teams/west-logo.png';
+            cleanName = cleanName.replace(/\s+/g, '-');
+            const isPng = ['reapers', 'zombies', 'free-agents', 'saucers'].includes(cleanName);
+            return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+        }
+
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            const headers = rows[0].split(delimiter).map(h => h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase());
+            return rows.slice(1).map(row => {
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim();
+                });
+                return obj;
+            });
+        }
+
+        function generateRequestToken() {
+            // @ts-ignore
+            return new Hashids("realwebapp", 16).encode(Date.now());
+        }
+
+        async function fetchPlayerContestData(sportId, userId) {
+            if (!sportId || !userId) return { score: 0, lineup: [] };
+            const url = `https://web.realsports.io/games/playerratingcontest/${sportId}/view/${userId}?contestType=sport&source=home`;
+            const token = generateRequestToken();
+            const uuid = crypto.randomUUID();
+            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${uuid}&token=${token}`;
+
+            try {
+                const res = await fetch(proxyUrl);
+                if (!res.ok) return { score: 0, lineup: [] };
+                const data = await res.json();
+                
+                let scoreDisplay = '0';
+                if (data.info?.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
+                else if (data.rankDisplayInfos?.length > 0) scoreDisplay = data.rankDisplayInfos[0].scoreDisplay || '0';
+                else if (data.scoreDisplay) scoreDisplay = data.scoreDisplay;
+                else if (data.info?.score !== undefined) scoreDisplay = data.info.score;
+                else if (data.score !== undefined) scoreDisplay = data.score;
+
+                const score = parseFloat(String(scoreDisplay).replace(/,/g, '')) || 0;
+
+                let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
+                if (!Array.isArray(extractedLineup)) {
+                    if (extractedLineup.players) extractedLineup = extractedLineup.players;
+                    else if (extractedLineup.items) extractedLineup = extractedLineup.items;
+                    else extractedLineup = [];
+                }
+
+                return { score, lineup: extractedLineup };
+            } catch (e) {
+                return { score: 0, lineup: [] };
+            }
+        }
+
+        function renderLineupChips(lineup) {
+            if (!lineup || lineup.length === 0) {
+                return `<div style="color:#666; font-size:0.75rem; font-style:italic;">No lineup submitted yet.</div>`;
+            }
+
+            return lineup.map(item => {
+                const lp = item.player || item;
+                const avatar = lp.avatar || item.avatar || '';
+                const name = lp.displayName || item.displayName || lp.name || item.name || 'Athlete';
+                const mult = item.multiplierDisplay || lp.multiplierDisplay || item.multiplier || lp.multiplier || '1x';
+                const avatarUrl = avatar ? `https://media.realapp.link/assets/players/default/large/${avatar}.webp` : 'https://placehold.co/24x24/222/fff?text=?';
+
+                return `
+                    <div class="athlete-chip">
+                        <div class="athlete-avatar-wrap">
+                            <img src="${avatarUrl}" class="athlete-avatar" onerror="this.src='https://placehold.co/24x24/222/fff?text=?'">
+                            <div class="athlete-mult">${mult}</div>
+                        </div>
+                        <span class="athlete-name" title="${name}">${name}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Contest Renderer with Lineups directly below each player
+        function renderContestList(items, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (items.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:#666; font-style:italic;">No participants entered yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = items.map((p, idx) => {
+                const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+                const advBadge = p.advanced ? `<span class="advanced-badge">Advanced</span>` : '';
+                const winnerClass = p.isChampion ? 'winner-score' : '';
+                const scoreDisplay = typeof p.score === 'number' && p.score > 0 ? p.score.toFixed(2) : '-';
+
+                return `
+                    <div class="contest-player-card">
+                        <div class="player-row">
+                            <div class="player-left">
+                                <span class="player-rank ${rankClass}">#${idx + 1}</span>
+                                <img src="${getTeamLogoPath(p.team)}" class="player-team-logo" onerror="this.src='https://placehold.co/24x24/222/fff?text=?'">
+                                <div>
+                                    <span class="player-name">${p.username}</span>
+                                    ${advBadge}
+                                </div>
+                            </div>
+                            <span class="player-score ${winnerClass}">${scoreDisplay}</span>
+                        </div>
+                        <div class="lineup-strip">
+                            ${renderLineupChips(p.lineup)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ASG Roster Renderer with Click-to-Expand Dropdown Drawers
+        function renderAsgRosterList(items, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (items.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:#666; font-style:italic;">No roster data found.</div>`;
+                return;
+            }
+
+            container.innerHTML = items.map((p, idx) => {
+                const scoreDisplay = typeof p.score === 'number' && p.score > 0 ? p.score.toFixed(2) : '-';
+                return `
+                    <div class="asg-user-item">
+                        <div class="asg-user-header" onclick="toggleAsgDrawer(this)">
+                            <div class="player-left">
+                                <span class="player-rank">#${idx + 1}</span>
+                                <span class="player-name">${p.username} <span class="asg-toggle-icon">+</span></span>
+                            </div>
+                            <span class="player-score">${scoreDisplay}</span>
+                        </div>
+                        <div class="asg-user-drawer">
+                            <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+                                ${renderLineupChips(p.lineup)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadAllStarData() {
+            const loadingStatus = document.getElementById('loading-status');
+            let entries = [];
+
+            try {
+                if (ALL_STAR_CSV_URL) {
+                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(ALL_STAR_CSV_URL));
+                    if (res.ok) {
+                        const text = await res.text();
+                        entries = parseCsvLocal(text);
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not load All-Star CSV", e);
+            }
+
+            // Partition Events
+            const hrdList = [];
+            const threePtList = [];
+            const eastASG = [];
+            const westASG = [];
+
+            entries.forEach(row => {
+                const uname = row.username || row.name || '';
+                const uid = row['user id'] || row.userid || row.userId || '';
+                const team = row.team || '';
+                const eventCode = (row.event || '').trim().toUpperCase();
+                const sportId = row['sport id'] || row.sportid || row.sportId || '';
+
+                const item = { username: uname, userId: uid, team, score: 0, lineup: [], sportId };
+
+                if (eventCode === 'HRD') hrdList.push(item);
+                else if (eventCode === '3PT') threePtList.push(item);
+                else if (eventCode === 'ASG') {
+                    if (team.toLowerCase().includes('east')) eastASG.push(item);
+                    else westASG.push(item);
+                }
+            });
+
+            // Fetch Live Scores & Lineups if Sport IDs are provided
+            const allItems = [...hrdList, ...threePtList, ...eastASG, ...westASG];
+            const hasLiveDrafts = allItems.some(i => Boolean(i.sportId));
+
+            if (hasLiveDrafts) {
+                loadingStatus.style.display = 'block';
+                for (const item of allItems) {
+                    if (item.sportId) {
+                        const res = await fetchPlayerContestData(item.sportId, item.userId);
+                        item.score = res.score;
+                        item.lineup = res.lineup;
+                        await new Promise(r => setTimeout(r, 100)); // Pacing
+                    }
+                }
+                loadingStatus.style.display = 'none';
+            }
+
+            // 1. Process Home Run Derby
+            hrdList.sort((a, b) => b.score - a.score);
+            const hrHasScores = hrdList.some(p => p.score > 0);
+            hrdList.forEach((p, idx) => { p.advanced = hrHasScores && idx < 4; });
+            const hrFinals = hrHasScores ? hrdList.slice(0, 4) : [];
+
+            renderContestList(hrdList, 'hr-r1-list');
+            renderContestList(hrFinals, 'hr-final-list');
+
+            if (hrHasScores && hrFinals.length > 0 && hrFinals[0].score > 0) {
+                document.getElementById('hr-champion-spotlight').style.display = 'inline-flex';
+                document.getElementById('hr-champion-name').textContent = `${hrFinals[0].username} (${hrFinals[0].team})`;
+            }
+
+            // 2. Process 3-Point Contest
+            threePtList.sort((a, b) => b.score - a.score);
+            const threeHasScores = threePtList.some(p => p.score > 0);
+            threePtList.forEach((p, idx) => { p.advanced = threeHasScores && idx < 4; });
+            const threeFinals = threeHasScores ? threePtList.slice(0, 4) : [];
+
+            renderContestList(threePtList, 'three-r1-list');
+            renderContestList(threeFinals, 'three-final-list');
+
+            if (threeHasScores && threeFinals.length > 0 && threeFinals[0].score > 0) {
+                document.getElementById('three-champion-spotlight').style.display = 'inline-flex';
+                document.getElementById('three-champion-name').textContent = `${threeFinals[0].username} (${threeFinals[0].team})`;
+            }
+
+            // 3. Process All-Star Game (East vs West)
+            renderAsgRosterList(eastASG, 'asg-east-list');
+            renderAsgRosterList(westASG, 'asg-west-list');
+
+            const eastTotal = eastASG.reduce((sum, p) => sum + p.score, 0);
+            const westTotal = westASG.reduce((sum, p) => sum + p.score, 0);
+
+            document.getElementById('asg-east-score').textContent = eastTotal.toFixed(2);
+            document.getElementById('asg-west-score').textContent = westTotal.toFixed(2);
+        }
+
+        loadAllStarData();
+    </script>
+</body>
+</html>

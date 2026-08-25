@@ -1047,14 +1047,58 @@
             h2hResizeTimer = setTimeout(autoFitAllOpenH2H, 150);
         });
 
-        // --- AUTH & HEADERS CONFIGURATION ---
-        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
+// --- AUTH & MULTI-ACCOUNT POOL ---
+        const REAL_AUTH_TOKENS = [
+            'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f',
+            'xnrGVlRJ!GYZ9e1oA!f1725a9c-9931-4b39-b59e-99fdba54b583' // Update with fresh token
+        ];
+
+        // Global fallback alias to prevent ReferenceErrors in older helper functions
+        const REAL_AUTH_TOKEN = REAL_AUTH_TOKENS[0];
+
+        const disabledTokens = new Set();
+        let currentTokenIdx = 0;
+
+        function getNextAuthToken() {
+            const activeTokens = REAL_AUTH_TOKENS.filter(t => t && !t.includes('PASTE_YOUR') && !disabledTokens.has(t));
+            if (activeTokens.length === 0) return REAL_AUTH_TOKENS[0];
+            const token = activeTokens[currentTokenIdx % activeTokens.length];
+            currentTokenIdx++;
+            return token;
+        }
 
         function generateRequestToken() {
             const timestampMs = Date.now();
             // @ts-ignore
             const hasher = new Hashids("realwebapp", 16);
             return hasher.encode(timestampMs);
+        }
+
+        async function fetchSingleData(url, specificAuthToken = null) {
+            const token = generateRequestToken();
+            const uuid = crypto.randomUUID();
+            const authToken = specificAuthToken || getNextAuthToken();
+            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(authToken)}&uuid=${uuid}&token=${token}`;
+            
+            try {
+                const res = await fetch(proxyUrl);
+                if (res.status === 401) {
+                    console.warn(`[AUTH] Token rejected (401 Unauthorized): ${authToken.substring(0, 15)}... Disabling token.`);
+                    disabledTokens.add(authToken);
+                    return { status: 401, data: null };
+                }
+                if (res.status === 429 || res.status === 502) {
+                    return { status: res.status, data: null };
+                }
+                if (res.ok) {
+                    const data = await res.json();
+                    return { status: res.status, data: data };
+                }
+                return { status: res.status, data: null };
+            } catch (error) {
+                console.error("fetchSingleData failed:", error);
+                return { status: 500, data: null };
+            }
         }
 
         window.getTeamLogoPath = function(name) {
@@ -1324,27 +1368,6 @@
             const top8 = sorted.slice(0, 8);
             return top8.reduce((sum, p) => sum + p.totalScore, 0);
         };
-
-        async function fetchSingleData(url) {
-            const token = generateRequestToken();
-            const uuid = crypto.randomUUID();
-            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${uuid}&token=${token}`;
-            
-            try {
-                const res = await fetch(proxyUrl);
-                if (res.status === 429 || res.status === 502) {
-                    return { status: res.status, data: null };
-                }
-                if (res.ok) {
-                    const data = await res.json();
-                    return { status: res.status, data: data };
-                }
-                return { status: res.status, data: null };
-            } catch (error) {
-                console.error("fetchSingleData failed:", error);
-                return { status: 500, data: null };
-            }
-        }
 
         async function fetchCSV(url) {
             try {
@@ -1995,7 +2018,7 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
         }
 
         // --- WIN PROBABILITY ALGORITHM ---
-// --- MONTE CARLO WIN PROBABILITY ENGINE (5-ATHLETE CALIBRATION) ---
+// --- MONTE CARLO WIN PROBABILITY & NET IMPACT ENGINE ---
     function calculateMatchupWinProbability(team1, team2, sortedSports) {
         const team1Players = (window.teamsDataCache[team1] || []).filter(p => !p.isBench);
         const team2Players = (window.teamsDataCache[team2] || []).filter(p => !p.isBench);
@@ -2013,7 +2036,6 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             'DEFAULT': { mean: 5.5, std: 2.5 }
         };
 
-        // Box-Muller Normal Random Generator
         function samplePoints(mean, stdDev) {
             const u = Math.max(0.0001, Math.random());
             const v = Math.random();
@@ -2021,10 +2043,9 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             return Math.max(0, mean + z * stdDev);
         }
 
-        let highestSwingDiff = 0;
-        let swingAthleteInfo = null;
+        const athleteImpactMap = new Map();
 
-        // 1. Extract active athlete inventory and current sport scores
+        // 1. Extract active athlete inventory, multipliers, and current sport scores
         const sportData = sortedSports.map(sport => {
             const profile = SPORT_PROFILES[sport.toUpperCase()] || SPORT_PROFILES['DEFAULT'];
             const scheduleMap = window.realLifeSchedules[sport] || { teamToGame: {} };
@@ -2044,37 +2065,52 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                     lineup.forEach(item => {
                         const lp = item.player || item;
                         const aName = (lp.displayName || item.displayName || lp.name || item.name || '').trim();
+                        if (!aName) return;
+
                         const tId = lp.teamId || item.teamId;
                         const mult = parseFloat(item.multiplierDisplay || lp.multiplierDisplay || item.multiplier || 1) || 1;
-                        
+                        const aScore = parseFloat(item.score || lp.score || item.points || lp.points || item.scoreDisplay || 0) || 0;
+
                         let gameObj = tId ? scheduleMap.teamToGame[tId] : null;
                         const st = (gameObj?.status || '').toLowerCase();
 
-                        // Evaluate game status progress
-                        let fracRemaining = 0;
+                        let fracRemaining = 1.0;
+                        let isLive = false;
+                        let isFinal = false;
+
                         if (st.includes('final') || st.includes('ended')) {
                             fracRemaining = 0;
+                            isFinal = true;
                         } else if (st.includes('q') || st.includes('half') || st.includes('period') || st.includes('top') || st.includes('bot') || st.includes('live') || st.includes("'")) {
-                            fracRemaining = 0.45; // Live in-progress
-                        } else {
-                            fracRemaining = 1.0;  // Upcoming / scheduled
+                            fracRemaining = 0.45;
+                            isLive = true;
                         }
 
                         if (fracRemaining > 0) {
                             if (isT1) remainingPicks1.push({ mult, fracRemaining });
                             else remainingPicks2.push({ mult, fracRemaining });
-
-                            // Track swing athlete potential
-                            const potSwing = (profile.mean * mult * fracRemaining);
-                            if (potSwing > highestSwingDiff) {
-                                highestSwingDiff = potSwing;
-                                swingAthleteInfo = {
-                                    name: aName,
-                                    sport: sport,
-                                    team: isT1 ? team1 : team2
-                                };
-                            }
                         }
+
+                        // Track global athlete net point differential impact
+                        const key = `${sport}:${aName}`;
+                        if (!athleteImpactMap.has(key)) {
+                            athleteImpactMap.set(key, {
+                                name: aName,
+                                sport: sport,
+                                t1Mult: 0,
+                                t2Mult: 0,
+                                rawScore: aScore,
+                                fracRemaining,
+                                isLive,
+                                isFinal,
+                                expectedBase: profile.mean
+                            });
+                        }
+
+                        const entry = athleteImpactMap.get(key);
+                        if (isT1) entry.t1Mult += mult;
+                        else entry.t2Mult += mult;
+                        if (aScore > entry.rawScore) entry.rawScore = aScore;
                     });
                 });
             };
@@ -2092,7 +2128,40 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             };
         });
 
-        // 2. Execute 1,000 Monte Carlo simulations
+        // 2. Identify the Athlete with the Highest Net Matchup Impact
+        let highestImpactAthlete = null;
+        let maxWeightedImpact = 0;
+
+        athleteImpactMap.forEach(ath => {
+            const netMultDiff = Math.abs(ath.t1Mult - ath.t2Mult);
+            if (netMultDiff <= 0.05) return; // Shared equally -> No score differential
+
+            // Estimated base points = actual points scored + remaining projected output
+            let estimatedBase = ath.rawScore > 0 ? ath.rawScore : ath.expectedBase;
+            if (ath.isLive && ath.rawScore > 0) {
+                estimatedBase = ath.rawScore + (ath.expectedBase * ath.fracRemaining);
+            }
+
+            const netPointSwing = netMultDiff * estimatedBase;
+
+            // Live and upcoming games carry higher uncertainty leverage
+            const gamePhaseWeight = ath.isLive ? 1.25 : (ath.isFinal ? 0.95 : 1.1);
+            const weightedImpact = netPointSwing * gamePhaseWeight;
+
+            if (weightedImpact > maxWeightedImpact) {
+                maxWeightedImpact = weightedImpact;
+                highestImpactAthlete = {
+                    name: ath.name,
+                    sport: ath.sport,
+                    advantagedTeam: ath.t1Mult > ath.t2Mult ? team1 : team2,
+                    netMultDiff: netMultDiff.toFixed(1).replace(/\.0$/, ''),
+                    projectedSwing: netPointSwing.toFixed(1),
+                    status: ath.isLive ? 'Live' : (ath.isFinal ? 'Final' : 'Upcoming')
+                };
+            }
+        });
+
+        // 3. Execute 1,000 Monte Carlo simulations
         const SIMULATION_RUNS = 1000;
         let t1SeriesWins = 0;
         let t2SeriesWins = 0;
@@ -2154,7 +2223,7 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             wp2,
             projScore1,
             projScore2,
-            swingAthlete: swingAthleteInfo
+            swingAthlete: highestImpactAthlete
         };
     }
 
@@ -2194,7 +2263,7 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             const url = `https://web.realsports.io/home/${urlSport}/next?cohort=0`;
             const token = generateRequestToken();
             const uuid = crypto.randomUUID();
-            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${uuid}&token=${token}`;
+            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(getNextAuthToken())}&uuid=${uuid}&token=${token}`;
             
             try {
                 const res = await fetch(proxyUrl);
@@ -2366,8 +2435,10 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
 
             let swingNoteHtml = '';
             if (wpData.swingAthlete) {
-                swingNoteHtml = `<div style="font-size: 0.65rem; color: var(--gold-light); margin-top: 6px; text-align: center;">
-                    ⚡ Key Swing Athlete: <strong>${wpData.swingAthlete.name}</strong> (${wpData.swingAthlete.sport})
+                const sa = wpData.swingAthlete;
+                const statusIcon = sa.status === 'Live' ? '🔴' : (sa.status === 'Final' ? '🏁' : '⏰');
+                swingNoteHtml = `<div style="font-size: 0.68rem; color: var(--gold-light); margin-top: 6px; text-align: center;">
+                    ⚡ Key Impact Athlete: <strong>${sa.name}</strong> (${sa.sport}) &bull; ${statusIcon} <strong>+${sa.netMultDiff}x</strong> (+${sa.projectedSwing} pts edge for ${sa.advantagedTeam})
                 </div>`;
             }
 
@@ -2835,9 +2906,10 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                 let lastRenderTime = Date.now();
                 let newCacheEntries = false;
         
-                const CONCURRENCY_LIMIT = 6; 
+                const activeTokenCount = REAL_AUTH_TOKENS.filter(t => t && !t.includes('PASTE_YOUR')).length;
+                const CONCURRENCY_LIMIT = activeTokenCount > 1 ? 10 : 6; 
                 let nextRequestTime = Date.now(); 
-                let currentPacing = 100;
+                let currentPacing = activeTokenCount > 1 ? 50 : 100;
                 const MAX_RETRIES = 10;
                 
                 let pauseUntil = 0; 

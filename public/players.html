@@ -245,7 +245,7 @@
         </div>
     </div>
 
-    <script type="module">
+<script type="module">
         import { initNav, getSeasonData, currentSeason } from './js/app.js';
         initNav();
 
@@ -256,13 +256,40 @@
             '6': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' }
         };
         
-        window.rookieMap = {};
+        window.userToIdMap = {};
+        window.canonicalPlayerMap = {};
+
         let allRawData = [];
         let leagueAvgPPG = 0;
-        let globalPlayerMap = {}; // Store processed player stats globally for the modal
+        let globalPlayerMap = {};
         let formChartInstance = null;
         let radarChartInstance = null;
-        let leagueSportAvgs = {}; // Used to calculate player strength index
+        let leagueSportAvgs = {};
+
+        // Helper: Case/space-insensitive property extractor
+        function getCleanValue(obj, keys) {
+            if (!obj) return '';
+            // 1. Direct match check
+            for (const k of keys) {
+                if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+                    return String(obj[k]).trim();
+                }
+            }
+            // 2. Normalized match check (removes casing, spaces, underscores)
+            const objKeys = Object.keys(obj);
+            for (const target of keys) {
+                const cleanTarget = target.toLowerCase().replace(/[\s_\-]/g, '');
+                for (const actual of objKeys) {
+                    if (actual.toLowerCase().replace(/[\s_\-]/g, '') === cleanTarget) {
+                        if (obj[actual] !== undefined && obj[actual] !== null) {
+                            const val = String(obj[actual]).trim();
+                            if (val !== '') return val;
+                        }
+                    }
+                }
+            }
+            return '';
+        }
 
         // Modal Elements
         const modal = document.getElementById('player-modal');
@@ -271,7 +298,7 @@
         window.onclick = (e) => { if (e.target == modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); } };
 
         function getTeamLogoPath(name) {
-             if(!name) return '';
+             if (!name) return '';
              let cleanName = name.trim().toLowerCase();
              if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
              cleanName = cleanName.replace(/\s+/g, '-');
@@ -279,7 +306,6 @@
              return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
         }
 
-        // --- Normalized Per-Sport Consistency Engine ---
         function getConsistencyInfo(perSportAverages) {
             if (!perSportAverages || perSportAverages.length < 2) return { text: 'N/A', color: '#888' };
             
@@ -287,14 +313,12 @@
             const variance = perSportAverages.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / perSportAverages.length;
             const stdDev = Math.sqrt(variance);
 
-            // Standard deviation based on per-sport output (independent of slate size)
-            if (stdDev < 3.5) return { text: 'Elite', color: '#4ade80' };   // < ±3.5 pts/sport
-            if (stdDev < 6.0) return { text: 'High', color: '#60a5fa' };    // < ±6.0 pts/sport
-            if (stdDev < 9.0) return { text: 'Average', color: '#facc15' }; // < ±9.0 pts/sport
-            return { text: 'Volatile', color: '#f87171' };                  // >= ±9.0 pts/sport
+            if (stdDev < 3.5) return { text: 'Elite', color: '#4ade80' };
+            if (stdDev < 6.0) return { text: 'High', color: '#60a5fa' };
+            if (stdDev < 9.0) return { text: 'Average', color: '#facc15' };
+            return { text: 'Volatile', color: '#f87171' };
         }
 
-        // Robust CSV Parser
         function parseCsvLocal(csvText) {
             if (!csvText || csvText.trim().startsWith('<')) return [];
             const rows = csvText.trim().split(/\r?\n/);
@@ -326,7 +350,10 @@
             
             allRawData = await getSeasonData(collectionName);
 
-            // Fetch rookie statuses from CSV
+            window.userToIdMap = {};
+            window.canonicalPlayerMap = {};
+
+            // 1. Ingest Master Roster CSV
             const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
             if (config) {
                 try {
@@ -336,42 +363,48 @@
                         const parsedData = parseCsvLocal(text);
                         
                         parsedData.forEach(row => {
-                            const uid = row['user id'] || row['userid'];
-                            const uname = row['username'];
-                            
-                            // Dynamically find the rookie column regardless of exact header name
-                            let rookieVal = '';
-                            for(let key in row) {
-                                if(key.includes('rookie')) {
-                                    rookieVal = row[key].toLowerCase();
-                                    break;
-                                }
+                            const uid = getCleanValue(row, ['user id', 'userid', 'user_id', 'uid', 'id']);
+                            const rawUname = getCleanValue(row, ['username', 'user name', 'name', 'user']).replace(/^@/, '');
+                            const cleanUname = rawUname.toLowerCase();
+                            const rawTeam = getCleanValue(row, ['team', 'team name']);
+
+                            const isFreeAgent = !rawTeam || 
+                                                ['free agent', 'free agents', 'fa', 'none', 'n/a', 'tbd', 'unknown'].includes(rawTeam.toLowerCase());
+                            const currentTeam = isFreeAgent ? '' : rawTeam;
+
+                            const rookieVal = getCleanValue(row, ['rookie', 'is rookie', 'isrookie']).toLowerCase();
+                            const isRookie = (rookieVal === 'yes' || rookieVal === 'true' || rookieVal === '1');
+
+                            const playerMeta = {
+                                userId: uid,
+                                username: rawUname || (uid ? `User_${uid.slice(0, 4)}` : 'Unknown'),
+                                team: currentTeam,
+                                isRookie: isRookie
+                            };
+
+                            if (uid) {
+                                window.canonicalPlayerMap[uid] = playerMeta;
+                                window.canonicalPlayerMap[uid.toLowerCase()] = playerMeta;
                             }
-                            
-                            const isRookie = rookieVal === 'yes' || rookieVal === 'true' || rookieVal === '1';
-                            
-                            if (uid) window.rookieMap[uid] = isRookie;
-                            if (uname) {
-                                const cleanUname = uname.replace(/@/g, '').toLowerCase();
-                                window.rookieMap[cleanUname] = isRookie;
+                            if (cleanUname) {
+                                window.canonicalPlayerMap[cleanUname] = playerMeta;
+                                if (uid) window.userToIdMap[cleanUname] = uid;
                             }
                         });
                     }
-                } catch(e) { console.warn("Failed to fetch rookie data:", e); }
+                } catch(e) { console.warn("Failed to fetch player roster data:", e); }
             }
 
-            // Calculate League Sport Averages & Populate Sport Filter Dropdown
+            // 2. Calculate League Sport Averages & Populate Filter Dropdown
             const sportTotals = {};
             const sportCounts = {};
             const discoveredSports = new Set();
 
             allRawData.forEach(d => {
-                const s = d.sport ? d.sport.trim().toUpperCase() : null;
-                const sc = parseFloat(d.score) || 0;
-                const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
-                                String(d.isBench || '').toLowerCase() === 'true' || 
-                                String(d.isbench || '').toLowerCase() === 'true' || 
-                                String(d.bench || '').toLowerCase() === 'true';
+                const s = getCleanValue(d, ['sport', 'sportName']).toUpperCase();
+                const sc = parseFloat(getCleanValue(d, ['score', 'points', 'pts'])) || 0;
+                const rawBench = getCleanValue(d, ['isBench', 'isbench', 'bench', 'is_bench']).toLowerCase();
+                const isBench = (rawBench === 'true' || rawBench === 'yes' || rawBench === '1');
                 
                 if (s && s !== 'USER' && s !== 'DRAFT' && s !== 'SPORT') {
                     discoveredSports.add(s);
@@ -385,7 +418,6 @@
             leagueSportAvgs = {};
             for (let s in sportTotals) leagueSportAvgs[s] = sportTotals[s] / sportCounts[s];
 
-            // Populate #sport-filter dropdown options
             const sportSelect = document.getElementById('sport-filter');
             if (sportSelect) {
                 const currentVal = sportSelect.value || 'ALL';
@@ -397,9 +429,9 @@
             }
 
             filter();
-        }
+        };
 
-// --- Filter, Sort & Render Table ---
+        // --- Filter, Aggregate & Render Table ---
         window.filter = () => {
             const term = document.getElementById('search').value.toLowerCase();
             const sportFilter = document.getElementById('sport-filter')?.value || 'ALL';
@@ -407,26 +439,40 @@
             const sortMetric = document.getElementById('sort-metric').value;
 
             let teamTotals = {};
-            globalPlayerMap = {}; // Reset global map
+            globalPlayerMap = {};
 
-allRawData.forEach(d => {
-                const id = d.userId || d.username;
-                const score = parseFloat(d.score) || 0;
-                const sport = (d.sport || 'Unknown').trim().toUpperCase();
-                const date = d.date || 'Unknown';
-                const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
-                                String(d.isBench || '').toLowerCase() === 'true' || 
-                                String(d.isbench || '').toLowerCase() === 'true' || 
-                                String(d.bench || '').toLowerCase() === 'true';
-                
-                if (!globalPlayerMap[id]) {
-                    const cleanDbName = d.username ? d.username.replace(/@/g, '').toLowerCase() : null;
-                    const isRookie = window.rookieMap[id] || (cleanDbName && window.rookieMap[cleanDbName]) || false;
-                    
-                    globalPlayerMap[id] = { 
-                        id: id,
-                        username: d.username,
-                        team: d.team || 'Free Agent',
+            allRawData.forEach(d => {
+                const rawUserId = getCleanValue(d, ['userId', 'userid', 'user id', 'user_id', 'uid', 'id']);
+                const rawUsername = getCleanValue(d, ['username', 'userName', 'user name', 'name', 'user']).replace(/^@/, '');
+                const cleanUsername = rawUsername.toLowerCase();
+
+                // 1. Resolve to single primary Canonical ID
+                let canonicalId = '';
+                if (rawUserId) {
+                    canonicalId = rawUserId;
+                } else if (cleanUsername && window.userToIdMap[cleanUsername]) {
+                    canonicalId = window.userToIdMap[cleanUsername];
+                } else if (cleanUsername) {
+                    canonicalId = cleanUsername;
+                }
+                if (!canonicalId) return;
+
+                // 2. Resolve Master Roster Metadata
+                const meta = window.canonicalPlayerMap[canonicalId] || 
+                             (rawUserId && window.canonicalPlayerMap[rawUserId]) ||
+                             (cleanUsername && window.canonicalPlayerMap[cleanUsername]) || 
+                             null;
+
+                const displayName = meta?.username || rawUsername || (canonicalId.startsWith('User_') ? canonicalId : `User_${canonicalId.slice(0, 4)}`);
+                const currentTeam = meta ? meta.team : '';
+                const isRookie = meta ? meta.isRookie : false;
+
+                // 3. Initialize or Update Player Bucket
+                if (!globalPlayerMap[canonicalId]) {
+                    globalPlayerMap[canonicalId] = { 
+                        id: canonicalId,
+                        username: displayName,
+                        team: currentTeam,
                         score: 0,
                         benchScore: 0,
                         games: 0,
@@ -437,32 +483,37 @@ allRawData.forEach(d => {
                         sportScores: {}, 
                         isRookie: isRookie
                     };
-                } else if (d.username && globalPlayerMap[id].username.startsWith('User_')) {
-                    globalPlayerMap[id].username = d.username;
+                } else {
+                    if (meta?.username) globalPlayerMap[canonicalId].username = meta.username;
+                    if (meta?.team !== undefined) globalPlayerMap[canonicalId].team = meta.team;
+                    if (meta?.isRookie !== undefined) globalPlayerMap[canonicalId].isRookie = meta.isRookie;
                 }
 
+                // 4. Ingest Scores
+                const score = parseFloat(getCleanValue(d, ['score', 'points', 'pts'])) || 0;
+                const sport = (getCleanValue(d, ['sport', 'sportName']) || 'Unknown').toUpperCase();
+                const date = getCleanValue(d, ['date', 'gamedate']) || 'Unknown';
+                const rawBench = getCleanValue(d, ['isBench', 'isbench', 'bench', 'is_bench']).toLowerCase();
+                const isBench = (rawBench === 'true' || rawBench === 'yes' || rawBench === '1');
+
                 if (score > 0) {
-                    // Populate overall sport profiles for modal
                     if (!isBench) {
-                        if (!globalPlayerMap[id].sportScores[sport]) globalPlayerMap[id].sportScores[sport] = [];
-                        globalPlayerMap[id].sportScores[sport].push(score);
+                        if (!globalPlayerMap[canonicalId].sportScores[sport]) globalPlayerMap[canonicalId].sportScores[sport] = [];
+                        globalPlayerMap[canonicalId].sportScores[sport].push(score);
                     }
 
-                    // Filter out unselected sports from the main table
-                    if (sportFilter !== 'ALL' && sport !== sportFilter) {
-                        return;
-                    }
+                    if (sportFilter !== 'ALL' && sport !== sportFilter) return;
 
                     if (isBench) {
-                        globalPlayerMap[id].benchGamedays[date] = (globalPlayerMap[id].benchGamedays[date] || 0) + score;
+                        globalPlayerMap[canonicalId].benchGamedays[date] = (globalPlayerMap[canonicalId].benchGamedays[date] || 0) + score;
                     } else {
-                        if (!globalPlayerMap[id].gamedays[date]) {
-                            globalPlayerMap[id].gamedays[date] = { total: 0, sportsCount: 0 };
+                        if (!globalPlayerMap[canonicalId].gamedays[date]) {
+                            globalPlayerMap[canonicalId].gamedays[date] = { total: 0, sportsCount: 0 };
                         }
-                        globalPlayerMap[id].gamedays[date].total += score;
-                        globalPlayerMap[id].gamedays[date].sportsCount += 1;
+                        globalPlayerMap[canonicalId].gamedays[date].total += score;
+                        globalPlayerMap[canonicalId].gamedays[date].sportsCount += 1;
 
-                        teamTotals[d.team] = (teamTotals[d.team] || 0) + score;
+                        if (currentTeam) teamTotals[currentTeam] = (teamTotals[currentTeam] || 0) + score;
                     }
                 }
             });
@@ -470,7 +521,6 @@ allRawData.forEach(d => {
             let totalLeagueScore = 0;
             let totalPlayerGames = 0;
 
-            // Finalize player stats with slate-normalized per-sport averages
             Object.values(globalPlayerMap).forEach(p => {
                 p.gamedayDetails = [];
                 p.scoresArray = [];
@@ -496,7 +546,6 @@ allRawData.forEach(d => {
                 p.score = p.scoresArray.reduce((a, b) => a + b, 0);
                 p.benchScore = Object.values(p.benchGamedays).reduce((a, b) => a + b, 0);
 
-                // Find Peak Gameday (Starter points only)
                 p.currentPeak = 0;
                 p.peakDate = 'Unknown';
                 for (let d in p.gamedays) {
@@ -517,7 +566,7 @@ allRawData.forEach(d => {
                 const ppg = p.games > 0 ? (p.score / p.games) : 0;
                 const paa = ppg - leagueAvgPPG;
                 const peak = p.scoresArray.length > 0 ? Math.max(...p.scoresArray) : 0;
-                const share = teamTotals[p.team] > 0 ? (p.score / teamTotals[p.team]) * 100 : 0;
+                const share = (p.team && teamTotals[p.team] > 0) ? (p.score / teamTotals[p.team]) * 100 : 0;
                 
                 return {
                     ...p,
@@ -530,12 +579,11 @@ allRawData.forEach(d => {
                 };
             });
 
-            // Re-assign back to map so the modal has access to the calculated stats
             mappedList.forEach(p => globalPlayerMap[p.id] = p);
 
-            // Apply Filters
+            // Filters
             if (sportFilter !== 'ALL') mappedList = mappedList.filter(p => p.games > 0 || p.currentBenchScore > 0);
-            if (term) mappedList = mappedList.filter(p => p.username.toLowerCase().includes(term) || p.team.toLowerCase().includes(term));
+            if (term) mappedList = mappedList.filter(p => p.username.toLowerCase().includes(term) || (p.team && p.team.toLowerCase().includes(term)));
             if (rookieFilter === 'ROOKIES') mappedList = mappedList.filter(p => p.isRookie);
             else if (rookieFilter === 'VETERANS') mappedList = mappedList.filter(p => !p.isRookie);
             else if (rookieFilter === 'BENCH_ONLY') mappedList = mappedList.filter(p => p.currentBenchScore > 0);
@@ -551,7 +599,6 @@ allRawData.forEach(d => {
                 return 0;
             });
 
-            // Render Header dynamically based on sort
             const headerDict = {
                 'total': 'Total Pts', 'bench': 'Bench Pts', 'avg': 'Points/Game', 'paa': 'Pts Above Avg', 'peak': 'Peak Score', 'share': 'Team % Share'
             };
@@ -586,24 +633,39 @@ allRawData.forEach(d => {
                     <tr onclick="openPlayerModal('${p.id}')">
                         <td class="rank-cell" style="${rankColorStyle}">${rankIcon}</td>
                         <td class="player-name-cell">${p.username}${rookieBadge}</td>
-                        <td class="secondary-stat">${p.team}</td>
+                        <td class="secondary-stat">${p.team || ''}</td>
                         ${dynamicStatHtml}
                     </tr>
                 `;
             }).join('');
-        }
+        };
 
-        // --- OPEN MODAL AND RENDER ADVANCED METRICS ---
+        // --- Open Modal & Render Advanced Metrics ---
         window.openPlayerModal = function(playerId) {
             const p = globalPlayerMap[playerId];
             if (!p) return;
 
-            // Header Elements
             document.getElementById('modal-name').textContent = p.username + (p.isRookie ? ' (R)' : '');
-            document.getElementById('modal-team').textContent = p.team;
-            document.getElementById('modal-logo').src = getTeamLogoPath(p.team);
+            
+            const teamEl = document.getElementById('modal-team');
+            const logoEl = document.getElementById('modal-logo');
+            
+            if (p.team) {
+                teamEl.textContent = p.team;
+                teamEl.style.display = 'block';
+                const logoPath = getTeamLogoPath(p.team);
+                if (logoPath) {
+                    logoEl.src = logoPath;
+                    logoEl.style.display = 'block';
+                } else {
+                    logoEl.style.display = 'none';
+                }
+            } else {
+                teamEl.textContent = '';
+                teamEl.style.display = 'none';
+                logoEl.style.display = 'none';
+            }
 
-            // Top Stat Grid
             document.getElementById('modal-ppg').textContent = p.currentPPG.toFixed(2);
             document.getElementById('modal-gp').textContent = `${p.games} Games Played`;
             
@@ -619,11 +681,9 @@ allRawData.forEach(d => {
             consEl.textContent = cons.text;
             consEl.style.color = cons.color;
 
-            // --- Destroy Old Charts ---
             if (formChartInstance) formChartInstance.destroy();
             if (radarChartInstance) radarChartInstance.destroy();
 
-            // --- Render Slate-Normalized Form Bar Chart (Last 5 Slates) ---
             const last5Slates = (p.gamedayDetails || []).slice(-5);
             const formLabels = last5Slates.map(d => `${d.date} (${d.sportsCount}S)`);
             const formAvgs = last5Slates.map(d => d.avgPerSport.toFixed(2));
@@ -669,32 +729,24 @@ allRawData.forEach(d => {
                 }
             });
 
-            // --- Render Radar Chart (Strength by Sport vs League) ---
             const radarLabels = [];
             const radarDataValues = [];
-            
-            // Sort sports alphabetically for a consistent shape across all players
             const allLeagueSports = Object.keys(leagueSportAvgs).sort();
             
             allLeagueSports.forEach(sport => {
                 const leagueAvg = leagueSportAvgs[sport];
                 if (leagueAvg && leagueAvg > 0) {
                     radarLabels.push(sport);
-                    
-                    // If the player hasn't played this sport, their average is 0
                     let sportAvg = 0;
                     if (p.sportScores[sport] && p.sportScores[sport].length > 0) {
                         sportAvg = p.sportScores[sport].reduce((a,b)=>a+b,0) / p.sportScores[sport].length;
                     }
-                    
-                    // Strength Index (Cap at 200 so UI doesn't blow out)
                     const index = Math.min((sportAvg / leagueAvg) * 100, 200);
                     radarDataValues.push(index.toFixed(1));
                 }
             });
 
             const radarCtx = document.getElementById('radarChart').getContext('2d');
-            
             if (radarLabels.length > 0) {
                 radarChartInstance = new Chart(radarCtx, {
                     type: 'radar',
@@ -703,7 +755,7 @@ allRawData.forEach(d => {
                         datasets: [{
                             label: 'Strength Index',
                             data: radarDataValues,
-                            backgroundColor: 'rgba(56, 189, 248, 0.3)', // Cool blue for player to contrast team gold
+                            backgroundColor: 'rgba(56, 189, 248, 0.3)',
                             borderColor: '#38bdf8',
                             pointBackgroundColor: '#fff',
                             pointBorderColor: '#38bdf8',
@@ -718,7 +770,7 @@ allRawData.forEach(d => {
                                 angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                                 grid: { color: 'rgba(255, 255, 255, 0.1)' },
                                 pointLabels: { color: '#e2e8f0', font: { size: 11, family: "'Inter', sans-serif" } },
-                                ticks: { display: false, min: 0 } // Hide scale numbers
+                                ticks: { display: false, min: 0 }
                             }
                         },
                         plugins: {
@@ -736,12 +788,10 @@ allRawData.forEach(d => {
                 `;
             }
 
-            // Show Modal
             modal.style.display = 'flex';
             document.body.classList.add('modal-open');
-        }
+        };
 
-        // Kickoff Load
         load();
     </script>
 </body>
