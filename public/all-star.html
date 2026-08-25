@@ -142,7 +142,7 @@
             color: var(--text-muted);
         }
 
-        /* Contest User Card & Inline Lineup (HRD & 3PT) */
+        /* Contest User Card & Lineup Strip */
         .contest-player-card {
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             display: flex;
@@ -212,64 +212,99 @@
             text-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
         }
 
-        /* Lineup Chips (Inline / Below) */
+        /* --- CIRCLE LINEUP STYLES (Matching Live Scores Page) --- */
         .lineup-strip {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
             padding: 0.4rem 1rem 0.75rem;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.25);
             border-top: 1px solid rgba(255, 255, 255, 0.02);
         }
 
-        .athlete-chip {
+        .pl-lineup {
             display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            padding: 3px 6px;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 0.6rem;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            padding-top: 4px;
+            overflow-x: auto;
+        }
+
+        .pl-lineup.empty {
+            color: #666;
             font-size: 0.75rem;
+            font-style: italic;
+            padding: 4px 0;
         }
 
-        .athlete-avatar-wrap {
+        .sport-lineup-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 0 0 42px;
+            min-width: 42px;
+            max-width: 46px;
+            overflow: visible;
+        }
+
+        .sport-player-avatar-container {
             position: relative;
-            width: 22px;
-            height: 22px;
+            width: 100%;
+            max-width: 32px;
+            aspect-ratio: 1;
+            height: auto;
+            margin-bottom: 0.3rem;
             flex-shrink: 0;
+            overflow: visible;
+            padding-top: 4px;
         }
 
-        .athlete-avatar {
+        .sport-player-avatar {
             width: 100%;
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
             border: 1px solid var(--border-subtle);
-            background: #000;
+            background-color: #000;
         }
 
-        .athlete-mult {
+        .sport-player-multiplier {
             position: absolute;
-            top: -4px;
+            top: 0;
             left: -4px;
             background: var(--bg-navy);
             color: #fff;
             border-radius: 50%;
-            font-size: 0.5rem;
+            padding: 0.1rem 0.25rem;
+            font-size: 0.55rem;
             font-weight: bold;
-            padding: 1px 3px;
-            line-height: 1;
             border: 1px solid var(--border-subtle);
+            line-height: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 1;
         }
 
-        .athlete-name {
+        .sport-player-info {
+            font-size: 0.6rem;
+            line-height: 1.1;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .sport-player-display-name {
             font-weight: 500;
-            color: #e2e8f0;
+            display: block;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 90px;
+            width: 100%;
+            max-width: 100%;
+            color: var(--text-muted);
         }
 
         /* ASG Dropdown Roster Items */
@@ -304,7 +339,7 @@
 
         .asg-user-drawer {
             display: none;
-            padding: 0.6rem 1rem 0.85rem;
+            padding: 0.5rem 1rem 0.85rem;
             background: rgba(0, 0, 0, 0.35);
             border-top: 1px solid rgba(255, 255, 255, 0.03);
         }
@@ -627,31 +662,34 @@
             }
         }
 
-        function renderLineupChips(lineup) {
+        // --- Circle Lineup Layout (from live-scores.html) ---
+        function renderLineupCircles(lineup) {
             if (!lineup || lineup.length === 0) {
-                return `<div style="color:#666; font-size:0.75rem; font-style:italic;">No lineup submitted yet.</div>`;
+                return `<div class="pl-lineup empty">No lineup data.</div>`;
             }
 
-            return lineup.map(item => {
+            return `<div class="pl-lineup">` + lineup.map(item => {
                 const lp = item.player || item;
                 const avatar = lp.avatar || item.avatar || '';
-                const name = lp.displayName || item.displayName || lp.name || item.name || 'Athlete';
-                const mult = item.multiplierDisplay || lp.multiplierDisplay || item.multiplier || lp.multiplier || '1x';
-                const avatarUrl = avatar ? `https://media.realapp.link/assets/players/default/large/${avatar}.webp` : 'https://placehold.co/24x24/222/fff?text=?';
+                const displayName = lp.displayName || item.displayName || lp.name || item.name || '';
+                const multiplier = item.multiplierDisplay || lp.multiplierDisplay || item.multiplier || lp.multiplier || '1x';
+                const avatarUrl = avatar ? `https://media.realapp.link/assets/players/default/large/${avatar}.webp` : 'https://placehold.co/40x40/222/fff?text=?';
 
                 return `
-                    <div class="athlete-chip">
-                        <div class="athlete-avatar-wrap">
-                            <img src="${avatarUrl}" class="athlete-avatar" onerror="this.src='https://placehold.co/24x24/222/fff?text=?'">
-                            <div class="athlete-mult">${mult}</div>
+                    <div class="sport-lineup-player">
+                        <div class="sport-player-avatar-container">
+                            <img src="${avatarUrl}" class="sport-player-avatar" onerror="this.src='https://placehold.co/40x40/222/fff?text=?';">
+                            <div class="sport-player-multiplier">${multiplier}</div>
                         </div>
-                        <span class="athlete-name" title="${name}">${name}</span>
+                        <div class="sport-player-info">
+                            <span class="sport-player-display-name" title="${displayName}">${displayName}</span>
+                        </div>
                     </div>
                 `;
-            }).join('');
+            }).join('') + `</div>`;
         }
 
-        // Contest Renderer with Lineups directly below each player
+        // Contest Renderer with Circle Lineups directly below each player
         function renderContestList(items, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -681,7 +719,7 @@
                             <span class="player-score ${winnerClass}">${scoreDisplay}</span>
                         </div>
                         <div class="lineup-strip">
-                            ${renderLineupChips(p.lineup)}
+                            ${renderLineupCircles(p.lineup)}
                         </div>
                     </div>
                 `;
@@ -710,9 +748,7 @@
                             <span class="player-score">${scoreDisplay}</span>
                         </div>
                         <div class="asg-user-drawer">
-                            <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
-                                ${renderLineupChips(p.lineup)}
-                            </div>
+                            ${renderLineupCircles(p.lineup)}
                         </div>
                     </div>
                 `;
@@ -735,9 +771,11 @@
                 console.warn("Could not load All-Star CSV", e);
             }
 
-            // Partition Events
-            const hrdList = [];
-            const threePtList = [];
+            // Partition Events by Specific Round Tags
+            const hrd1List = [];
+            const hrd2List = [];
+            const threePt1List = [];
+            const threePt2List = [];
             const eastASG = [];
             const westASG = [];
 
@@ -745,21 +783,23 @@
                 const uname = row.username || row.name || '';
                 const uid = row['user id'] || row.userid || row.userId || '';
                 const team = row.team || '';
-                const eventCode = (row.event || '').trim().toUpperCase();
+                const eventCode = (row.event || '').trim().toUpperCase().replace(/[\s_-]/g, '');
                 const sportId = row['sport id'] || row.sportid || row.sportId || '';
 
                 const item = { username: uname, userId: uid, team, score: 0, lineup: [], sportId };
 
-                if (eventCode === 'HRD') hrdList.push(item);
-                else if (eventCode === '3PT') threePtList.push(item);
+                if (eventCode === 'HRD1' || eventCode === 'HRD') hrd1List.push(item);
+                else if (eventCode === 'HRD2') hrd2List.push(item);
+                else if (eventCode === '3PT1' || eventCode === '3PT') threePt1List.push(item);
+                else if (eventCode === '3PT2') threePt2List.push(item);
                 else if (eventCode === 'ASG') {
                     if (team.toLowerCase().includes('east')) eastASG.push(item);
                     else westASG.push(item);
                 }
             });
 
-            // Fetch Live Scores & Lineups if Sport IDs are provided
-            const allItems = [...hrdList, ...threePtList, ...eastASG, ...westASG];
+            // Fetch Live Scores & Lineups for all active draft IDs
+            const allItems = [...hrd1List, ...hrd2List, ...threePt1List, ...threePt2List, ...eastASG, ...westASG];
             const hasLiveDrafts = allItems.some(i => Boolean(i.sportId));
 
             if (hasLiveDrafts) {
@@ -769,41 +809,54 @@
                         const res = await fetchPlayerContestData(item.sportId, item.userId);
                         item.score = res.score;
                         item.lineup = res.lineup;
-                        await new Promise(r => setTimeout(r, 100)); // Pacing
+                        await new Promise(r => setTimeout(r, 100)); // Pacing buffer
                     }
                 }
                 loadingStatus.style.display = 'none';
             }
 
-            // 1. Process Home Run Derby
-            hrdList.sort((a, b) => b.score - a.score);
-            const hrHasScores = hrdList.some(p => p.score > 0);
-            hrdList.forEach((p, idx) => { p.advanced = hrHasScores && idx < 4; });
-            const hrFinals = hrHasScores ? hrdList.slice(0, 4) : [];
+            // 1. Home Run Derby Processing
+            hrd1List.sort((a, b) => b.score - a.score);
+            const hr1HasScores = hrd1List.some(p => p.score > 0);
+            
+            // Mark advanced players (either top 4 by score or matching names in Round 2)
+            const hrd2Names = new Set(hrd2List.map(p => p.username.toLowerCase()));
+            hrd1List.forEach((p, idx) => {
+                p.advanced = (hrd2Names.size > 0 && hrd2Names.has(p.username.toLowerCase())) || (hr1HasScores && idx < 4);
+            });
 
-            renderContestList(hrdList, 'hr-r1-list');
-            renderContestList(hrFinals, 'hr-final-list');
-
-            if (hrHasScores && hrFinals.length > 0 && hrFinals[0].score > 0) {
+            hrd2List.sort((a, b) => b.score - a.score);
+            const hr2HasScores = hrd2List.some(p => p.score > 0);
+            if (hr2HasScores && hrd2List.length > 0) {
+                hrd2List[0].isChampion = true;
                 document.getElementById('hr-champion-spotlight').style.display = 'inline-flex';
-                document.getElementById('hr-champion-name').textContent = `${hrFinals[0].username} (${hrFinals[0].team})`;
+                document.getElementById('hr-champion-name').textContent = `${hrd2List[0].username} (${hrd2List[0].team})`;
             }
 
-            // 2. Process 3-Point Contest
-            threePtList.sort((a, b) => b.score - a.score);
-            const threeHasScores = threePtList.some(p => p.score > 0);
-            threePtList.forEach((p, idx) => { p.advanced = threeHasScores && idx < 4; });
-            const threeFinals = threeHasScores ? threePtList.slice(0, 4) : [];
+            renderContestList(hrd1List, 'hr-r1-list');
+            renderContestList(hrd2List, 'hr-final-list');
 
-            renderContestList(threePtList, 'three-r1-list');
-            renderContestList(threeFinals, 'three-final-list');
+            // 2. 3-Point Contest Processing
+            threePt1List.sort((a, b) => b.score - a.score);
+            const three1HasScores = threePt1List.some(p => p.score > 0);
+            
+            const three2Names = new Set(threePt2List.map(p => p.username.toLowerCase()));
+            threePt1List.forEach((p, idx) => {
+                p.advanced = (three2Names.size > 0 && three2Names.has(p.username.toLowerCase())) || (three1HasScores && idx < 4);
+            });
 
-            if (threeHasScores && threeFinals.length > 0 && threeFinals[0].score > 0) {
+            threePt2List.sort((a, b) => b.score - a.score);
+            const three2HasScores = threePt2List.some(p => p.score > 0);
+            if (three2HasScores && threePt2List.length > 0) {
+                threePt2List[0].isChampion = true;
                 document.getElementById('three-champion-spotlight').style.display = 'inline-flex';
-                document.getElementById('three-champion-name').textContent = `${threeFinals[0].username} (${threeFinals[0].team})`;
+                document.getElementById('three-champion-name').textContent = `${threePt2List[0].username} (${threePt2List[0].team})`;
             }
 
-            // 3. Process All-Star Game (East vs West)
+            renderContestList(threePt1List, 'three-r1-list');
+            renderContestList(threePt2List, 'three-final-list');
+
+            // 3. All-Star Game (East vs West)
             renderAsgRosterList(eastASG, 'asg-east-list');
             renderAsgRosterList(westASG, 'asg-west-list');
 
