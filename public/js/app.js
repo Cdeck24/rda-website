@@ -134,6 +134,7 @@ export function initNav() {
             <a href="trophies.html?season=${currentSeason}" class="nav-button" id="nav-trophies">Trophies</a>
             <a href="records.html" class="nav-button" id="nav-records">Records</a>
             <a href="gms.html" class="nav-button" id="nav-gm">GM Dashboard</a>
+            <a href="all-star.html" class="nav-button" id="nav-allstar">All-Star</a>
         </div>
     </div>
     `;
@@ -160,7 +161,7 @@ export function initNav() {
     if(path.includes('trophies')) document.getElementById('nav-trophies')?.classList.add('active');
     if(path.includes('records')) document.getElementById('nav-records')?.classList.add('active');
     if(path.includes('gms')) document.getElementById('nav-gm')?.classList.add('active');
-
+    if(path.includes('all-star')) document.getElementById('nav-allstar')?.classList.add('active');
     // Update Page Title
     if (header && document.title.includes('RDA')) {
        const pageName = document.title.split('RDA')[1] || '';
