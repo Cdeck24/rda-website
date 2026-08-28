@@ -212,7 +212,7 @@
             text-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
         }
 
-        /* --- CIRCLE LINEUP STYLES (Matching Live Scores Page) --- */
+        /* --- CIRCLE LINEUP STYLES --- */
         .lineup-strip {
             padding: 0.4rem 1rem 0.75rem;
             background: rgba(0, 0, 0, 0.25);
@@ -346,7 +346,19 @@
 
         .asg-user-drawer.open { display: block; }
 
-        /* H2H Game Banner */
+        .sport-breakdown-tag {
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: var(--gold-mid);
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-right: 4px;
+            text-transform: uppercase;
+        }
+
+        /* Banner Cards */
         .asg-banner-card {
             background: var(--bg-card);
             border: 1px solid var(--border-gold);
@@ -416,8 +428,225 @@
             gap: 1.5rem;
         }
 
+        /* --- 3v3 SHOWDOWN DROPDOWN CARDS --- */
+        .three-v-three-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .sport-battle-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+
+        .sport-battle-header {
+            background: rgba(0,0,0,0.35);
+            padding: 0.9rem 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .sport-battle-header:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .sport-battle-header.open .battle-toggle-icon {
+            transform: rotate(45deg);
+        }
+
+        .battle-toggle-icon {
+            font-size: 0.95rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-left: 8px;
+            transition: transform 0.2s ease;
+            display: inline-block;
+        }
+
+        .sport-battle-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sport-battle-status {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .sport-battle-body {
+            display: none;
+            grid-template-columns: 1fr 1px 1fr;
+            align-items: stretch;
+            background: rgba(0, 0, 0, 0.15);
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .sport-battle-body.open {
+            display: grid;
+        }
+
+        .battle-divider {
+            background: var(--border-subtle);
+            width: 1px;
+            height: 100%;
+        }
+
+        .sport-side-container {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .side-conference-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .side-conference-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #fff;
+        }
+
+        .side-sport-total-score {
+            font-size: 1.4rem;
+            font-weight: 900;
+            font-family: monospace;
+            color: var(--gold-light);
+        }
+
+        .side-sport-total-score.winning-score {
+            color: #4ade80;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+
+        .battle-header-score {
+            font-family: monospace;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--gold-light);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* GM Highlight Box (2x) */
+        .gm-spotlight-box {
+            background: linear-gradient(180deg, rgba(212, 175, 55, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%);
+            border: 1px solid var(--border-gold);
+            border-radius: 8px;
+            padding: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .gm-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .gm-tag {
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #000;
+            background: var(--gold-mid);
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .gm-score-block {
+            text-align: right;
+        }
+
+        .gm-score-val {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--gold-light);
+            font-family: monospace;
+        }
+
+        .gm-raw-subtext {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            display: block;
+        }
+
+        /* 1x Player Stack */
+        .players-stack-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .players-stack-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.2rem;
+        }
+
+        .player-stack-card {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 6px;
+            padding: 0.5rem 0.6rem;
+        }
+
+        .player-stack-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .player-stack-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+        }
+
+        .player-stack-score {
+            font-size: 0.95rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: #fff;
+        }
+
         @media (max-width: 768px) {
             .rounds-container, .asg-rosters-grid { grid-template-columns: 1fr; }
+            .sport-battle-body.open { grid-template-columns: 1fr; }
+            .battle-divider { height: 1px; width: 100%; }
             .asg-total-score { font-size: 1.6rem; }
             .asg-team-title { font-size: 0.9rem; }
             .asg-team-logo { width: 40px; height: 40px; }
@@ -436,8 +665,8 @@
         <div class="sub-nav-container">
             <button class="sub-nav-btn active" onclick="switchEventTab('hr-derby')">Home Run Derby</button>
             <button class="sub-nav-btn" onclick="switchEventTab('three-pt')">3-Point Shootout</button>
-            <button class="sub-nav-btn" onclick="switchEventTab('asg-game')">All-Star Game</button>
-            <button class="sub-nav-btn" onclick="switchEventTab('matchup-2')">Showcase Challenge</button>
+            <button class="sub-nav-btn" onclick="switchEventTab('asg-game')">10v10 All-Star Game</button>
+            <button class="sub-nav-btn" onclick="switchEventTab('three-v-three')">3v3 Showdown</button>
         </div>
 
         <!-- 1. HOME RUN DERBY -->
@@ -506,7 +735,7 @@
             </div>
         </div>
 
-        <!-- 3. ALL-STAR GAME (EAST VS WEST) -->
+        <!-- 3. ALL-STAR GAME (EAST VS WEST 10v10) -->
         <div id="tab-asg-game" class="tab-view">
             <div class="asg-banner-card">
                 <div class="asg-score-grid">
@@ -548,14 +777,69 @@
             </div>
         </div>
 
-        <!-- 4. SHOWCASE CHALLENGE / H2H 2 -->
-        <div id="tab-matchup-2" class="tab-view">
-            <div class="event-header-card">
-                <h2 class="event-title">Showcase Challenge</h2>
-                <div class="event-subtitle">Head-to-Head Exhibition</div>
+        <!-- 4. 3v3 CONFERENCE ALL-STAR GAME -->
+        <div id="tab-three-v-three" class="tab-view">
+            <div class="asg-banner-card">
+                <div class="asg-score-grid">
+                    <div class="asg-team-block">
+                        <img src="images/teams/east-logo.png" class="asg-team-logo" onerror="this.src='https://placehold.co/55x55/222/fff?text=EAST'">
+                        <div class="asg-team-title">East Conference</div>
+                        <div class="asg-total-score" id="three-v-three-east-series">0</div>
+                    </div>
+
+                    <div class="asg-center-status">
+                        <div class="asg-vs-badge">SERIES</div>
+                        <div style="font-size: 0.7rem; color: var(--gold-dark); font-weight: bold; margin-top: 0.4rem; text-transform: uppercase;" id="three-v-three-status-text">BEST 2 OF 3</div>
+                    </div>
+
+                    <div class="asg-team-block">
+                        <img src="images/teams/west-logo.png" class="asg-team-logo" onerror="this.src='https://placehold.co/55x55/222/fff?text=WEST'">
+                        <div class="asg-team-title">West Conference</div>
+                        <div class="asg-total-score" id="three-v-three-west-series">0</div>
+                    </div>
+                </div>
             </div>
-            <div style="text-align: center; color: var(--text-muted); padding: 3rem; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-subtle);">
-                Event details and matchups will be announced shortly.
+
+            <!-- 3 Sport Showdowns (MLB, WNBA, FC) -->
+            <div class="three-v-three-grid">
+                <!-- MLB Matchup -->
+                <div class="sport-battle-card" id="battle-card-mlb">
+                    <div class="sport-battle-header open" onclick="toggleBattleDrawer(this)">
+                        <span class="sport-battle-title">⚾ Baseball (MLB) Battle</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="battle-header-score" id="battle-score-mlb">0.00 - 0.00</span>
+                            <span class="sport-battle-status" id="battle-status-mlb">1 Point</span>
+                            <span class="battle-toggle-icon">+</span>
+                        </div>
+                    </div>
+                    <div class="sport-battle-body open" id="battle-body-mlb"></div>
+                </div>
+
+                <!-- WNBA Matchup -->
+                <div class="sport-battle-card" id="battle-card-wnba">
+                    <div class="sport-battle-header open" onclick="toggleBattleDrawer(this)">
+                        <span class="sport-battle-title">🏀 Basketball (WNBA) Battle</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="battle-header-score" id="battle-score-wnba">0.00 - 0.00</span>
+                            <span class="sport-battle-status" id="battle-status-wnba">1 Point</span>
+                            <span class="battle-toggle-icon">+</span>
+                        </div>
+                    </div>
+                    <div class="sport-battle-body open" id="battle-body-wnba"></div>
+                </div>
+
+                <!-- FC Matchup -->
+                <div class="sport-battle-card" id="battle-card-fc">
+                    <div class="sport-battle-header open" onclick="toggleBattleDrawer(this)">
+                        <span class="sport-battle-title">⚽ Soccer (FC) Battle</span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="battle-header-score" id="battle-score-fc">0.00 - 0.00</span>
+                            <span class="sport-battle-status" id="battle-status-fc">1 Point</span>
+                            <span class="battle-toggle-icon">+</span>
+                        </div>
+                    </div>
+                    <div class="sport-battle-body open" id="battle-body-fc"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -587,6 +871,36 @@
                 drawer.classList.toggle('open');
             }
         };
+        
+        window.toggleBattleDrawer = function(headerEl) {
+            headerEl.classList.toggle('open');
+            const drawer = headerEl.nextElementSibling;
+            if (drawer) {
+                drawer.classList.toggle('open');
+            }
+        };
+
+        function getCleanVal(obj, keys) {
+            if (!obj) return '';
+            for (const k of keys) {
+                if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+                    return String(obj[k]).trim();
+                }
+            }
+            const objKeys = Object.keys(obj);
+            for (const target of keys) {
+                const cleanTarget = target.toLowerCase().replace(/[\s_\-]/g, '');
+                for (const actual of objKeys) {
+                    if (actual.toLowerCase().replace(/[\s_\-]/g, '') === cleanTarget) {
+                        if (obj[actual] !== undefined && obj[actual] !== null) {
+                            const val = String(obj[actual]).trim();
+                            if (val !== '') return val;
+                        }
+                    }
+                }
+            }
+            return '';
+        }
 
         function getTeamLogoPath(name) {
             if (!name) return 'https://placehold.co/50x50/0a0a0a/fff?text=?';
@@ -662,7 +976,6 @@
             }
         }
 
-        // --- Circle Lineup Layout (from live-scores.html) ---
         function renderLineupCircles(lineup) {
             if (!lineup || lineup.length === 0) {
                 return `<div class="pl-lineup empty">No lineup data.</div>`;
@@ -689,7 +1002,6 @@
             }).join('') + `</div>`;
         }
 
-        // Contest Renderer with Circle Lineups directly below each player
         function renderContestList(items, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -703,7 +1015,7 @@
                 const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
                 const advBadge = p.advanced ? `<span class="advanced-badge">Advanced</span>` : '';
                 const winnerClass = p.isChampion ? 'winner-score' : '';
-                const scoreDisplay = typeof p.score === 'number' && p.score > 0 ? p.score.toFixed(2) : '-';
+                const scoreDisplay = typeof p.score === 'number' && (p.score !== 0 || p.lineup.length > 0) ? p.score.toFixed(2) : '-';
 
                 return `
                     <div class="contest-player-card">
@@ -726,7 +1038,6 @@
             }).join('');
         }
 
-        // ASG Roster Renderer with Click-to-Expand Dropdown Drawers
         function renderAsgRosterList(items, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -737,7 +1048,16 @@
             }
 
             container.innerHTML = items.map((p, idx) => {
-                const scoreDisplay = typeof p.score === 'number' && p.score > 0 ? p.score.toFixed(2) : '-';
+                const scoreDisplay = typeof p.score === 'number' && (p.score !== 0 || p.lineup.length > 0) ? p.score.toFixed(2) : '0.00';
+                
+                let sportScoresHtml = '';
+                if (p.sportsBreakdown && Object.keys(p.sportsBreakdown).length > 0) {
+                    sportScoresHtml = `<div style="margin-bottom:0.4rem;">` + 
+                        Object.entries(p.sportsBreakdown).map(([sp, sc]) => 
+                            `<span class="sport-breakdown-tag">${sp}: ${sc.toFixed(2)}</span>`
+                        ).join('') + `</div>`;
+                }
+
                 return `
                     <div class="asg-user-item">
                         <div class="asg-user-header" onclick="toggleAsgDrawer(this)">
@@ -748,11 +1068,132 @@
                             <span class="player-score">${scoreDisplay}</span>
                         </div>
                         <div class="asg-user-drawer">
+                            ${sportScoresHtml}
                             ${renderLineupCircles(p.lineup)}
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function render3v3Battle(eastGroup, westGroup, containerId, statusId, scoreId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // GM Scores Doubled (2x) + Players (1x)
+            const calcSideTotal = (group) => {
+                let total = 0;
+                if (group.gm) total += (parseFloat(group.gm.score) || 0) * 2;
+                group.players.forEach(p => { total += (parseFloat(p.score) || 0); });
+                return total;
+            };
+
+            const eTotal = calcSideTotal(eastGroup);
+            const wTotal = calcSideTotal(westGroup);
+            
+            const hasScores = (eastGroup.gm && typeof eastGroup.gm.score === 'number' && (eastGroup.gm.score !== 0 || eastGroup.gm.lineup.length > 0)) ||
+                              (westGroup.gm && typeof westGroup.gm.score === 'number' && (westGroup.gm.score !== 0 || westGroup.gm.lineup.length > 0)) ||
+                              eastGroup.players.some(p => typeof p.score === 'number' && (p.score !== 0 || p.lineup.length > 0)) ||
+                              westGroup.players.some(p => typeof p.score === 'number' && (p.score !== 0 || p.lineup.length > 0));
+
+            const eWins = hasScores && eTotal > wTotal;
+            const wWins = hasScores && wTotal > eTotal;
+
+            // Update Collapsed Header Score Display
+            if (scoreId) {
+                const scoreEl = document.getElementById(scoreId);
+                if (scoreEl) {
+                    const eStyle = eWins ? 'color:#4ade80;' : (hasScores ? 'color:#fff;' : 'color:var(--text-muted);');
+                    const wStyle = wWins ? 'color:#4ade80;' : (hasScores ? 'color:#fff;' : 'color:var(--text-muted);');
+                    scoreEl.innerHTML = `<span style="${eStyle}">${eTotal.toFixed(2)}</span> <span style="color:var(--text-muted);">-</span> <span style="${wStyle}">${wTotal.toFixed(2)}</span>`;
+                }
+            }
+
+            if (statusId) {
+                const statusEl = document.getElementById(statusId);
+                if (statusEl) {
+                    if (eWins) statusEl.innerHTML = `<span style="color:#4ade80;">East Takes Point (+1)</span>`;
+                    else if (wWins) statusEl.innerHTML = `<span style="color:#4ade80;">West Takes Point (+1)</span>`;
+                    else if (hasScores && eTotal === wTotal) statusEl.innerHTML = `<span style="color:var(--gold-mid);">Tied (0.5 Pts)</span>`;
+                    else statusEl.textContent = `1 Point`;
+                }
+            }
+
+            const renderSide = (group, isWinning, isEast) => {
+                const totalScore = calcSideTotal(group);
+                const scoreDisplay = totalScore.toFixed(2);
+
+                // GM Component (Doubled)
+                let gmHtml = '';
+                if (group.gm && (group.gm.username || group.gm.userId)) {
+                    const rawScore = typeof group.gm.score === 'number' ? group.gm.score : 0;
+                    const doubledScore = (rawScore * 2).toFixed(2);
+                    gmHtml = `
+                        <div class="gm-spotlight-box">
+                            <div class="gm-box-header">
+                                <span class="gm-tag">👑 GM &bull; 2x Multiplier</span>
+                                <div class="gm-score-block">
+                                    <span class="gm-score-val">${doubledScore}</span>
+                                    <span class="gm-raw-subtext">Base: ${rawScore.toFixed(2)} &times; 2</span>
+                                </div>
+                            </div>
+                            <div style="font-weight:700; color:#fff; font-size:0.95rem; margin-bottom:0.4rem;">${group.gm.username || 'GM Unassigned'}</div>
+                            ${renderLineupCircles(group.gm.lineup)}
+                        </div>
+                    `;
+                } else {
+                    gmHtml = `
+                        <div class="gm-spotlight-box" style="opacity:0.6;">
+                            <div class="gm-tag" style="background:#444; color:#aaa;">👑 GM &bull; 2x</div>
+                            <div style="color:#888; font-style:italic; margin-top:0.4rem; font-size:0.85rem;">No GM Assigned</div>
+                        </div>
+                    `;
+                }
+
+                // Players Component (1x)
+                let playersHtml = '';
+                if (group.players.length > 0) {
+                    playersHtml = group.players.map((p, idx) => {
+                        const pScore = typeof p.score === 'number' ? p.score.toFixed(2) : '0.00';
+                        return `
+                            <div class="player-stack-card">
+                                <div class="player-stack-header">
+                                    <span class="player-stack-name">${p.username || `Player #${idx + 1}`}</span>
+                                    <span class="player-stack-score">${pScore}</span>
+                                </div>
+                                ${renderLineupCircles(p.lineup)}
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    playersHtml = `<div style="color:#666; font-size:0.75rem; font-style:italic; padding:0.5rem 0;">Awaiting player draft selections...</div>`;
+                }
+
+                return `
+                    <div class="sport-side-container">
+                        <div class="side-conference-header">
+                            <div class="side-conference-title">
+                                <img src="${getTeamLogoPath(isEast ? 'East' : 'West')}" style="width:20px; height:20px; object-fit:contain;">
+                                <span>${isEast ? 'East Conference' : 'West Conference'}</span>
+                            </div>
+                            <div class="side-sport-total-score ${isWinning ? 'winning-score' : ''}">${scoreDisplay}</div>
+                        </div>
+
+                        ${gmHtml}
+
+                        <div class="players-stack-container">
+                            <div class="players-stack-title">Drafted Lineups (1x Multiplier)</div>
+                            ${playersHtml}
+                        </div>
+                    </div>
+                `;
+            };
+
+            container.innerHTML = `
+                ${renderSide(eastGroup, eWins, true)}
+                <div class="battle-divider"></div>
+                ${renderSide(westGroup, wWins, false)}
+            `;
         }
 
         async function loadAllStarData() {
@@ -771,100 +1212,252 @@
                 console.warn("Could not load All-Star CSV", e);
             }
 
-            // Partition Events by Specific Round Tags
+            // Partition Events
             const hrd1List = [];
+            let hrd2ContestId = '';
             const hrd2List = [];
+
             const threePt1List = [];
+            let threePt2ContestId = '';
             const threePt2List = [];
+
             const eastASG = [];
             const westASG = [];
 
+            const threeVThree = {
+                mlb: { east: { gm: null, players: [] }, west: { gm: null, players: [] } },
+                wnba: { east: { gm: null, players: [] }, west: { gm: null, players: [] } },
+                fc: { east: { gm: null, players: [] }, west: { gm: null, players: [] } }
+            };
+
             entries.forEach(row => {
-                const uname = row.username || row.name || '';
-                const uid = row['user id'] || row.userid || row.userId || '';
-                const team = row.team || '';
-                const eventCode = (row.event || '').trim().toUpperCase().replace(/[\s_-]/g, '');
-                const sportId = row['sport id'] || row.sportid || row.sportId || '';
+                const uname = getCleanVal(row, ['username', 'user name', 'name', 'user']).replace(/^@/, '');
+                const uid = getCleanVal(row, ['user id', 'userid', 'user_id', 'uid', 'id']);
+                const team = getCleanVal(row, ['team', 'team name']);
+                const eventCode = getCleanVal(row, ['event', 'event name']).toUpperCase().replace(/[\s_-]/g, '');
+                const role = getCleanVal(row, ['role', 'type']) || 'Player';
 
-                const item = { username: uname, userId: uid, team, score: 0, lineup: [], sportId };
+                // Extract all sport pairs
+                const sportsList = [];
+                for (let i = 1; i <= 3; i++) {
+                    const sp = getCleanVal(row, [`sport ${i}`, `sport${i}`]).toUpperCase();
+                    const sid = getCleanVal(row, [`sport ${i} id`, `sport ${i}id`, `sport${i} id`, `sport${i}id`]);
+                    if (sid) sportsList.push({ sport: sp || `SPORT ${i}`, sportId: sid });
+                }
 
-                if (eventCode === 'HRD1' || eventCode === 'HRD') hrd1List.push(item);
-                else if (eventCode === 'HRD2') hrd2List.push(item);
-                else if (eventCode === '3PT1' || eventCode === '3PT') threePt1List.push(item);
-                else if (eventCode === '3PT2') threePt2List.push(item);
-                else if (eventCode === 'ASG') {
+                const singleSportId = getCleanVal(row, ['sport id', 'sportid']);
+                const singleSportName = getCleanVal(row, ['sport', 'sport 1', 'sport1']).toUpperCase() || 'MLB';
+                if (sportsList.length === 0 && singleSportId) {
+                    sportsList.push({ sport: singleSportName, sportId: singleSportId });
+                }
+
+                const item = {
+                    username: uname,
+                    userId: uid,
+                    team: team,
+                    event: eventCode,
+                    role: role,
+                    sports: sportsList,
+                    score: 0,
+                    lineup: [],
+                    sportsBreakdown: {}
+                };
+
+                if (eventCode === 'HRD1' || eventCode === 'HRD') {
+                    if (uname || uid) hrd1List.push(item);
+                } else if (eventCode === 'HRD2') {
+                    if (item.sports.length > 0) hrd2ContestId = item.sports[0].sportId;
+                    if (uname || uid) hrd2List.push(item);
+                } else if (eventCode === '3PT1' || eventCode === '3PT') {
+                    if (uname || uid) threePt1List.push(item);
+                } else if (eventCode === '3PT2') {
+                    if (item.sports.length > 0) threePt2ContestId = item.sports[0].sportId;
+                    if (uname || uid) threePt2List.push(item);
+                } else if (eventCode === 'ASG') {
                     if (team.toLowerCase().includes('east')) eastASG.push(item);
                     else westASG.push(item);
+                } else if (eventCode.startsWith('3V3')) {
+                    const isEast = team.toLowerCase().includes('east');
+                    const side = isEast ? 'east' : 'west';
+                    const firstSport = (item.sports[0]?.sport || getCleanVal(row, ['sport 1', 'sport', 'sport1'])).toLowerCase();
+                    
+                    let targetKey = 'fc';
+                    if (firstSport.includes('mlb') || firstSport.includes('base')) targetKey = 'mlb';
+                    else if (firstSport.includes('wnba') || firstSport.includes('basket')) targetKey = 'wnba';
+                    else if (firstSport.includes('fc') || firstSport.includes('socc')) targetKey = 'fc';
+
+                    if (role.toLowerCase().includes('gm')) {
+                        threeVThree[targetKey][side].gm = item;
+                    } else {
+                        threeVThree[targetKey][side].players.push(item);
+                    }
                 }
             });
 
-            // Fetch Live Scores & Lineups for all active draft IDs
-            const allItems = [...hrd1List, ...hrd2List, ...threePt1List, ...threePt2List, ...eastASG, ...westASG];
-            const hasLiveDrafts = allItems.some(i => Boolean(i.sportId));
+            // Gather all items to fetch
+            const all3v3Items = [];
+            ['mlb', 'wnba', 'fc'].forEach(sp => {
+                ['east', 'west'].forEach(sd => {
+                    if (threeVThree[sp][sd].gm) all3v3Items.push(threeVThree[sp][sd].gm);
+                    threeVThree[sp][sd].players.forEach(p => all3v3Items.push(p));
+                });
+            });
 
-            if (hasLiveDrafts) {
+            const allItemsToFetch = [
+                ...hrd1List, ...hrd2List, ...threePt1List, ...threePt2List, ...eastASG, ...westASG,
+                ...all3v3Items
+            ].filter(Boolean);
+
+            const hasActiveDrafts = allItemsToFetch.some(item => item.userId && item.sports.length > 0);
+
+            if (hasActiveDrafts) {
                 loadingStatus.style.display = 'block';
-                for (const item of allItems) {
-                    if (item.sportId) {
-                        const res = await fetchPlayerContestData(item.sportId, item.userId);
-                        item.score = res.score;
-                        item.lineup = res.lineup;
-                        await new Promise(r => setTimeout(r, 100)); // Pacing buffer
+                for (const item of allItemsToFetch) {
+                    if (item.userId && item.sports.length > 0) {
+                        let totalScore = 0;
+                        const allLineups = [];
+
+                        for (const spObj of item.sports) {
+                            if (spObj.sportId) {
+                                const res = await fetchPlayerContestData(spObj.sportId, item.userId);
+                                totalScore += res.score;
+                                item.sportsBreakdown[spObj.sport] = res.score;
+                                if (res.lineup && res.lineup.length > 0) {
+                                    allLineups.push(...res.lineup);
+                                }
+                                await new Promise(r => setTimeout(r, 60)); // Pacing buffer
+                            }
+                        }
+
+                        item.score = totalScore;
+                        item.lineup = allLineups;
                     }
                 }
                 loadingStatus.style.display = 'none';
             }
 
-            // 1. Home Run Derby Processing
+            // 1. Process Home Run Derby
             hrd1List.sort((a, b) => b.score - a.score);
-            const hr1HasScores = hrd1List.some(p => p.score > 0);
-            
-            // Mark advanced players (either top 4 by score or matching names in Round 2)
-            const hrd2Names = new Set(hrd2List.map(p => p.username.toLowerCase()));
+            const hr1HasScores = hrd1List.some(p => p.score !== 0 || p.lineup.length > 0);
+
+            let finalHrd2List = hrd2List;
+            if (finalHrd2List.length === 0 && hr1HasScores && hrd2ContestId) {
+                const qualifiers = hrd1List.slice(0, 4);
+                finalHrd2List = qualifiers.map(q => ({
+                    ...q,
+                    score: 0,
+                    lineup: [],
+                    sports: [{ sport: 'MLB', sportId: hrd2ContestId }]
+                }));
+
+                for (const q of finalHrd2List) {
+                    const res = await fetchPlayerContestData(hrd2ContestId, q.userId);
+                    q.score = res.score;
+                    q.lineup = res.lineup;
+                }
+            }
+
+            const hrd2Names = new Set(finalHrd2List.map(p => p.username.toLowerCase()));
             hrd1List.forEach((p, idx) => {
                 p.advanced = (hrd2Names.size > 0 && hrd2Names.has(p.username.toLowerCase())) || (hr1HasScores && idx < 4);
             });
 
-            hrd2List.sort((a, b) => b.score - a.score);
-            const hr2HasScores = hrd2List.some(p => p.score > 0);
-            if (hr2HasScores && hrd2List.length > 0) {
-                hrd2List[0].isChampion = true;
+            finalHrd2List.sort((a, b) => b.score - a.score);
+            const hr2HasScores = finalHrd2List.some(p => p.score !== 0 || p.lineup.length > 0);
+            if (hr2HasScores && finalHrd2List.length > 0) {
+                finalHrd2List[0].isChampion = true;
                 document.getElementById('hr-champion-spotlight').style.display = 'inline-flex';
-                document.getElementById('hr-champion-name').textContent = `${hrd2List[0].username} (${hrd2List[0].team})`;
+                document.getElementById('hr-champion-name').textContent = `${finalHrd2List[0].username} (${finalHrd2List[0].team})`;
             }
 
             renderContestList(hrd1List, 'hr-r1-list');
-            renderContestList(hrd2List, 'hr-final-list');
+            renderContestList(finalHrd2List, 'hr-final-list');
 
-            // 2. 3-Point Contest Processing
+            // 2. Process 3-Point Contest
             threePt1List.sort((a, b) => b.score - a.score);
-            const three1HasScores = threePt1List.some(p => p.score > 0);
-            
-            const three2Names = new Set(threePt2List.map(p => p.username.toLowerCase()));
+            const three1HasScores = threePt1List.some(p => p.score !== 0 || p.lineup.length > 0);
+
+            let finalThree2List = threePt2List;
+            if (finalThree2List.length === 0 && three1HasScores && threePt2ContestId) {
+                const qualifiers = threePt1List.slice(0, 4);
+                finalThree2List = qualifiers.map(q => ({
+                    ...q,
+                    score: 0,
+                    lineup: [],
+                    sports: [{ sport: 'WNBA', sportId: threePt2ContestId }]
+                }));
+
+                for (const q of finalThree2List) {
+                    const res = await fetchPlayerContestData(threePt2ContestId, q.userId);
+                    q.score = res.score;
+                    q.lineup = res.lineup;
+                }
+            }
+
+            const three2Names = new Set(finalThree2List.map(p => p.username.toLowerCase()));
             threePt1List.forEach((p, idx) => {
                 p.advanced = (three2Names.size > 0 && three2Names.has(p.username.toLowerCase())) || (three1HasScores && idx < 4);
             });
 
-            threePt2List.sort((a, b) => b.score - a.score);
-            const three2HasScores = threePt2List.some(p => p.score > 0);
-            if (three2HasScores && threePt2List.length > 0) {
-                threePt2List[0].isChampion = true;
+            finalThree2List.sort((a, b) => b.score - a.score);
+            const three2HasScores = finalThree2List.some(p => p.score !== 0 || p.lineup.length > 0);
+            if (three2HasScores && finalThree2List.length > 0) {
+                finalThree2List[0].isChampion = true;
                 document.getElementById('three-champion-spotlight').style.display = 'inline-flex';
-                document.getElementById('three-champion-name').textContent = `${threePt2List[0].username} (${threePt2List[0].team})`;
+                document.getElementById('three-champion-name').textContent = `${finalThree2List[0].username} (${finalThree2List[0].team})`;
             }
 
             renderContestList(threePt1List, 'three-r1-list');
-            renderContestList(threePt2List, 'three-final-list');
+            renderContestList(finalThree2List, 'three-final-list');
 
-            // 3. All-Star Game (East vs West)
+            // 3. Process 10v10 All-Star Game
             renderAsgRosterList(eastASG, 'asg-east-list');
             renderAsgRosterList(westASG, 'asg-west-list');
 
             const eastTotal = eastASG.reduce((sum, p) => sum + p.score, 0);
             const westTotal = westASG.reduce((sum, p) => sum + p.score, 0);
-
             document.getElementById('asg-east-score').textContent = eastTotal.toFixed(2);
             document.getElementById('asg-west-score').textContent = westTotal.toFixed(2);
+
+            // 4. Process 3v3 Conference Showdown
+            render3v3Battle(threeVThree.mlb.east, threeVThree.mlb.west, 'battle-body-mlb', 'battle-status-mlb', 'battle-score-mlb');
+            render3v3Battle(threeVThree.wnba.east, threeVThree.wnba.west, 'battle-body-wnba', 'battle-status-wnba', 'battle-score-wnba');
+            render3v3Battle(threeVThree.fc.east, threeVThree.fc.west, 'battle-body-fc', 'battle-status-fc', 'battle-score-fc');
+
+            let eastSeriesWins = 0;
+            let westSeriesWins = 0;
+
+            ['mlb', 'wnba', 'fc'].forEach(sp => {
+                const eGroup = threeVThree[sp].east;
+                const wGroup = threeVThree[sp].west;
+
+                let eScore = (eGroup.gm?.score || 0) * 2;
+                eGroup.players.forEach(p => { eScore += (p.score || 0); });
+
+                let wScore = (wGroup.gm?.score || 0) * 2;
+                wGroup.players.forEach(p => { wScore += (p.score || 0); });
+
+                const spHasScores = (eGroup.gm && typeof eGroup.gm.score === 'number' && (eGroup.gm.score !== 0 || eGroup.gm.lineup.length > 0)) ||
+                                    (wGroup.gm && typeof wGroup.gm.score === 'number' && (wGroup.gm.score !== 0 || wGroup.gm.lineup.length > 0)) ||
+                                    eGroup.players.some(p => typeof p.score === 'number' && (p.score !== 0 || p.lineup.length > 0)) ||
+                                    wGroup.players.some(p => typeof p.score === 'number' && (p.score !== 0 || p.lineup.length > 0));
+
+                if (spHasScores) {
+                    if (eScore > wScore) eastSeriesWins++;
+                    else if (wScore > eScore) westSeriesWins++;
+                }
+            });
+
+            document.getElementById('three-v-three-east-series').textContent = eastSeriesWins;
+            document.getElementById('three-v-three-west-series').textContent = westSeriesWins;
+
+            const statusEl = document.getElementById('three-v-three-status-text');
+            if (eastSeriesWins >= 2) statusEl.textContent = 'EAST WINS SERIES';
+            else if (westSeriesWins >= 2) statusEl.textContent = 'WEST WINS SERIES';
+            else if (eastSeriesWins === 1 && westSeriesWins === 1) statusEl.textContent = 'TIED 1-1';
+            else if (eastSeriesWins === 1) statusEl.textContent = 'EAST LEADS 1-0';
+            else if (westSeriesWins === 1) statusEl.textContent = 'WEST LEADS 1-0';
+            else statusEl.textContent = 'BEST 2 OF 3';
         }
 
         loadAllStarData();
