@@ -64,7 +64,7 @@
             gap: 1px;
             background: #333;
             border: 1px solid #333;
-            min-width: 700px; /* Default for desktop */
+            min-width: 700px;
         }
 
         .calendar-day-header {
@@ -130,10 +130,10 @@
             display: block;
         }
 
-        /* Text Colors */
-        .text-preseason { color: #d97706 !important; }
-        .text-regular { color: #059669 !important; }
-        .text-postseason { color: #7c3aed !important; }
+/* Text Colors */
+        .text-preseason { color: #f59e0b !important; }
+        .text-regular { color: #4ade80 !important; }
+        .text-postseason { color: #c084fc !important; font-weight: 800; text-shadow: 0 0 8px rgba(192, 132, 252, 0.3); }
 
         /* Modal Styling */
         body.modal-open { overflow: hidden; }
@@ -168,6 +168,14 @@
             text-align: left; padding-right: 2rem;
         }
         .modal-date { font-size: 1.5rem; font-weight: 700; color: var(--gold-light); }
+        .modal-subtitle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.35rem;
+        }
         .modal-subtitle { font-size: 0.95rem; color: var(--text-muted); }
 
         .modal-game-list { display: flex; flex-direction: column; gap: 1rem; }
@@ -273,7 +281,7 @@
         }
 
         .box-score-container {
-            display: none; /* Hidden by default */
+            display: none;
             grid-template-columns: 1fr 1fr;
             padding: 0.75rem;
             gap: 0.75rem;
@@ -294,55 +302,41 @@
         .no-data-msg { padding: 1.5rem; text-align: center; color: #888; font-style: italic; font-size: 0.9rem; }
 
         /* Badge Styles */
-        .badge-container {
+        .day-sports-container {
             display: flex;
-            gap: 4px;
-            margin-bottom: 4px;
-            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
         }
         .sport-badge {
             background: var(--gold-mid);
             color: #000;
-            font-size: 0.65rem;
-            padding: 2px 6px;
+            font-size: 0.7rem;
+            padding: 2px 8px;
             border-radius: 4px;
             font-weight: 800;
             text-transform: uppercase;
-            display: inline-block !important; /* Force visibility */
+            letter-spacing: 0.5px;
+            display: inline-block !important;
         }
 
         #loading-message { padding: 3rem; color: var(--text-muted); text-align: center; width: 100%; font-size: 1.1rem; }
 
-        /* ========================================================= */
-        /* --- MOBILE OPTIMIZATION SPECIFICALLY FOR THE CALENDAR --- */
-        /* ========================================================= */
         @media (max-width: 768px) {
             .schedule-content { padding: 0 0.5rem 2rem 0.5rem; }
             .calendar-container { padding: 0.25rem; border-radius: 8px; }
-            
-            /* Remove minimum width to stop horizontal scrolling */
             .calendar-grid { min-width: 100%; border: none; }
-            
-            /* Shrink headers and padding */
             .calendar-day-header { font-size: 0.6rem; padding: 0.3rem 0; letter-spacing: 0; }
             .calendar-day { min-height: 60px; padding: 2px; }
             .calendar-date-number { font-size: 0.7rem; margin-right: 2px; }
-            
-            /* Squeeze the indicator to fit */
             .game-indicator { padding: 4px 0; margin-top: auto; border-radius: 4px; }
             .game-indicator-count { font-size: 0.6rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            
-            /* Completely hide extra text elements to make room for numbers */
             .hide-mobile { display: none !important; }
-            
             .month-title { font-size: 1.1rem; min-width: 120px; }
-
-            /* Matchup / Modal Mobile Tweaks */
             .modal { padding: 1rem; border-radius: 12px; }
             .modal-header { padding-right: 1.5rem; margin-bottom: 1rem; }
             .close-btn { top: 0.5rem; right: 0.5rem; width: 2rem; height: 2rem; font-size: 1.2rem; }
             .modal-date { font-size: 1.2rem; }
-            
             .box-score-container { grid-template-columns: 1fr; gap: 1rem; padding: 0.5rem; }
             .box-team-col:first-child { border-right: none; padding-right: 0; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; }
             .header-team-name { font-size: 0.85rem; }
@@ -361,7 +355,6 @@
     
     <!-- Navigation (Injected by JS) -->
 
-    <!-- Main Content Area -->
     <div class="schedule-content">
         <div class="month-nav">
             <button class="nav-arrow" id="prev-month">&lt;</button>
@@ -383,7 +376,10 @@
             <span class="close-btn" id="modal-close">&times;</span>
             <div class="modal-header">
                 <div class="modal-date" id="modal-date-display">Date</div>
-                <div class="modal-subtitle" id="modal-count-display">0 Games</div>
+                <div class="modal-subtitle-row">
+                    <div class="modal-subtitle" id="modal-count-display">0 Games</div>
+                    <div class="day-sports-container" id="modal-sports-display"></div>
+                </div>
             </div>
             <div class="modal-game-list" id="modal-games-list">
                 <!-- Games injected here -->
@@ -411,14 +407,12 @@
         let dbPlayers = [];
         let displayedDate = new Date(); 
 
-        // Modal Elements
         const modal = document.getElementById('games-modal');
         const modalClose = document.getElementById('modal-close');
         
         modalClose.onclick = () => { modal.style.display = 'none'; document.body.classList.remove('modal-open'); };
         window.onclick = (e) => { if (e.target == modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); } };
 
-        // --- Fetch & Parse Logic ---
         async function fetchCSV(url) {
             try {
                 const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
@@ -445,7 +439,9 @@
         }
 
         function getTeamLogo(teamName) {
-             if(!teamName) return '';
+             if (!teamName || teamName.trim() === '' || teamName.toUpperCase() === 'TBD') {
+                 return 'https://placehold.co/50x50/222/fff?text=?';
+             }
              let cleanName = teamName.trim().toLowerCase();
              if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
              cleanName = cleanName.replace(/\s+/g, '-');
@@ -470,6 +466,7 @@
         function openDayModal(dateObj, gamesList) {
             const modalDate = document.getElementById('modal-date-display');
             const modalCount = document.getElementById('modal-count-display');
+            const modalSports = document.getElementById('modal-sports-display');
             const modalList = document.getElementById('modal-games-list');
             
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -477,22 +474,21 @@
             
             modalList.innerHTML = '';
             
-            // Format search date to M/D to match database records
             const searchDateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
 
-            // Filter historical database collections for this specific day
             const dailyCompletedGames = dbGames.filter(g => g.date === searchDateStr || gamesList.some(sg => sg.dateStr === g.date));
             const dailyPlayerStats = dbPlayers.filter(p => p.date === searchDateStr || gamesList.some(sg => sg.dateStr === p.date));
 
             const finalRenderList = [];
             const usedDbGames = new Set();
 
-            // 1. Match Scheduled CSV Games with Database results
             gamesList.forEach(sg => {
-                const dbMatch = dailyCompletedGames.find(dg => 
+                const isTBD = sg.team1 === 'TBD' || sg.team2 === 'TBD';
+                const dbMatch = !isTBD ? dailyCompletedGames.find(dg => 
                     (dg.team1 === sg.team1 && dg.team2 === sg.team2) || 
                     (dg.team1 === sg.team2 && dg.team2 === sg.team1)
-                );
+                ) : null;
+
                 if (dbMatch) {
                     usedDbGames.add(dbMatch.id);
                     finalRenderList.push({ ...sg, dbGame: dbMatch });
@@ -501,17 +497,43 @@
                 }
             });
 
-            // 2. Append any extra Database games that weren't in the schedule CSV
             dailyCompletedGames.forEach(dg => {
                 if (!usedDbGames.has(dg.id)) {
                     finalRenderList.push({
-                        dateObj: dateObj, team1: dg.team1, team2: dg.team2,
-                        type: 'Completed Game', dbGame: dg
+                        dateObj: dateObj, 
+                        dateStr: dg.date,
+                        team1: dg.team1, 
+                        team2: dg.team2,
+                        type: 'Completed Game', 
+                        dbGame: dg,
+                        activeSports: ''
                     });
                 }
             });
 
-            modalCount.textContent = `${finalRenderList.length} Game${finalRenderList.length !== 1 ? 's' : ''} Recorded`;
+            // 1. Gather all unique sports of the day for the modal header
+            const daySportsSet = new Set();
+            gamesList.forEach(g => {
+                if (g.activeSports) {
+                    g.activeSports.split(',').forEach(s => {
+                        const cleanS = s.trim();
+                        if (cleanS) daySportsSet.add(cleanS.toUpperCase());
+                    });
+                }
+            });
+            dailyPlayerStats.forEach(p => { 
+                if (p.sport) daySportsSet.add(p.sport.trim().toUpperCase()); 
+            });
+
+            if (daySportsSet.size > 0) {
+                modalSports.innerHTML = Array.from(daySportsSet).sort().map(s => `<span class="sport-badge">${s}</span>`).join('');
+                modalSports.style.display = 'flex';
+            } else {
+                modalSports.innerHTML = '';
+                modalSports.style.display = 'none';
+            }
+
+            modalCount.textContent = `${finalRenderList.length} Game${finalRenderList.length !== 1 ? 's' : ''}`;
 
             const matchupsHtml = finalRenderList.map(game => {
                 const hasData = !!game.dbGame;
@@ -519,9 +541,6 @@
                 let t1Class = '', t2Class = '';
                 let recordText = game.type || 'Matchup';
                 let dropdownContentHtml = '<div class="no-data-msg">Stats pending / Game not yet completed.</div>';
-                
-                // Display the active sports badges
-                const sportsList = game.activeSports ? game.activeSports.split(',').map(s => `<span class="sport-badge">${s.trim()}</span>`).join('') : '';
 
                 if (hasData) {
                     t1Class = game.dbGame.winner === game.team1 ? 'winning-score' : '';
@@ -539,7 +558,6 @@
                     
                     recordText = 'FINAL';
 
-                    // Build detailed box score using the players database grouped by sport
                     const p1All = dailyPlayerStats.filter(p => p.team === game.team1);
                     const p2All = dailyPlayerStats.filter(p => p.team === game.team2);
 
@@ -549,7 +567,6 @@
 
                     if (sortedSports.length > 0) {
                         const renderPlayers = (plist) => {
-                            // SEPARATE STARTERS FROM BENCH
                             const starters = plist.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true'));
                             const bench = plist.filter(p => p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true');
 
@@ -581,7 +598,6 @@
                             const p1Sport = p1All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
                             const p2Sport = p2All.filter(p => p.sport === sport).sort((a,b) => (parseFloat(b.score)||0) - (parseFloat(a.score)||0));
 
-                            // CALCULATE STARTERS ONLY
                             const s1 = p1Sport.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true')).reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
                             const s2 = p2Sport.filter(p => !(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true')).reduce((sum, p) => sum + parseFloat(p.score || 0), 0);
 
@@ -675,7 +691,6 @@
                         <div class="header-team-name away">${game.team1}</div>
                         
                         <div class="header-center-block">
-                            <div class="badge-container">${sportsList}</div>
                             <div class="header-scores-row">
                                 <span class="header-series-score ${t1Class}">${t1Score}</span>
                                 <span class="header-dash">${hasData ? '-' : 'VS'}</span>
@@ -742,25 +757,28 @@
                 numEl.textContent = d;
                 dayEl.appendChild(numEl);
 
-                // Find scheduled games for this day
+                // Find all scheduled games on this day (including TBD/unassigned games)
                 const daysGames = scheduledGames.filter(g => {
                     return g.dateObj && g.dateObj.getDate() === d && g.dateObj.getMonth() === date.getMonth() && g.dateObj.getFullYear() === date.getFullYear();
                 });
 
                 if (daysGames.length > 0) {
                     let indicatorLabelClass = '';
-                    let labelText = 'Gameday';
+                    let labelText = `${daysGames.length} Game${daysGames.length > 1 ? 's' : ''}`;
                     const firstType = (daysGames[0].type || '').toLowerCase();
                     
-                    if (firstType.includes('preseason') || firstType.includes('pre-season')) { indicatorLabelClass = 'text-preseason'; labelText = 'Preseason'; } 
-                    else if (firstType.includes('regular')) { indicatorLabelClass = 'text-regular'; labelText = 'Gameday'; } 
-                    else if (firstType.includes('playoff') || firstType.includes('postseason') || firstType.includes('final')) { indicatorLabelClass = 'text-postseason'; labelText = 'Playoffs'; }
+                    if (firstType.includes('preseason') || firstType.includes('pre-season')) { 
+                        indicatorLabelClass = 'text-preseason'; 
+                    } else if (firstType.includes('regular')) { 
+                        indicatorLabelClass = 'text-regular'; 
+                    } else if (firstType.includes('playoff') || firstType.includes('postseason') || firstType.includes('final')) { 
+                        indicatorLabelClass = 'text-postseason'; 
+                    }
 
                     const indicator = document.createElement('div');
                     indicator.className = 'game-indicator';
                     indicator.onclick = () => openDayModal(currentDay, daysGames);
                     
-                    // Added .hide-mobile class to wrap text components we don't want seen on small screens
                     indicator.innerHTML = `
                         <div class="game-indicator-count ${indicatorLabelClass}">${labelText}</div>
                         <div class="game-indicator-label hide-mobile ${indicatorLabelClass}">View Details</div>
@@ -775,7 +793,6 @@
         async function loadData() {
             const loading = document.getElementById('loading-message');
             
-            // 1. Fetch historical DB arrays concurrently
             const [g, pg, p, pp] = await Promise.all([
                 getSeasonData('games'), getSeasonData('playoff-games'),
                 getSeasonData('players'), getSeasonData('playoff-players')
@@ -783,59 +800,71 @@
             dbGames = [...g, ...pg];
             dbPlayers = [...p, ...pp];
 
-            // 2. Fetch standard Schedule CSV to map out the calendar
             const url = SCHEDULE_URLS[currentSeason] || SCHEDULE_URLS['6'];
             const data = await fetchCSV(url);
             
             const headers = data[0].map(h => h.toLowerCase().trim());
             const dateIndex = headers.findIndex(h => h.includes('date'));
-            const team1Index = headers.findIndex(h => h.includes('team 1') || h === 'team1');
-            const team2Index = headers.findIndex(h => h.includes('team 2') || h === 'team2');
-            const gameTypeIndex = headers.findIndex(h => h.includes('game type'));
+            const team1Index = headers.findIndex(h => h.includes('team 1') || h === 'team1' || h === 'away');
+            const team2Index = headers.findIndex(h => h.includes('team 2') || h === 'team2' || h === 'home');
+            const gameTypeIndex = headers.findIndex(h => h.includes('game type') || h.includes('type') || h.includes('round'));
             
-            // Find all columns that start with "sport" (e.g., Sport 1, Sport 2, etc.)
             const sportIndices = headers.map((h, idx) => h.toLowerCase().startsWith('sport') ? idx : -1).filter(idx => idx !== -1);
 
-            if (dateIndex === -1 || team1Index === -1 || team2Index === -1) {
-                loading.innerHTML = `Error: Missing columns in schedule CSV.`;
+            if (dateIndex === -1) {
+                loading.innerHTML = `Error: Date column not found in schedule CSV.`;
                 return;
             }
 
             scheduledGames = [];
             data.slice(1).forEach(row => {
-                if (!row[dateIndex] || !row[team1Index] || !row[team2Index]) return;
-                const dateObj = parseDate(row[dateIndex]);
-                
-                // Get values from all detected Sport columns and join them with a comma
+                const dateVal = row[dateIndex] ? row[dateIndex].trim() : '';
+                if (!dateVal) return;
+
+                const dateObj = parseDate(dateVal);
+                if (!dateObj) return;
+
+                const t1 = (team1Index > -1 && row[team1Index]) ? row[team1Index].trim() : 'TBD';
+                const t2 = (team2Index > -1 && row[team2Index]) ? row[team2Index].trim() : 'TBD';
                 const activeSports = sportIndices.map(idx => row[idx]).filter(val => val && val.trim() !== '').join(', ');
 
-                if (dateObj) {
-                    scheduledGames.push({
-                        dateObj: dateObj, 
-                        dateStr: row[dateIndex].trim(),
-                        team1: row[team1Index].trim(), 
-                        team2: row[team2Index].trim(),
-                        type: gameTypeIndex > -1 ? row[gameTypeIndex] : '',
-                        activeSports: activeSports
-                    });
-                }
+                scheduledGames.push({
+                    dateObj: dateObj, 
+                    dateStr: dateVal,
+                    team1: t1 || 'TBD', 
+                    team2: t2 || 'TBD',
+                    type: gameTypeIndex > -1 && row[gameTypeIndex] ? row[gameTypeIndex].trim() : '',
+                    activeSports: activeSports
+                });
             });
 
-            // Calculate Initial Display Date
+// Calculate Initial Display Date (Zero out time to keep current month active)
             const today = new Date();
-            const upcoming = scheduledGames.find(g => g.dateObj >= today);
-            
-            if (upcoming) displayedDate = new Date(upcoming.dateObj);
-            else if (scheduledGames.length > 0) displayedDate = new Date(scheduledGames[0].dateObj);
-            else displayedDate = new Date();
-            
-            displayedDate.setDate(1);
+            today.setHours(0, 0, 0, 0);
+
+            // Check if current month has scheduled games
+            const currentMonthGames = scheduledGames.filter(g => 
+                g.dateObj.getFullYear() === today.getFullYear() && 
+                g.dateObj.getMonth() === today.getMonth()
+            );
+
+            if (currentMonthGames.length > 0) {
+                displayedDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            } else {
+                const upcoming = scheduledGames.find(g => g.dateObj >= today);
+                if (upcoming) {
+                    displayedDate = new Date(upcoming.dateObj.getFullYear(), upcoming.dateObj.getMonth(), 1);
+                } else if (scheduledGames.length > 0) {
+                    displayedDate = new Date(scheduledGames[0].dateObj.getFullYear(), scheduledGames[0].dateObj.getMonth(), 1);
+                } else {
+                    displayedDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                }
+            }
 
             loading.style.display = 'none';
             renderCalendar(displayedDate);
         }
 
-        // Nav listeners
         document.getElementById('prev-month').addEventListener('click', () => { displayedDate.setMonth(displayedDate.getMonth() - 1); renderCalendar(displayedDate); });
         document.getElementById('next-month').addEventListener('click', () => { displayedDate.setMonth(displayedDate.getMonth() + 1); renderCalendar(displayedDate); });
 
