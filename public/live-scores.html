@@ -872,6 +872,36 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes pulse { 0% { opacity: .7 } 100% { opacity: 1 } }
         @keyframes popupSlideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        /* Universal Cache Status Bar */
+        .cache-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            max-width: 850px;
+            margin: 0 auto 1.25rem auto;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .cache-sync-btn {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+        .cache-sync-btn:hover {
+            background: var(--gold-mid);
+            color: #000;
+        }
     </style>
     <!-- Required for Hashids Token Generation -->
     <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
@@ -884,6 +914,15 @@
         <button class="sub-nav-btn active" id="tab-live" onclick="switchTab('live')">Team Matchups</button>
         <button class="sub-nav-btn" id="tab-analytics" onclick="switchTab('analytics')">Matchup Analytics</button>
         <button class="sub-nav-btn" id="tab-leaderboard" onclick="switchTab('leaderboard')">Daily Leaderboard</button>
+    </div>
+
+    <!-- Universal Cache Status Bar -->
+    <div class="cache-status-bar" id="universal-cache-bar" style="display: none;">
+        <div>
+            ⚡ <span id="cache-status-label">Universal Cache</span>: 
+            <strong id="cache-time-text" style="color: #fff;">--</strong>
+        </div>
+        <button class="cache-sync-btn" id="cache-refresh-all-btn" onclick="triggerUniversalSync()">↻ Sync Fresh Scores</button>
     </div>
 
     <div id="loading">
@@ -2029,6 +2068,8 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             'NBA':     { mean: 6.6, std: 2.6 },
             'MLB':     { mean: 5.7, std: 4.2 },
             'CBB':     { mean: 5.2, std: 2.2 },
+            'CFB':     { mean: 5.2, std: 2.5 },
+            'NCAAF':   { mean: 5.2, std: 2.5 },
             'NFL':     { mean: 5.0, std: 2.4 },
             'NHL':     { mean: 4.0, std: 2.0 },
             'FC':      { mean: 3.1, std: 1.8 },
@@ -2054,7 +2095,7 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             const remainingPicks1 = [];
             const remainingPicks2 = [];
 
-            const collectPicks = (players, isT1) => {
+const collectPicks = (players, isT1) => {
                 players.forEach(p => {
                     const sc = p.scoresBySport[sport];
                     if (typeof sc === 'number') {
@@ -2069,7 +2110,12 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
 
                         const tId = lp.teamId || item.teamId;
                         const mult = parseFloat(item.multiplierDisplay || lp.multiplierDisplay || item.multiplier || 1) || 1;
-                        const aScore = parseFloat(item.score || lp.score || item.points || lp.points || item.scoreDisplay || 0) || 0;
+                        
+                        // item.score is the exact points contributed to the team score by this player
+                        const actualScore = parseFloat(item.score ?? lp.score ?? item.points ?? lp.points ?? 0) || 0;
+                        
+                        // item.value is the unmultiplied base score
+                        const baseVal = parseFloat(item.value ?? lp.value ?? (mult > 0 && actualScore !== 0 ? actualScore / mult : 0)) || 0;
 
                         let gameObj = tId ? scheduleMap.teamToGame[tId] : null;
                         const st = (gameObj?.status || '').toLowerCase();
@@ -2091,7 +2137,6 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                             else remainingPicks2.push({ mult, fracRemaining });
                         }
 
-                        // Track global athlete net point differential impact
                         const key = `${sport}:${aName}`;
                         if (!athleteImpactMap.has(key)) {
                             athleteImpactMap.set(key, {
@@ -2099,7 +2144,9 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                                 sport: sport,
                                 t1Mult: 0,
                                 t2Mult: 0,
-                                rawScore: aScore,
+                                t1TotalPoints: 0,
+                                t2TotalPoints: 0,
+                                baseScore: 0,
                                 fracRemaining,
                                 isLive,
                                 isFinal,
@@ -2108,9 +2155,17 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                         }
 
                         const entry = athleteImpactMap.get(key);
-                        if (isT1) entry.t1Mult += mult;
-                        else entry.t2Mult += mult;
-                        if (aScore > entry.rawScore) entry.rawScore = aScore;
+                        if (isT1) {
+                            entry.t1Mult += mult;
+                            entry.t1TotalPoints += actualScore;
+                        } else {
+                            entry.t2Mult += mult;
+                            entry.t2TotalPoints += actualScore;
+                        }
+                        
+                        if (baseVal !== 0 && (entry.baseScore === 0 || Math.abs(baseVal) > Math.abs(entry.baseScore))) {
+                            entry.baseScore = baseVal;
+                        }
                     });
                 });
             };
@@ -2128,36 +2183,58 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             };
         });
 
-        // 2. Identify the Athlete with the Highest Net Matchup Impact
+        // 2. Identify the Athlete with the Highest Net Matchup Impact (Purely Active Points)
         let highestImpactAthlete = null;
-        let maxWeightedImpact = 0;
+        let maxPointEdge = 0;
+        let maxMultDiff = 0;
+
+        // Check if any athlete in this matchup has generated an active point differential
+        let anyPointsScored = false;
+        athleteImpactMap.forEach(ath => {
+            const pointDiff = Math.abs(ath.t1TotalPoints - ath.t2TotalPoints);
+            if (pointDiff > 0.05) {
+                anyPointsScored = true;
+            }
+        });
 
         athleteImpactMap.forEach(ath => {
             const netMultDiff = Math.abs(ath.t1Mult - ath.t2Mult);
-            if (netMultDiff <= 0.05) return; // Shared equally -> No score differential
+            if (netMultDiff <= 0.05) return; // Equal picks on both sides -> no edge
 
-            // Estimated base points = actual points scored + remaining projected output
-            let estimatedBase = ath.rawScore > 0 ? ath.rawScore : ath.expectedBase;
-            if (ath.isLive && ath.rawScore > 0) {
-                estimatedBase = ath.rawScore + (ath.expectedBase * ath.fracRemaining);
-            }
+            const pointDiff = Math.abs(ath.t1TotalPoints - ath.t2TotalPoints);
 
-            const netPointSwing = netMultDiff * estimatedBase;
+            if (anyPointsScored) {
+                // When points have been scored, evaluate only athletes actively generating a point edge
+                if (pointDiff > maxPointEdge) {
+                    maxPointEdge = pointDiff;
 
-            // Live and upcoming games carry higher uncertainty leverage
-            const gamePhaseWeight = ath.isLive ? 1.25 : (ath.isFinal ? 0.95 : 1.1);
-            const weightedImpact = netPointSwing * gamePhaseWeight;
+                    const advantagedTeam = ath.t1TotalPoints >= ath.t2TotalPoints ? team1 : team2;
 
-            if (weightedImpact > maxWeightedImpact) {
-                maxWeightedImpact = weightedImpact;
-                highestImpactAthlete = {
-                    name: ath.name,
-                    sport: ath.sport,
-                    advantagedTeam: ath.t1Mult > ath.t2Mult ? team1 : team2,
-                    netMultDiff: netMultDiff.toFixed(1).replace(/\.0$/, ''),
-                    projectedSwing: netPointSwing.toFixed(1),
-                    status: ath.isLive ? 'Live' : (ath.isFinal ? 'Final' : 'Upcoming')
-                };
+                    highestImpactAthlete = {
+                        name: ath.name,
+                        sport: ath.sport,
+                        advantagedTeam: advantagedTeam,
+                        netMultDiff: netMultDiff.toFixed(1).replace(/\.0$/, ''),
+                        actualPointSwing: pointDiff.toFixed(1),
+                        status: ath.isLive ? 'Live' : (ath.isFinal ? 'Final' : 'Upcoming')
+                    };
+                }
+            } else {
+                // Pre-game fallback: Nobody has scored yet, pick the largest multiplier differential
+                if (netMultDiff > maxMultDiff) {
+                    maxMultDiff = netMultDiff;
+
+                    const advantagedTeam = ath.t1Mult >= ath.t2Mult ? team1 : team2;
+
+                    highestImpactAthlete = {
+                        name: ath.name,
+                        sport: ath.sport,
+                        advantagedTeam: advantagedTeam,
+                        netMultDiff: netMultDiff.toFixed(1).replace(/\.0$/, ''),
+                        actualPointSwing: '0.0',
+                        status: ath.isLive ? 'Live' : (ath.isFinal ? 'Final' : 'Upcoming')
+                    };
+                }
             }
         });
 
@@ -2253,86 +2330,137 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
             });
         });
 
-        // 2. Fetch real-life schedules
+// 2. Fetch real-life schedules
         if (!window.realLifeSchedules) window.realLifeSchedules = {};
         
         const schedulePromises = Array.from(allSports).map(async (sport) => {
             if (window.realLifeSchedules[sport]) return;
-            
-            const urlSport = sport.toLowerCase() === 'fc' ? 'soccer' : sport.toLowerCase();
-            const url = `https://web.realsports.io/home/${urlSport}/next?cohort=0`;
+
+            const sportLower = sport.toLowerCase();
+            let urlSport = sportLower;
+            let cohort = 0;
+
+            if (sportLower === 'fc' || sportLower === 'soccer') {
+                urlSport = 'soccer';
+                cohort = 0;
+            } else if (sportLower === 'cfb' || sportLower === 'ncaaf') {
+                urlSport = 'ncaaf';
+                cohort = 777777777; // 'All' games cohort (0 is Top 25 only)
+            } else if (sportLower === 'cbb' || sportLower === 'ncaab') {
+                urlSport = 'cbb';
+                cohort = 777777777;
+            }
+
             const token = generateRequestToken();
             const uuid = crypto.randomUUID();
-            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(getNextAuthToken())}&uuid=${uuid}&token=${token}`;
+            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(`https://web.realsports.io/home/${urlSport}/next?cohort=${cohort}`)}&auth=${encodeURIComponent(getNextAuthToken())}&uuid=${uuid}&token=${token}`;
             
             try {
                 const res = await fetch(proxyUrl);
-                if (!res.ok) throw new Error("Schedule fetch failed");
+                if (!res.ok) throw new Error(`Schedule fetch failed for ${sport}`);
                 const data = await res.json();
-                const games = data.latestDayContent?.games || [];
                 
-                const scheduleMap = { games: [], teamToGame: {} };
-                    games.forEach(g => {
-                        let statusText = g.display?.primary || 'Scheduled';
-                        const rawLower = statusText.toLowerCase();
+                let allGames = data.latestDayContent?.games || data.dayContent?.games || data.games || [];
 
-                        // 1. Leave live/final game statuses untouched
-                        const isLiveOrFinal = rawLower.includes('final') || rawLower.includes('ended') || 
-                                             rawLower.includes('q') || rawLower.includes('half') || 
-                                             rawLower.includes('period') || rawLower.includes('top') || 
-                                             rawLower.includes('bot') || rawLower.includes('live') || 
-                                             rawLower.includes("'") || rawLower.includes('postponed');
-
-                        if (!isLiveOrFinal) {
-                            // 2. Check if a full timestamp/ISO string exists on the game object
-                            const rawDate = g.startDate || g.startTime || g.startTimeUtc || g.date || g.scheduledTime || g.startTimeMillis;
-                            
-                            if (rawDate) {
-                                const d = new Date(rawDate);
-                                if (!isNaN(d.getTime())) {
-                                    statusText = d.toLocaleTimeString('en-US', {
-                                        timeZone: 'America/New_York',
-                                        hour: 'numeric',
-                                        minute: '2-digit',
-                                        hour12: true
-                                    }) + ' ET';
+                // If this sport has multi-day slates (e.g. CFB Friday 8 games + Saturday 68 games), pull the next day
+                if (data.days && Array.isArray(data.days) && data.latestDay) {
+                    const currentDayIdx = data.days.findIndex(d => d.day === data.latestDay);
+                    if (currentDayIdx !== -1 && currentDayIdx + 1 < data.days.length) {
+                        const nextDayObj = data.days[currentDayIdx + 1];
+                        if (parseInt(nextDayObj.count || 0) > 0) {
+                            try {
+                                const nextDayUrl = `https://web.realsports.io/home/${urlSport}/day/${nextDayObj.day}?cohort=${cohort}`;
+                                const nextProxyUrl = `${workerProxy}?url=${encodeURIComponent(nextDayUrl)}&auth=${encodeURIComponent(getNextAuthToken())}&uuid=${crypto.randomUUID()}&token=${generateRequestToken()}`;
+                                const nextRes = await fetch(nextProxyUrl);
+                                if (nextRes.ok) {
+                                    const nextData = await nextRes.json();
+                                    const nextGames = nextData.dayContent?.games || nextData.latestDayContent?.games || nextData.games || [];
+                                    allGames = allGames.concat(nextGames);
                                 }
-                            } else {
-                                // 3. Parse the raw UTC time string (e.g., "11:00 PM" -> 7:00 PM ET)
-                                const timeMatch = statusText.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-                                if (timeMatch) {
-                                    let hours = parseInt(timeMatch[1], 10);
-                                    const mins = parseInt(timeMatch[2], 10);
-                                    const mer = timeMatch[3] ? timeMatch[3].toUpperCase() : null;
-
-                                    if (mer === 'PM' && hours < 12) hours += 12;
-                                    if (mer === 'AM' && hours === 12) hours = 0;
-
-                                    const now = new Date();
-                                    const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hours, mins, 0));
-                                    
-                                    statusText = utcDate.toLocaleTimeString('en-US', {
-                                        timeZone: 'America/New_York',
-                                        hour: 'numeric',
-                                        minute: '2-digit',
-                                        hour12: true
-                                    }) + ' ET';
-                                }
+                            } catch(err) {
+                                console.warn(`Failed to fetch additional day ${nextDayObj.day} for ${sport}`, err);
                             }
                         }
+                    }
+                }
 
-                        const gameObj = {
-                            id: g.id,
-                            homeTeam: g.homeTeam,
-                            awayTeam: g.awayTeam,
-                            status: statusText,
-                            homeScore: g.display?.homeScoreDisplay || g.homeTeamScore || 0,
-                            awayScore: g.display?.awayScoreDisplay || g.awayTeamScore || 0
-                        };
-                        scheduleMap.games.push(gameObj);
-                        scheduleMap.teamToGame[g.homeTeam.id] = gameObj;
-                        scheduleMap.teamToGame[g.awayTeam.id] = gameObj;
-                    });
+                const scheduleMap = { games: [], teamToGame: {} };
+                allGames.forEach(g => {
+                    let statusText = g.display?.primary || 'Scheduled';
+                    const rawLower = statusText.toLowerCase();
+
+                    const isLiveOrFinal = rawLower.includes('final') || rawLower.includes('ended') || 
+                                         rawLower.includes('q') || rawLower.includes('half') || 
+                                         rawLower.includes('period') || rawLower.includes('top') || 
+                                         rawLower.includes('bot') || rawLower.includes('live') || 
+                                         rawLower.includes("'") || rawLower.includes('postponed');
+
+                    if (!isLiveOrFinal) {
+                        // Include g.dateTime from Real API payload
+                        const rawDate = g.dateTime || g.startDate || g.startTime || g.startTimeUtc || g.date || g.scheduledTime || g.startTimeMillis;
+                        
+                        if (rawDate) {
+                            const d = new Date(rawDate);
+                            if (!isNaN(d.getTime())) {
+                                statusText = d.toLocaleTimeString('en-US', {
+                                    timeZone: 'America/New_York',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                }) + ' ET';
+                            }
+                        } else {
+                            const timeMatch = statusText.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+                            if (timeMatch) {
+                                let hours = parseInt(timeMatch[1], 10);
+                                const mins = parseInt(timeMatch[2], 10);
+                                const mer = timeMatch[3] ? timeMatch[3].toUpperCase() : null;
+
+                                if (mer === 'PM' && hours < 12) hours += 12;
+                                if (mer === 'AM' && hours === 12) hours = 0;
+
+                                const now = new Date();
+                                const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hours, mins, 0));
+                                
+                                statusText = utcDate.toLocaleTimeString('en-US', {
+                                    timeZone: 'America/New_York',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                }) + ' ET';
+                            }
+                        }
+                    }
+
+                    const homeTeam = g.homeTeam || {};
+                    const awayTeam = g.awayTeam || {};
+                    const homeId = homeTeam.id || g.homeTeamId;
+                    const awayId = awayTeam.id || g.awayTeamId;
+
+                    // Use numerical in-game score when live/final; avoid displaying pre-game record ('1-0')
+                    const homeScore = isLiveOrFinal ? (g.display?.homeScoreDisplay ?? g.homeTeamScore ?? 0) : 0;
+                    const awayScore = isLiveOrFinal ? (g.display?.awayScoreDisplay ?? g.awayTeamScore ?? 0) : 0;
+
+                    const gameObj = {
+                        id: g.id,
+                        homeTeam: {
+                            id: homeId,
+                            name: homeTeam.displayName || homeTeam.name || g.homeTeamKey || 'Home'
+                        },
+                        awayTeam: {
+                            id: awayId,
+                            name: awayTeam.displayName || awayTeam.name || g.awayTeamKey || 'Away'
+                        },
+                        status: statusText,
+                        homeScore: homeScore,
+                        awayScore: awayScore
+                    };
+
+                    scheduleMap.games.push(gameObj);
+                    if (homeId) scheduleMap.teamToGame[String(homeId)] = gameObj;
+                    if (awayId) scheduleMap.teamToGame[String(awayId)] = gameObj;
+                });
+
                 window.realLifeSchedules[sport] = scheduleMap;
             } catch(e) {
                 console.warn(`Failed to fetch real schedule for ${sport}`, e);
@@ -2438,7 +2566,7 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                 const sa = wpData.swingAthlete;
                 const statusIcon = sa.status === 'Live' ? '🔴' : (sa.status === 'Final' ? '🏁' : '⏰');
                 swingNoteHtml = `<div style="font-size: 0.68rem; color: var(--gold-light); margin-top: 6px; text-align: center;">
-                    ⚡ Key Impact Athlete: <strong>${sa.name}</strong> (${sa.sport}) &bull; ${statusIcon} <strong>+${sa.netMultDiff}x</strong> (+${sa.projectedSwing} pts edge for ${sa.advantagedTeam})
+                    ⚡ Key Impact Athlete: <strong>${sa.name}</strong> (${sa.sport}) &bull; ${statusIcon} <strong>+${sa.netMultDiff}x</strong> (+${sa.actualPointSwing} pts edge for ${sa.advantagedTeam})
                 </div>`;
             }
 
@@ -2529,7 +2657,11 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                                 realTeamName = (tId == gameObj.homeTeam.id) ? gameObj.homeTeam.name : gameObj.awayTeam.name;
                             } else if (tId && window.realLifeTeamMap) {
                                 const compoundKey = `${pSport}_${String(tId).trim()}`;
+                                const altSport = pSport === 'CFB' ? 'NCAAF' : (pSport === 'NCAAF' ? 'CFB' : pSport);
+                                const altCompoundKey = `${altSport}_${String(tId).trim()}`;
+
                                 if (window.realLifeTeamMap[compoundKey]) realTeamName = window.realLifeTeamMap[compoundKey];
+                                else if (window.realLifeTeamMap[altCompoundKey]) realTeamName = window.realLifeTeamMap[altCompoundKey];
                                 else if (window.realLifeTeamMap[String(tId).trim()]) realTeamName = window.realLifeTeamMap[String(tId).trim()];
                             } else if (lp.team && lp.team.name) realTeamName = lp.team.name;
                             else if (typeof lp.team === 'string') realTeamName = lp.team;
@@ -2701,18 +2833,22 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
         container.innerHTML = finalHtml;
     };
         
-        async function main() {
+        async function main(isManualRefresh = false) {
             const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn', '9JmXRKDn']);
             const loadingDiv = document.getElementById('loading');
             loadingDiv.style.display = 'block';
             let globalAuthErrorEncountered = false;
         
             // --- SESSION CACHE LOGIC ---
-            window.sessionCache = JSON.parse(sessionStorage.getItem('rda_live_cache') || '{}');
-            const CACHE_EXPIRY = 3 * 60 * 1000;
-        
-            for(let k in window.sessionCache) {
-                if(Date.now() - window.sessionCache[k].ts > CACHE_EXPIRY) delete window.sessionCache[k];
+            if (isManualRefresh) {
+                window.sessionCache = {};
+                sessionStorage.removeItem('rda_live_cache');
+            } else {
+                window.sessionCache = JSON.parse(sessionStorage.getItem('rda_live_cache') || '{}');
+                const CACHE_EXPIRY = 3 * 60 * 1000;
+                for (let k in window.sessionCache) {
+                    if (Date.now() - window.sessionCache[k].ts > CACHE_EXPIRY) delete window.sessionCache[k];
+                }
             }
         
             try {
@@ -2769,9 +2905,7 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                             const tsport = tsportIdx !== -1 ? String(row[tsportIdx]).trim().toUpperCase() : 'UNKNOWN';
                             
                             if (tid) {
-                                // Create compound key for strict sport-specific matching
                                 window.realLifeTeamMap[`${tsport}_${tid}`] = row[tnameIdx]?.trim();
-                                // Store a fallback just in case the API payload is missing the sport
                                 if (!window.realLifeTeamMap[tid]) {
                                     window.realLifeTeamMap[tid] = row[tnameIdx]?.trim();
                                 }
@@ -2834,7 +2968,9 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                     }
                 }
         
+                // Clear previous globals to prevent duplication on manual sync
                 window.playersToFetch = {};
+                window.teamsDataCache = {};
                 const allScoreUrls = [];
         
                 playersCsv.slice(playerStartRow).forEach(row => {
@@ -3033,24 +3169,28 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                             if (res.status === 200 && res.data) {
                                 processSuccessfulData(reqData, res.data, false);
                                 currentPauseDuration = 3000; 
-                            } else if (res.status === 429 || res.status === 502) {
+                            } else if (res.status === 429) {
+                                // Genuine rate limit: back off and send to back of queue
                                 pauseUntil = Date.now() + currentPauseDuration; 
-                                currentPacing = Math.min(currentPacing + 25, 300);
+                                currentPacing = Math.min(currentPacing + 50, 400);
                                 
                                 reqData.retries = (reqData.retries || 0) + 1;
-                                if (reqData.retries < MAX_RETRIES) {
-                                    queue.unshift(reqData); 
+                                if (reqData.retries < 3) {
+                                    queue.push(reqData); 
                                 } else {
                                     handleFailedRequest(reqData, res.status);
                                 }
                             } else {
+                                // 502, 404, 500: Do not loop endlessly; fail cleanly
                                 handleFailedRequest(reqData, res.status);
                             }
                         } catch (e) {
-                            nextRequestTime = Date.now() + 1500;
                             reqData.retries = (reqData.retries || 0) + 1;
-                            if (reqData.retries < MAX_RETRIES) queue.unshift(reqData);
-                            else handleFailedRequest(reqData, "Network Error");
+                            if (reqData.retries < 2) {
+                                queue.push(reqData);
+                            } else {
+                                handleFailedRequest(reqData, "Network Error");
+                            }
                         }
                     }
                 }
@@ -3069,7 +3209,7 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                 // Duplicate Check 
                 const hashes = new Map();
                 Object.values(window.playersToFetch).forEach(p => {
-                    if (p.isBench) return; // Skip bench players from duplicate detection
+                    if (p.isBench) return;
                     for(const s in p.lineupsBySport) {
                         if(s.toUpperCase() === 'DRAFT' || s.toUpperCase() === 'SPORT' || s.toUpperCase() === 'USER') continue;
                         const l = p.lineupsBySport[s];
@@ -3106,14 +3246,125 @@ const usernamesJSON = JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g,
                 renderTeamMatchupUI(false, globalAuthErrorEncountered);
                 loadingDiv.style.display = 'none';
         
+                // --- SAVE UNIVERSAL SNAPSHOT (ONCE PER LOAD) ---
+                lastCacheTimestamp = Date.now();
+                document.getElementById('universal-cache-bar').style.display = 'flex';
+                updateCacheElapsedText();
+                clearInterval(snapshotInterval);
+                snapshotInterval = setInterval(updateCacheElapsedText, 1000);
+                await saveUniversalSnapshot();
+        
             } catch (e) {
                 console.error("[CRITICAL FAILURE]", e);
                 loadingDiv.style.display = 'none';
                 document.getElementById('results').innerHTML = `<div class="no-games">Failed to load: ${e.message}</div>`;
             }
         }
+
+        let snapshotInterval = null;
+        let lastCacheTimestamp = null;
+
+        function updateCacheElapsedText() {
+            if (!lastCacheTimestamp) return;
+            const diffSec = Math.floor((Date.now() - lastCacheTimestamp) / 1000);
+            const timeEl = document.getElementById('cache-time-text');
+            if (!timeEl) return;
+
+            const timeStr = new Date(lastCacheTimestamp).toLocaleTimeString('en-US', {
+                timeZone: 'America/New_York',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            }) + ' ET';
+
+            if (diffSec < 60) {
+                timeEl.textContent = `${timeStr} (${diffSec}s ago)`;
+            } else if (diffSec < 3600) {
+                const diffMin = Math.floor(diffSec / 60);
+                timeEl.textContent = `${timeStr} (${diffMin}m ago)`;
+            } else {
+                const diffHr = Math.floor(diffSec / 3600);
+                const remMin = Math.floor((diffSec % 3600) / 60);
+                timeEl.textContent = `${timeStr} (${diffHr}h ${remMin}m ago)`;
+            }
+        }
+
+        async function saveUniversalSnapshot() {
+            try {
+                console.log("[CACHE] Uploading league snapshot to Cloudflare...");
+                const payload = {
+                    timestamp: Date.now(),
+                    season: currentSeason,
+                    dailyMatchups: window.dailyMatchups,
+                    teamsDataCache: window.teamsDataCache,
+                    playersToFetch: window.playersToFetch,
+                    realLifeSchedules: window.realLifeSchedules || {}
+                };
+
+                const res = await fetch(`${workerProxy}snapshot`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                console.log("[CACHE] Snapshot POST result:", res.status, result);
+            } catch (e) {
+                console.warn("[CACHE] Could not save snapshot:", e);
+            }
+        }
+
+        async function loadUniversalSnapshot() {
+            try {
+                const res = await fetch(`${workerProxy}snapshot`);
+                if (!res.ok) return false;
+
+                const snapshot = await res.json();
+                if (!snapshot || !snapshot.timestamp) return false;
+
+                // Restore state immediately regardless of how old the snapshot is
+                window.dailyMatchups = snapshot.dailyMatchups || [];
+                window.teamsDataCache = snapshot.teamsDataCache || {};
+                window.playersToFetch = snapshot.playersToFetch || {};
+                window.realLifeSchedules = snapshot.realLifeSchedules || {};
+
+                lastCacheTimestamp = snapshot.timestamp;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('universal-cache-bar').style.display = 'flex';
+
+                updateCacheElapsedText();
+                clearInterval(snapshotInterval);
+                snapshotInterval = setInterval(updateCacheElapsedText, 1000);
+
+                renderTeamMatchupUI(false);
+                return true;
+            } catch (e) {
+                console.error("[CACHE] Error restoring snapshot:", e);
+                return false;
+            }
+        }
+
+        window.triggerUniversalSync = async function() {
+            const btn = document.getElementById('cache-refresh-all-btn');
+            if (btn) {
+                btn.textContent = 'Syncing...';
+                btn.style.pointerEvents = 'none';
+            }
+            clearInterval(snapshotInterval);
+            await main(true);
+            if (btn) {
+                btn.textContent = '↻ Sync Fresh Scores';
+                btn.style.pointerEvents = 'auto';
+            }
+        };
         
-        main();
+        (async () => {
+            const loadedFromCache = await loadUniversalSnapshot();
+            if (!loadedFromCache) {
+                main();
+            }
+        })();
     </script>
 </body>
 </html>
