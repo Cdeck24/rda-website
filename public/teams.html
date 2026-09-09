@@ -134,8 +134,24 @@
             padding: 0.6rem 0.8rem;
             font-size: 0.9rem;
         }
-        .draft-pick-name { font-weight: 600; color: #fff; }
-        .draft-pick-detail { font-size: 0.75rem; color: var(--gold-light); }
+        .draft-pick-name { 
+            font-weight: 600; 
+            color: #fff; 
+            letter-spacing: 0.5px;
+        }
+        .draft-pick-detail { 
+            font-size: 0.9rem; 
+            font-weight: 700; 
+            color: var(--gold-light); 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+        .draft-pick-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
 
         @media (max-width: 768px) {
             .main-content { padding: 0 1rem 4rem 1rem; }
@@ -164,7 +180,6 @@
 
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
 
-        // --- Configuration per Season ---
         const seasonConfig = {
             '2': {
                 scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?output=csv',
@@ -193,7 +208,6 @@
 
         const activeConfig = seasonConfig[currentSeason] || seasonConfig['6'];
 
-        // --- Division Structures ---
         const divisions = {
             "East Conference": {
                 "Atlantic Division": ["Reapers", "Knights", "Voyagers"],
@@ -244,7 +258,6 @@
             });
         }
 
-        // --- Date Parser for Sorting Games ---
         function parseGameDate(dateStr) {
             if (!dateStr) return 0;
             const parts = dateStr.split('/');
@@ -266,7 +279,6 @@
             else displayTeamGrid();
         });
 
-        // 1. GRID VIEW
         async function displayTeamGrid() {
             document.getElementById('team-name-header').textContent = `Season ${currentSeason} Teams`;
             const mainContent = document.getElementById('main-content');
@@ -290,7 +302,6 @@
             mainContent.innerHTML = html;
         }
 
-        // 2. TEAM DETAIL VIEW
         async function loadTeamData(teamName) {
             const headerEl = document.getElementById('team-name-header');
             headerEl.innerHTML = `
@@ -331,15 +342,15 @@
                 <h2>Draft Capital</h2>
                 <div class="draft-capital-grid" id="draft-capital-grid">
                     <div class="draft-card">
-                        <h3>Season 6 Picks</h3>
-                        <div class="draft-pick-list" id="s6-draft-picks">
-                            <div style="color: #666; font-style: italic; font-size: 0.85rem;">Loading Season 6 picks...</div>
-                        </div>
-                    </div>
-                    <div class="draft-card">
                         <h3>Season 7 Picks</h3>
                         <div class="draft-pick-list" id="s7-draft-picks">
                             <div style="color: #666; font-style: italic; font-size: 0.85rem;">Loading Season 7 picks...</div>
+                        </div>
+                    </div>
+                    <div class="draft-card">
+                        <h3>Season 8 Picks</h3>
+                        <div class="draft-pick-list" id="s8-draft-picks">
+                            <div style="color: #666; font-style: italic; font-size: 0.85rem;">Loading Season 8 picks...</div>
                         </div>
                     </div>
                 </div>
@@ -374,59 +385,81 @@
                 }
             } catch(e) { console.warn("Team Mapping fetch failed", e); }
 
-            const S6_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1325728230&single=true&output=csv';
-            const S7_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1306361585&single=true&output=csv';
+            const S7_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1325728230&single=true&output=csv';
+            const S8_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1306361585&single=true&output=csv';
 
             try {
-                const [scheduleText, allGames, allPlayoffGames, playersText, allPlayers, s6DraftText, s7DraftText] = await Promise.all([
+                const [scheduleText, allGames, allPlayoffGames, playersText, allPlayers, s7DraftText, s8DraftText] = await Promise.all([
                     fetchViaWorker(activeConfig.scheduleUrl),
                     getSeasonData('games'),
                     getSeasonData('playoff-games'),
                     fetchViaWorker(activeConfig.playersUrl),
                     getSeasonData('players'),
-                    fetchViaWorker(S6_DRAFT_URL),
-                    fetchViaWorker(S7_DRAFT_URL)
+                    fetchViaWorker(S7_DRAFT_URL),
+                    fetchViaWorker(S8_DRAFT_URL)
                 ]);
 
-                // Helper to extract picks across horizontal or vertical sheets
-                const extractTeamPicks = (csvText) => {
+                // Parses Team | Season | Round | Notes
+                const extractTeamPicks = (csvText, targetSeason) => {
                     if (!csvText) return [];
                     const rows = parseCsvToObject(csvText);
                     if (!rows.length) return [];
                     const picks = [];
 
-                    // 1. Horizontal format (Team row with round columns)
-                    rows.forEach(r => {
-                        const teamVal = (r.team || r.owner || r['team name'] || Object.values(r)[0] || '').trim().toLowerCase();
-                        const isMatch = teamNamesToQuery.some(t => t.toLowerCase() === teamVal || teamVal.includes(t.toLowerCase()));
-                        if (isMatch) {
+                    const firstRow = rows[0] || {};
+                    const hasVerticalRoundCol = Object.keys(firstRow).some(k => {
+                        const cleanKey = k.trim().toLowerCase();
+                        return cleanKey === 'round' || cleanKey === 'rd';
+                    });
+
+                    if (hasVerticalRoundCol) {
+                        rows.forEach(r => {
+                            const teamVal = (r.team || r.owner || r['team name'] || Object.values(r)[0] || '').trim().toLowerCase();
+                            const isMatch = teamNamesToQuery.some(t => t.toLowerCase() === teamVal || teamVal.includes(t.toLowerCase()));
+                            if (!isMatch) return;
+
+                            if (targetSeason && r.season && String(r.season).trim() !== String(targetSeason)) return;
+
+                            const roundNum = (r.round || r.rd || r['round #'] || '').trim();
+                            if (!roundNum) return;
+
+                            const rawNote = (r.notes || r.note || r.comment || r.comments || r.details || '').trim();
+                            let formattedNote = '';
+                            if (rawNote && !['own', 'none', 'n/a', '-', 'na', 'no'].includes(rawNote.toLowerCase())) {
+                                const unparenthesized = rawNote.replace(/^\(+|\)+$/g, '').trim();
+                                formattedNote = `(${unparenthesized})`;
+                            }
+
+                            picks.push({
+                                label: 'ROUND',
+                                detail: roundNum,
+                                note: formattedNote
+                            });
+                        });
+                    } else {
+                        // Fallback for horizontal tables
+                        rows.forEach(r => {
+                            const teamVal = (r.team || r.owner || r['team name'] || Object.values(r)[0] || '').trim().toLowerCase();
+                            const isMatch = teamNamesToQuery.some(t => t.toLowerCase() === teamVal || teamVal.includes(t.toLowerCase()));
+                            if (!isMatch) return;
+
+                            if (targetSeason && r.season && String(r.season).trim() !== String(targetSeason)) return;
+
                             Object.entries(r).forEach(([k, val]) => {
-                                const keyLower = k.toLowerCase();
-                                if (!['team', 'owner', 'team name'].includes(keyLower) && val && val.trim() !== '') {
+                                const keyLower = k.toLowerCase().trim();
+                                if (!['team', 'owner', 'team name', 'season', 'notes', 'note'].includes(keyLower) && val && val.trim() !== '') {
                                     if (keyLower.includes('round') || keyLower.includes('rd') || keyLower.includes('pick') || keyLower.startsWith('r')) {
-                                        picks.push({ label: k.toUpperCase(), detail: val.trim() });
+                                        picks.push({
+                                            label: k.toUpperCase(),
+                                            detail: val.trim(),
+                                            note: ''
+                                        });
                                     }
                                 }
                             });
-                        }
-                    });
-
-                    // 2. Vertical format (Individual pick per row)
-                    if (picks.length === 0) {
-                        rows.forEach(r => {
-                            const teamVal = (r.team || r.owner || r['current owner'] || r['current team'] || '').trim().toLowerCase();
-                            const isMatch = teamNamesToQuery.some(t => t.toLowerCase() === teamVal || teamVal.includes(t.toLowerCase()));
-                            if (isMatch) {
-                                const round = r.round || r.rd || '';
-                                const pick = r.pick || r['pick #'] || '';
-                                const orig = r['original team'] || r['orig team'] || r['original owner'] || r['from'] || '';
-                                const desc = r.description || r.details || r.name || '';
-                                const label = desc || (round ? `Round ${round}${pick ? ` (Pick ${pick})` : ''}` : 'Pick');
-                                const detail = orig ? `via ${orig}` : 'Own';
-                                picks.push({ label, detail });
-                            }
                         });
                     }
+
                     return picks;
                 };
 
@@ -440,13 +473,15 @@
                     el.innerHTML = picks.map(p => `
                         <div class="draft-pick-item">
                             <span class="draft-pick-name">${p.label}</span>
-                            <span class="draft-pick-detail">${p.detail}</span>
+                            <span class="draft-pick-detail">
+                                ${p.detail}${p.note ? ` <span class="draft-pick-note">${p.note}</span>` : ''}
+                            </span>
                         </div>
                     `).join('');
                 };
 
-                renderPickList('s6-draft-picks', extractTeamPicks(s6DraftText));
-                renderPickList('s7-draft-picks', extractTeamPicks(s7DraftText));
+                renderPickList('s7-draft-picks', extractTeamPicks(s7DraftText, '7'));
+                renderPickList('s8-draft-picks', extractTeamPicks(s8DraftText, '8'));
 
                 // --- 1. PROCESS GAMES & BASIC STATS ---
                 let regWins = 0, regLosses = 0, playoffWins = 0, playoffLosses = 0, pf = 0, pa = 0;
@@ -498,19 +533,16 @@
                         const cls = isWin ? 'W' : (isTie ? 'T' : 'L');
                         formHtml += `<div class="form-badge ${cls}" title="${g.date} vs ${isWin ? (g.team1 === g.winner ? g.team2 : g.team1) : g.winner}">${cls}</div>`;
                     });
-                    // Pad with empty badges if less than 5 games played
                     for(let i = last5.length; i < 5; i++) formHtml += `<div class="form-badge none">-</div>`;
                     formTrackerEl.innerHTML = formHtml;
                 }
 
                 // --- 3. ADVANCED METRICS: RADAR CHART ---
-                // Calculate League Averages by Sport
                 const leagueSportTotals = {};
                 const leagueSportCounts = {};
                 const teamSportTotals = {};
                 const teamSportCounts = {};
 
-                // Loop through every player stat logged this season
                 allPlayers.forEach(p => {
                     const sport = p.sport ? p.sport.toUpperCase() : null;
                     if (!sport) return;
@@ -518,13 +550,10 @@
                     const score = parseFloat(p.score || 0);
                     const isBench = p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true';
 
-                    // Only count Starters towards the strength index so bench points don't skew the graph
                     if (score > 0 && !isBench) {
-                        // Add to League Pool
                         leagueSportTotals[sport] = (leagueSportTotals[sport] || 0) + score;
                         leagueSportCounts[sport] = (leagueSportCounts[sport] || 0) + 1;
 
-                        // Add to Team Pool if they are on this team
                         if (teamNamesToQuery.includes(p.team)) {
                             teamSportTotals[sport] = (teamSportTotals[sport] || 0) + score;
                             teamSportCounts[sport] = (teamSportCounts[sport] || 0) + 1;
@@ -534,21 +563,13 @@
 
                 const radarLabels = [];
                 const radarDataValues = [];
-                
-                // Sort sports alphabetically for a consistent shape across all teams
                 const allLeagueSports = Object.keys(leagueSportTotals).sort();
 
-                // Calculate "Strength Index" (100 is league average) for ALL league sports
                 allLeagueSports.forEach(sport => {
                     const leagueAvg = leagueSportTotals[sport] / leagueSportCounts[sport];
-                    
                     if (leagueAvg > 0) {
                         radarLabels.push(sport);
-                        
-                        // If the team hasn't played this sport, their average is 0
                         const teamAvg = teamSportCounts[sport] ? (teamSportTotals[sport] / teamSportCounts[sport]) : 0;
-                        
-                        // Cap at 150 visually so it doesn't break the chart boundaries if they are insane at one sport
                         const index = Math.min((teamAvg / leagueAvg) * 100, 150);
                         radarDataValues.push(index.toFixed(1));
                     }
@@ -579,7 +600,7 @@
                                     angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                                     grid: { color: 'rgba(255, 255, 255, 0.1)' },
                                     pointLabels: { color: '#e2e8f0', font: { size: 12, family: "'Inter', sans-serif", weight: 'bold' } },
-                                    ticks: { display: false, min: 0, max: 150 } // Hide inner numbers, standardize scale
+                                    ticks: { display: false, min: 0, max: 150 }
                                 }
                             },
                             plugins: {
