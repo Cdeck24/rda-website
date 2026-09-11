@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Standings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <style>
+        .standings-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1rem 1rem 4rem 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* View Toggle Tabs */
+        .sub-nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .sub-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.5rem 1.25rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sub-nav-btn:hover { color: #fff; }
+        .sub-nav-btn.active { color: var(--gold-light); border-bottom: 2px solid var(--gold-mid); }
+
+        /* Headers */
+        .conf-header {
+            font-size: 1.4rem;
+            margin: 2rem 0 0.75rem 0;
+            color: #fff;
+            border-bottom: 2px solid var(--border-gold);
+            padding-bottom: 0.4rem;
+            font-family: 'Didot', serif;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .conf-header:first-of-type { margin-top: 0.5rem; }
+
+        .div-header {
+            font-size: 0.85rem;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 1.25rem 0 0.5rem 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Table Scaffolding */
+        .table-wrapper {
+            overflow-x: auto;
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(15, 23, 42, 0.5);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .data-table th, .data-table td {
+            padding: 0.75rem 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--gold-mid);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .data-table tbody tr {
+            transition: background 0.15s ease;
+        }
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .team-cell-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .team-cell-link:hover {
+            color: var(--gold-light);
+        }
+
+        .team-logo {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        }
+
+        .seed-cell {
+            width: 40px;
+            text-align: center;
+            font-weight: 800;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .seed-playoff {
+            color: var(--gold-light);
+        }
+
+        /* Playoff Cutline */
+        .cutline-row td {
+            border-bottom: 2px dashed rgba(212, 175, 55, 0.4) !important;
+            position: relative;
+        }
+
+        .div-winner-badge {
+            font-size: 0.55rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: var(--gold-mid);
+            margin-left: 6px;
+            font-weight: 800;
+        }
+
+        .stat-val {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-win { color: #4ade80; font-weight: 700; }
+        .stat-loss { color: #f87171; font-weight: 700; }
+        .stat-diff-pos { color: #4ade80; font-weight: 600; }
+        .stat-diff-neg { color: #f87171; font-weight: 600; }
+
+        @media (max-width: 650px) {
+            .standings-content { padding: 0.5rem 0.5rem 3rem 0.5rem; }
+            .conf-header { font-size: 1.2rem; }
+            .data-table th, .data-table td { padding: 0.6rem 0.45rem; font-size: 0.78rem; }
+            .data-table th { font-size: 0.65rem; }
+            .team-logo { width: 20px; height: 20px; }
+            .col-hide-mobile { display: none; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <h1>RDA Standings</h1>
+
+    <!-- Sub-Navigation for Views -->
+    <div class="sub-nav-container">
+        <button class="sub-nav-btn active" id="tab-conference" onclick="switchView('conference')">Conference</button>
+        <button class="sub-nav-btn" id="tab-division" onclick="switchView('division')">Division</button>
+    </div>
+
+    <div class="standings-content" id="standings-container">
+        <div style="text-align: center; color: var(--gold-mid); padding: 3rem; font-style: italic;">Loading standings...</div>
+    </div>
+
+    <script type="module">
+        import { initNav, getSeasonData, currentSeason, getTeamLogoPath } from './js/app-v2.js';
+        initNav();
+
+        const seasonConfigs = {
+            '4': {
+                'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Buffaloes': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Kings': { conf: 'East Conference', div: 'Metro Division' },
+                'Underdogs': { conf: 'East Conference', div: 'Metro Division' },
+                'Knights': { conf: 'East Conference', div: 'Metro Division' },
+                'Reapers': { conf: 'West Conference', div: 'Central Division' },
+                'Stars': { conf: 'West Conference', div: 'Central Division' },
+                'Zombies': { conf: 'West Conference', div: 'Central Division' },
+                'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
+                'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
+                'Voyagers': { conf: 'West Conference', div: 'Pacific Division' }
+            },
+            '5': {
+                'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Bajas': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Buffaloes': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Kings': { conf: 'East Conference', div: 'Metro Division' },
+                'Underdogs': { conf: 'East Conference', div: 'Metro Division' },
+                'Knights': { conf: 'East Conference', div: 'Metro Division' },
+                'Reapers': { conf: 'West Conference', div: 'Central Division' },
+                'Stars': { conf: 'West Conference', div: 'Central Division' },
+                'Zombies': { conf: 'West Conference', div: 'Central Division' },
+                'Manatees': { conf: 'West Conference', div: 'Pacific Division' },
+                'Tigers': { conf: 'West Conference', div: 'Pacific Division' },
+                'Voyagers': { conf: 'West Conference', div: 'Pacific Division' }
+            },
+            '6': {
+                'Reapers': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Knights': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Voyagers': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Bajas': { conf: 'East Conference', div: 'Metro Division' },
+                'Manatees': { conf: 'East Conference', div: 'Metro Division' },
+                'Saucers': { conf: 'East Conference', div: 'Metro Division' },
+                'Dragons': { conf: 'West Conference', div: 'Central Division' },
+                'Tigers': { conf: 'West Conference', div: 'Central Division' },
+                'Zombies': { conf: 'West Conference', div: 'Central Division' },
+                'Underdogs': { conf: 'West Conference', div: 'Pacific Division' },
+                'Kings': { conf: 'West Conference', div: 'Pacific Division' },
+                'Buffaloes': { conf: 'West Conference', div: 'Pacific Division' }
+            }
+        };
+
+        let globalTeams = [];
+        let currentView = 'conference';
+
+        const sortTeams = (a, b) => {
+            if (b.pct !== a.pct) return b.pct - a.pct;
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            if (b.diff !== a.diff) return b.diff - a.diff;
+            return (b.pointsFor || 0) - (a.pointsFor || 0);
+        };
+
+        window.switchView = (view) => {
+            currentView = view;
+            document.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${view}`).classList.add('active');
+            render();
+        };
+
+        async function init() {
+            const container = document.getElementById('standings-container');
+            let teamsRaw = await getSeasonData('teams');
+            const gamesRaw = await getSeasonData('games');
+            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+
+            if (!teamsRaw || !teamsRaw.length) {
+                const calculated = {};
+                Object.keys(config).forEach(t => {
+                    calculated[t] = { name: t, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 };
+                });
+
+                if (gamesRaw && gamesRaw.length) {
+                    gamesRaw.forEach(g => {
+                        const t1 = g.team1 || g['team 1'], t2 = g.team2 || g['team 2'];
+                        const s1 = parseFloat(g.team1score) || 0;
+                        const s2 = parseFloat(g.team2score) || 0;
+                        const winner = g.winner;
+
+                        if (calculated[t1]) {
+                            calculated[t1].pointsFor += s1;
+                            calculated[t1].pointsAgainst += s2;
+                            if (winner === t1) calculated[t1].wins++;
+                            else if (winner === t2) calculated[t1].losses++;
+                        }
+                        if (calculated[t2]) {
+                            calculated[t2].pointsFor += s2;
+                            calculated[t2].pointsAgainst += s1;
+                            if (winner === t2) calculated[t2].wins++;
+                            else if (winner === t1) calculated[t2].losses++;
+                        }
+                    });
+                }
+                teamsRaw = Object.values(calculated);
+            }
+
+            globalTeams = teamsRaw.filter(t => t && t.name && t.name !== 'TIE' && !t.name.toLowerCase().includes('free agent')).map(t => {
+                const wins = parseInt(t.wins) || 0;
+                const losses = parseInt(t.losses) || 0;
+                const pf = parseFloat(t.pointsFor) || 0;
+                const pa = parseFloat(t.pointsAgainst) || 0;
+                const gp = wins + losses;
+                return {
+                    name: t.name,
+                    wins, losses, gp,
+                    pointsFor: pf, pointsAgainst: pa,
+                    pct: gp > 0 ? wins / gp : 0,
+                    diff: pf - pa
+                };
+            });
+
+            render();
+        }
+
+        function render() {
+            const container = document.getElementById('standings-container');
+            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+
+            const structure = {};
+            globalTeams.forEach(t => {
+                const map = config[t.name];
+                if (!map) return;
+                if (!structure[map.conf]) structure[map.conf] = {};
+                if (!structure[map.conf][map.div]) structure[map.conf][map.div] = [];
+                structure[map.conf][map.div].push(t);
+            });
+
+            const confs = Object.keys(structure).sort();
+            let html = '';
+
+            if (currentView === 'conference') {
+                confs.forEach(confName => {
+                    const divObj = structure[confName];
+                    const divisionWinners = [];
+                    const wildcards = [];
+
+                    Object.keys(divObj).forEach(divName => {
+                        const sortedDiv = [...divObj[divName]].sort(sortTeams);
+                        if (sortedDiv.length > 0) {
+                            divisionWinners.push({ ...sortedDiv[0], isDivWinner: true });
+                            wildcards.push(...sortedDiv.slice(1).map(x => ({ ...x, isDivWinner: false })));
+                        }
+                    });
+
+                    divisionWinners.sort(sortTeams);
+                    wildcards.sort(sortTeams);
+                    const seededTeams = [...divisionWinners, ...wildcards];
+
+                    html += `
+                        <div class="conf-header">
+                            <span>${confName}</span>
+                            <span style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-family:sans-serif; font-weight:700;">Top 4 Qualify</span>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="seed-cell">Seed</th>
+                                        <th>Franchise</th>
+                                        <th class="stat-val">W</th>
+                                        <th class="stat-val">L</th>
+                                        <th class="stat-val">Pct</th>
+                                        <th class="stat-val col-hide-mobile">PF</th>
+                                        <th class="stat-val col-hide-mobile">PA</th>
+                                        <th class="stat-val">Diff</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${seededTeams.map((t, idx) => createRow(t, idx + 1, idx === 3)).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                });
+            } else {
+                confs.forEach(confName => {
+                    html += `<div class="conf-header">${confName}</div>`;
+                    const divs = Object.keys(structure[confName]).sort();
+
+                    divs.forEach(divName => {
+                        const divTeams = [...structure[confName][divName]].sort(sortTeams);
+                        html += `
+                            <div class="div-header">${divName}</div>
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Franchise</th>
+                                            <th class="stat-val">W</th>
+                                            <th class="stat-val">L</th>
+                                            <th class="stat-val">Pct</th>
+                                            <th class="stat-val col-hide-mobile">PF</th>
+                                            <th class="stat-val col-hide-mobile">PA</th>
+                                            <th class="stat-val">Diff</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${divTeams.map((t, idx) => createRow(t, null, false, idx === 0)).join('')}
+                                    </tbody>
+                                </table>
+                            </div>`;
+                    });
+                });
+            }
+
+            container.innerHTML = html;
+        }
+
+        function createRow(t, seed = null, isCutline = false, isDivLeader = false) {
+            const isPlayoffSeed = seed && seed <= 4;
+            const diffClass = t.diff > 0 ? 'stat-diff-pos' : (t.diff < 0 ? 'stat-diff-neg' : '');
+            const diffSign = t.diff > 0 ? '+' : '';
+
+            return `
+                <tr class="${isCutline ? 'cutline-row' : ''}">
+                    ${seed ? `<td class="seed-cell ${isPlayoffSeed ? 'seed-playoff' : ''}">${seed}</td>` : ''}
+                    <td>
+                        <a href="teams-v2.html?season=${currentSeason}&team=${encodeURIComponent(t.name)}" class="team-cell-link">
+                            <img src="${getTeamLogoPath(t.name)}" class="team-logo" onerror="this.style.display='none'">
+                            <span>${t.name}</span>
+                            ${t.isDivWinner || isDivLeader ? '<span class="div-winner-badge">DIV</span>' : ''}
+                        </a>
+                    </td>
+                    <td class="stat-val stat-win">${t.wins}</td>
+                    <td class="stat-val stat-loss">${t.losses}</td>
+                    <td class="stat-val">${t.pct.toFixed(3)}</td>
+                    <td class="stat-val col-hide-mobile" style="color:#cbd5e1;">${t.pointsFor.toFixed(1)}</td>
+                    <td class="stat-val col-hide-mobile" style="color:#cbd5e1;">${t.pointsAgainst.toFixed(1)}</td>
+                    <td class="stat-val ${diffClass}">${diffSign}${t.diff.toFixed(1)}</td>
+                </tr>`;
+        }
+
+        init();
+    </script>
+</body>
+</html>
