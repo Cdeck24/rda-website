@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Players</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global.css">
+    <!-- Chart.js for Advanced Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .player-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem 1rem 4rem 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* Controls & Filter Bar */
+        .controls-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .search-input {
+            flex: 2;
+            min-width: 220px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-gold);
+            color: #fff;
+            padding: 0.55rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .search-input:focus { border-color: var(--gold-light); }
+
+        .filter-select {
+            flex: 1;
+            min-width: 140px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            color: var(--gold-light);
+            padding: 0.55rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+        }
+        .filter-select:focus { border-color: var(--gold-mid); }
+
+        /* Scaffolding Table */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(15, 23, 42, 0.5);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .data-table th, .data-table td {
+            padding: 0.75rem 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            background: rgba(0, 0, 0, 0.35);
+            color: var(--gold-mid);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.75px;
+            font-weight: 800;
+            cursor: pointer;
+            user-select: none;
+        }
+        .data-table th:hover { color: #fff; }
+
+        .data-table tbody tr {
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .rank-cell { font-weight: 800; width: 60px; text-align: center; }
+        .rank-1 { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+        .rank-2 { color: #C0C0C0; }
+        .rank-3 { color: #CD7F32; }
+
+        .player-name-cell {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .team-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .team-link:hover { color: var(--gold-light); }
+
+        .team-logo {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+
+        .rookie-badge {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold-mid);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            font-size: 0.55rem;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        .stat-val {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+        .highlight-cell { color: var(--gold-light); }
+
+        /* Modal Scaffolding */
+        body.modal-open { overflow: hidden; }
+
+        .modal-bg {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+            display: none; justify-content: center; align-items: center;
+            z-index: 2000; backdrop-filter: blur(8px); padding: 1rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal {
+            background: var(--bg-navy-light); border-radius: 12px; padding: 1.75rem;
+            max-width: 850px; width: 100%; max-height: 88vh; overflow-y: auto;
+            position: relative; border: 1px solid var(--border-gold);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.8);
+        }
+
+        .close-btn {
+            position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem;
+            cursor: pointer; color: #888; width: 2.2rem; height: 2.2rem;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: rgba(255, 255, 255, 0.05);
+            border: none; transition: 0.2s;
+        }
+        .close-btn:hover { color: #fff; background: #222; }
+
+        .modal-header {
+            display: flex; align-items: center; gap: 1rem;
+            margin-bottom: 1.5rem; padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .modal-team-logo { width: 50px; height: 50px; object-fit: contain; }
+        .modal-player-name { font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0; }
+        .modal-player-team { font-size: 0.85rem; color: var(--gold-mid); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
+        .metrics-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.75rem; margin-bottom: 1.5rem;
+        }
+
+        .metric-box {
+            background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle);
+            border-radius: 8px; padding: 0.85rem; text-align: center;
+        }
+        .metric-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem; letter-spacing: 0.75px; font-weight: 700; }
+        .metric-value { font-size: 1.35rem; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+        .metric-subtext { font-size: 0.68rem; color: #888; margin-top: 0.25rem; }
+
+        .charts-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+        }
+
+        .chart-card {
+            background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-subtle);
+            border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; align-items: center;
+        }
+        .chart-card h3 { margin: 0 0 0.85rem 0; font-size: 0.85rem; color: var(--gold-mid); text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+        .canvas-wrapper { width: 100%; height: 230px; position: relative; }
+
+        @media (max-width: 768px) {
+            .player-content { padding: 0.5rem 0.5rem 3rem 0.5rem; }
+            .controls-card { padding: 0.75rem; gap: 0.5rem; }
+            .search-input, .filter-select { width: 100%; min-width: 100%; }
+            .charts-container { grid-template-columns: 1fr; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .modal-player-name { font-size: 1.3rem; }
+            .modal { padding: 1.2rem; }
+            .col-hide-mobile { display: none; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <h1>RDA Player Directory</h1>
+
+    <div class="player-content">
+        <!-- Filter and Search Controls -->
+        <div class="controls-card">
+            <select class="filter-select" id="season-type" onchange="load(this.value === 'playoffs')">
+                <option value="regular">Regular Season</option>
+                <option value="playoffs">Playoffs</option>
+            </select>
+            <input type="text" class="search-input" id="search" placeholder="Search player or team..." oninput="filter()">
+            <select class="filter-select" id="sport-filter" onchange="filter()">
+                <option value="ALL">All Sports</option>
+            </select>
+            <select class="filter-select" id="rookie-filter" onchange="filter()">
+                <option value="ALL">All Status</option>
+                <option value="ROOKIES">Rookies Only</option>
+                <option value="VETERANS">Veterans Only</option>
+                <option value="BENCH_ONLY">Has Bench Points</option>
+            </select>
+            <select class="filter-select" id="sort-metric" onchange="filter()">
+                <option value="total">Sort: Total Points</option>
+                <option value="bench">Sort: Bench Points</option>
+                <option value="avg">Sort: Points Per Game</option>
+                <option value="paa">Sort: Points Above Avg (PAA)</option>
+                <option value="peak">Sort: Peak Score</option>
+                <option value="share">Sort: Team % Share</option>
+            </select>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="rank-cell">Rank</th>
+                        <th>Player</th>
+                        <th>Franchise</th>
+                        <th class="stat-val" id="dynamic-header">Total Pts</th>
+                    </tr>
+                </thead>
+                <tbody id="player-table-body">
+                    <tr><td colspan="4" style="text-align:center; color:var(--gold-mid); padding:3rem; font-style:italic;">Loading players...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Advanced Player Modal -->
+    <div class="modal-bg" id="player-modal">
+        <div class="modal">
+            <button class="close-btn" id="modal-close">&times;</button>
+            
+            <div class="modal-header">
+                <img src="" id="modal-logo" class="modal-team-logo" onerror="this.style.display='none'">
+                <div class="modal-name-block">
+                    <h2 class="modal-player-name" id="modal-name">Player Name</h2>
+                    <div class="modal-player-team" id="modal-team">Team Name</div>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <div class="metric-label">Points Per Game</div>
+                    <div class="metric-value" id="modal-ppg">0.00</div>
+                    <div class="metric-subtext" id="modal-gp">0 Games Played</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Consistency</div>
+                    <div class="metric-value" id="modal-consistency" style="color: #4ade80;">Elite</div>
+                    <div class="metric-subtext">Sport variance</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Peak Score</div>
+                    <div class="metric-value highlight-cell" id="modal-peak">0.00</div>
+                    <div class="metric-subtext" id="modal-peak-sport">Peak slate</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Pts Above Avg</div>
+                    <div class="metric-value" id="modal-paa">0.00</div>
+                    <div class="metric-subtext">vs League Avg PPG</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Recent Form (Last 5)</h3>
+                    <div class="canvas-wrapper">
+                        <canvas id="formChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Sport Profile</h3>
+                    <div class="canvas-wrapper" id="radar-wrapper">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, getSeasonData, currentSeason, getTeamLogoPath } from './js/app-v2.js';
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const seasonConfigs = {
+            '4': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' },
+            '5': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' },
+            '6': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' }
+        };
+
+        window.userToIdMap = {};
+        window.canonicalPlayerMap = {};
+
+        let allRawData = [];
+        let leagueAvgPPG = 0;
+        let globalPlayerMap = {};
+        let formChartInstance = null;
+        let radarChartInstance = null;
+        let leagueSportAvgs = {};
+
+        function getCleanValue(obj, keys) {
+            if (!obj) return '';
+            for (const k of keys) {
+                if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+                    return String(obj[k]).trim();
+                }
+            }
+            const objKeys = Object.keys(obj);
+            for (const target of keys) {
+                const cleanTarget = target.toLowerCase().replace(/[\s_\-]/g, '');
+                for (const actual of objKeys) {
+                    if (actual.toLowerCase().replace(/[\s_\-]/g, '') === cleanTarget) {
+                        if (obj[actual] !== undefined && obj[actual] !== null) {
+                            const val = String(obj[actual]).trim();
+                            if (val !== '') return val;
+                        }
+                    }
+                }
+            }
+            return '';
+        }
+
+        const modal = document.getElementById('player-modal');
+        const modalClose = document.getElementById('modal-close');
+        modalClose.onclick = () => { modal.style.display = 'none'; document.body.classList.remove('modal-open'); };
+        window.onclick = (e) => { if (e.target === modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); } };
+
+        function getConsistencyInfo(perSportAverages) {
+            if (!perSportAverages || perSportAverages.length < 2) return { text: 'N/A', color: '#888' };
+            const mean = perSportAverages.reduce((a, b) => a + b, 0) / perSportAverages.length;
+            const variance = perSportAverages.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / perSportAverages.length;
+            const stdDev = Math.sqrt(variance);
+
+            if (stdDev < 3.5) return { text: 'Elite', color: '#4ade80' };
+            if (stdDev < 6.0) return { text: 'High', color: '#60a5fa' };
+            if (stdDev < 9.0) return { text: 'Average', color: '#facc15' };
+            return { text: 'Volatile', color: '#f87171' };
+        }
+
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            const headers = rows[0].split(delimiter).map(h => h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase());
+            return rows.slice(1).map(row => {
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim();
+                });
+                return obj;
+            });
+        }
+
+        window.load = async function(isPlayoff = false) {
+            const collectionName = isPlayoff ? 'playoff-players' : 'players';
+            document.getElementById('player-table-body').innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--gold-mid); padding:3rem; font-style:italic;">Loading players...</td></tr>';
+            
+            allRawData = await getSeasonData(collectionName);
+
+            window.userToIdMap = {};
+            window.canonicalPlayerMap = {};
+
+            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+            if (config) {
+                try {
+                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(config.players));
+                    if (res.ok) {
+                        const text = await res.text();
+                        const parsedData = parseCsvLocal(text);
+                        
+                        parsedData.forEach(row => {
+                            const uid = getCleanValue(row, ['user id', 'userid', 'user_id', 'uid', 'id']);
+                            const rawUname = getCleanValue(row, ['username', 'user name', 'name', 'user']).replace(/^@/, '');
+                            const cleanUname = rawUname.toLowerCase();
+                            const rawTeam = getCleanValue(row, ['team', 'team name']);
+
+                            const isFreeAgent = !rawTeam || ['free agent', 'free agents', 'fa', 'none', 'n/a', 'tbd', 'unknown'].includes(rawTeam.toLowerCase());
+                            const currentTeam = isFreeAgent ? '' : rawTeam;
+
+                            const rookieVal = getCleanValue(row, ['rookie', 'is rookie', 'isrookie']).toLowerCase();
+                            const isRookie = (rookieVal === 'yes' || rookieVal === 'true' || rookieVal === '1');
+
+                            const playerMeta = {
+                                userId: uid,
+                                username: rawUname || (uid ? `User_${uid.slice(0, 4)}` : 'Unknown'),
+                                team: currentTeam,
+                                isRookie: isRookie
+                            };
+
+                            if (uid) {
+                                window.canonicalPlayerMap[uid] = playerMeta;
+                                window.canonicalPlayerMap[uid.toLowerCase()] = playerMeta;
+                            }
+                            if (cleanUname) {
+                                window.canonicalPlayerMap[cleanUname] = playerMeta;
+                                if (uid) window.userToIdMap[cleanUname] = uid;
+                            }
+                        });
+                    }
+                } catch(e) { console.warn("Failed to fetch player roster data:", e); }
+            }
+
+            const sportTotals = {};
+            const sportCounts = {};
+            const discoveredSports = new Set();
+
+            allRawData.forEach(d => {
+                const s = getCleanValue(d, ['sport', 'sportName']).toUpperCase();
+                const sc = parseFloat(getCleanValue(d, ['score', 'points', 'pts'])) || 0;
+                const rawBench = getCleanValue(d, ['isBench', 'isbench', 'bench', 'is_bench']).toLowerCase();
+                const isBench = (rawBench === 'true' || rawBench === 'yes' || rawBench === '1');
+                
+                if (s && s !== 'USER' && s !== 'DRAFT' && s !== 'SPORT') {
+                    discoveredSports.add(s);
+                    if (sc > 0 && !isBench) {
+                        sportTotals[s] = (sportTotals[s] || 0) + sc;
+                        sportCounts[s] = (sportCounts[s] || 0) + 1;
+                    }
+                }
+            });
+
+            leagueSportAvgs = {};
+            for (let s in sportTotals) leagueSportAvgs[s] = sportTotals[s] / sportCounts[s];
+
+            const sportSelect = document.getElementById('sport-filter');
+            if (sportSelect) {
+                const currentVal = sportSelect.value || 'ALL';
+                let optionsHtml = '<option value="ALL">All Sports</option>';
+                [...discoveredSports].sort().forEach(sport => {
+                    optionsHtml += `<option value="${sport}" ${currentVal === sport ? 'selected' : ''}>${sport}</option>`;
+                });
+                sportSelect.innerHTML = optionsHtml;
+            }
+
+            filter();
+        };
+
+        window.filter = () => {
+            const term = document.getElementById('search').value.toLowerCase();
+            const sportFilter = document.getElementById('sport-filter')?.value || 'ALL';
+            const rookieFilter = document.getElementById('rookie-filter').value;
+            const sortMetric = document.getElementById('sort-metric').value;
+
+            let teamTotals = {};
+            globalPlayerMap = {};
+
+            allRawData.forEach(d => {
+                const rawUserId = getCleanValue(d, ['userId', 'userid', 'user id', 'user_id', 'uid', 'id']);
+                const rawUsername = getCleanValue(d, ['username', 'userName', 'user name', 'name', 'user']).replace(/^@/, '');
+                const cleanUsername = rawUsername.toLowerCase();
+
+                let canonicalId = '';
+                if (rawUserId) canonicalId = rawUserId;
+                else if (cleanUsername && window.userToIdMap[cleanUsername]) canonicalId = window.userToIdMap[cleanUsername];
+                else if (cleanUsername) canonicalId = cleanUsername;
+                if (!canonicalId) return;
+
+                const meta = window.canonicalPlayerMap[canonicalId] || 
+                             (rawUserId && window.canonicalPlayerMap[rawUserId]) ||
+                             (cleanUsername && window.canonicalPlayerMap[cleanUsername]) || null;
+
+                const displayName = meta?.username || rawUsername || (canonicalId.startsWith('User_') ? canonicalId : `User_${canonicalId.slice(0, 4)}`);
+                const currentTeam = meta ? meta.team : '';
+                const isRookie = meta ? meta.isRookie : false;
+
+                if (!globalPlayerMap[canonicalId]) {
+                    globalPlayerMap[canonicalId] = { 
+                        id: canonicalId,
+                        username: displayName,
+                        team: currentTeam,
+                        score: 0,
+                        benchScore: 0,
+                        games: 0,
+                        benchGames: 0,
+                        gamedays: {}, 
+                        benchGamedays: {}, 
+                        scoresArray: [],
+                        sportScores: {}, 
+                        isRookie: isRookie
+                    };
+                } else {
+                    if (meta?.username) globalPlayerMap[canonicalId].username = meta.username;
+                    if (meta?.team !== undefined) globalPlayerMap[canonicalId].team = meta.team;
+                    if (meta?.isRookie !== undefined) globalPlayerMap[canonicalId].isRookie = meta.isRookie;
+                }
+
+                const score = parseFloat(getCleanValue(d, ['score', 'points', 'pts'])) || 0;
+                const sport = (getCleanValue(d, ['sport', 'sportName']) || 'Unknown').toUpperCase();
+                const date = getCleanValue(d, ['date', 'gamedate']) || 'Unknown';
+                const rawBench = getCleanValue(d, ['isBench', 'isbench', 'bench', 'is_bench']).toLowerCase();
+                const isBench = (rawBench === 'true' || rawBench === 'yes' || rawBench === '1');
+
+                if (score > 0) {
+                    if (!isBench) {
+                        if (!globalPlayerMap[canonicalId].sportScores[sport]) globalPlayerMap[canonicalId].sportScores[sport] = [];
+                        globalPlayerMap[canonicalId].sportScores[sport].push(score);
+                    }
+
+                    if (sportFilter !== 'ALL' && sport !== sportFilter) return;
+
+                    if (isBench) {
+                        globalPlayerMap[canonicalId].benchGamedays[date] = (globalPlayerMap[canonicalId].benchGamedays[date] || 0) + score;
+                    } else {
+                        if (!globalPlayerMap[canonicalId].gamedays[date]) {
+                            globalPlayerMap[canonicalId].gamedays[date] = { total: 0, sportsCount: 0 };
+                        }
+                        globalPlayerMap[canonicalId].gamedays[date].total += score;
+                        globalPlayerMap[canonicalId].gamedays[date].sportsCount += 1;
+
+                        if (currentTeam) teamTotals[currentTeam] = (teamTotals[currentTeam] || 0) + score;
+                    }
+                }
+            });
+
+            let totalLeagueScore = 0;
+            let totalPlayerGames = 0;
+
+            Object.values(globalPlayerMap).forEach(p => {
+                p.gamedayDetails = [];
+                p.scoresArray = [];
+                p.perSportAverages = [];
+
+                for (let d in p.gamedays) {
+                    const dayData = p.gamedays[d];
+                    const dayTotal = dayData.total;
+                    const count = dayData.sportsCount || 1;
+                    const avgPerSport = dayTotal / count;
+
+                    p.scoresArray.push(dayTotal);
+                    p.perSportAverages.push(avgPerSport);
+                    p.gamedayDetails.push({ date: d, total: dayTotal, sportsCount: count, avgPerSport: avgPerSport });
+                }
+
+                p.games = p.scoresArray.length;
+                p.score = p.scoresArray.reduce((a, b) => a + b, 0);
+                p.benchScore = Object.values(p.benchGamedays).reduce((a, b) => a + b, 0);
+
+                p.currentPeak = 0;
+                p.peakDate = 'Unknown';
+                for (let d in p.gamedays) {
+                    const dayTotal = p.gamedays[d].total !== undefined ? p.gamedays[d].total : p.gamedays[d];
+                    if (dayTotal > p.currentPeak) {
+                        p.currentPeak = dayTotal;
+                        p.peakDate = d;
+                    }
+                }
+
+                totalLeagueScore += p.score;
+                totalPlayerGames += p.games;
+            });
+
+            leagueAvgPPG = totalPlayerGames > 0 ? (totalLeagueScore / totalPlayerGames) : 0;
+
+            let mappedList = Object.values(globalPlayerMap).map(p => {
+                const ppg = p.games > 0 ? (p.score / p.games) : 0;
+                const paa = ppg - leagueAvgPPG;
+                const peak = p.scoresArray.length > 0 ? Math.max(...p.scoresArray) : 0;
+                const share = (p.team && teamTotals[p.team] > 0) ? (p.score / teamTotals[p.team]) * 100 : 0;
+                
+                return {
+                    ...p,
+                    currentScore: p.score,
+                    currentBenchScore: p.benchScore,
+                    currentPPG: ppg,
+                    currentPAA: paa,
+                    currentPeak: peak,
+                    currentShare: share
+                };
+            });
+
+            mappedList.forEach(p => globalPlayerMap[p.id] = p);
+
+            if (sportFilter !== 'ALL') mappedList = mappedList.filter(p => p.games > 0 || p.currentBenchScore > 0);
+            if (term) mappedList = mappedList.filter(p => p.username.toLowerCase().includes(term) || (p.team && p.team.toLowerCase().includes(term)));
+            if (rookieFilter === 'ROOKIES') mappedList = mappedList.filter(p => p.isRookie);
+            else if (rookieFilter === 'VETERANS') mappedList = mappedList.filter(p => !p.isRookie);
+            else if (rookieFilter === 'BENCH_ONLY') mappedList = mappedList.filter(p => p.currentBenchScore > 0);
+
+            mappedList.sort((a, b) => {
+                if (sortMetric === 'total') return b.currentScore - a.currentScore;
+                if (sortMetric === 'bench') return b.currentBenchScore - a.currentBenchScore;
+                if (sortMetric === 'avg') return b.currentPPG - a.currentPPG;
+                if (sortMetric === 'paa') return b.currentPAA - a.currentPAA;
+                if (sortMetric === 'peak') return b.currentPeak - a.currentPeak;
+                if (sortMetric === 'share') return b.currentShare - a.currentShare;
+                return 0;
+            });
+
+            const headerDict = {
+                'total': 'Total Pts', 'bench': 'Bench Pts', 'avg': 'Points/Game', 'paa': 'Pts Above Avg', 'peak': 'Peak Score', 'share': 'Team % Share'
+            };
+            document.getElementById('dynamic-header').innerText = headerDict[sortMetric];
+
+            const tbody = document.getElementById('player-table-body');
+            if (mappedList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:3rem;">No players found matching filters.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = mappedList.map((p, index) => {
+                const rank = index + 1;
+                let rankClass = '', rankDisplay = `#${rank}`;
+                if (rank === 1 && (sortMetric === 'total' || sortMetric === 'bench')) { rankClass = 'rank-1'; rankDisplay = `👑 #${rank}`; }
+                else if (rank === 2 && (sortMetric === 'total' || sortMetric === 'bench')) { rankClass = 'rank-2'; }
+                else if (rank === 3 && (sortMetric === 'total' || sortMetric === 'bench')) { rankClass = 'rank-3'; }
+
+                let dynamicStatHtml = '';
+                const benchHtml = p.currentBenchScore > 0 ? `<div style="font-size:0.72rem; color:#888; font-weight:normal; margin-top:2px;">+${p.currentBenchScore.toFixed(2)} Bench</div>` : '';
+                
+                if (sortMetric === 'total') dynamicStatHtml = `<td class="stat-val"><span class="highlight-cell">${p.currentScore.toFixed(2)}</span>${benchHtml}</td>`;
+                else if (sortMetric === 'bench') dynamicStatHtml = `<td class="stat-val highlight-cell" style="color: #94a3b8;">${p.currentBenchScore.toFixed(2)}</td>`;
+                else if (sortMetric === 'avg') dynamicStatHtml = `<td class="stat-val highlight-cell">${p.currentPPG.toFixed(2)}</td>`;
+                else if (sortMetric === 'paa') dynamicStatHtml = `<td class="stat-val" style="color: ${p.currentPAA > 0 ? '#4ade80' : '#f87171'}">${p.currentPAA > 0 ? '+' : ''}${p.currentPAA.toFixed(2)}</td>`;
+                else if (sortMetric === 'peak') dynamicStatHtml = `<td class="stat-val highlight-cell">${p.currentPeak.toFixed(2)}</td>`;
+                else if (sortMetric === 'share') dynamicStatHtml = `<td class="stat-val">${p.currentShare.toFixed(1)}%</td>`;
+
+                const rookieBadge = p.isRookie ? '<span class="rookie-badge">R</span>' : '';
+
+                return `
+                    <tr onclick="openPlayerModal('${p.id}')">
+                        <td class="rank-cell ${rankClass}">${rankDisplay}</td>
+                        <td class="player-name-cell">
+                            <span class="player-name-wrap">
+                                <span>${p.username}</span>${rookieBadge}
+                            </span>
+                        </td>
+                        <td>
+                            ${p.team ? `
+                                <span class="team-link">
+                                    <img src="${getTeamLogoPath(p.team)}" class="team-logo" onerror="this.style.display='none'">
+                                    <span>${p.team}</span>
+                                </span>
+                            ` : '<span style="color:#666; font-style:italic;">Free Agent</span>'}
+                        </td>
+                        ${dynamicStatHtml}
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        window.openPlayerModal = function(playerId) {
+            const p = globalPlayerMap[playerId];
+            if (!p) return;
+
+            document.getElementById('modal-name').textContent = p.username + (p.isRookie ? ' (R)' : '');
+            
+            const teamEl = document.getElementById('modal-team');
+            const logoEl = document.getElementById('modal-logo');
+            
+            if (p.team) {
+                teamEl.textContent = p.team;
+                teamEl.style.display = 'block';
+                const logoPath = getTeamLogoPath(p.team);
+                if (logoPath) {
+                    logoEl.src = logoPath;
+                    logoEl.style.display = 'block';
+                } else {
+                    logoEl.style.display = 'none';
+                }
+            } else {
+                teamEl.textContent = 'Free Agent';
+                teamEl.style.display = 'block';
+                logoEl.style.display = 'none';
+            }
+
+            document.getElementById('modal-ppg').textContent = p.currentPPG.toFixed(2);
+            document.getElementById('modal-gp').textContent = `${p.games} Games Played`;
+            
+            document.getElementById('modal-peak').textContent = p.currentPeak.toFixed(2);
+            document.getElementById('modal-peak-sport').textContent = `Achieved on ${p.peakDate}`;
+
+            const paaEl = document.getElementById('modal-paa');
+            paaEl.textContent = `${p.currentPAA > 0 ? '+' : ''}${p.currentPAA.toFixed(2)}`;
+            paaEl.style.color = p.currentPAA > 0 ? '#4ade80' : '#f87171';
+
+            const cons = getConsistencyInfo(p.perSportAverages || []);
+            const consEl = document.getElementById('modal-consistency');
+            consEl.textContent = cons.text;
+            consEl.style.color = cons.color;
+
+            if (formChartInstance) formChartInstance.destroy();
+            if (radarChartInstance) radarChartInstance.destroy();
+
+            const last5Slates = (p.gamedayDetails || []).slice(-5);
+            const formLabels = last5Slates.map(d => `${d.date} (${d.sportsCount}S)`);
+            const formAvgs = last5Slates.map(d => d.avgPerSport.toFixed(2));
+            
+            const formCtx = document.getElementById('formChart').getContext('2d');
+            formChartInstance = new Chart(formCtx, {
+                type: 'bar',
+                data: {
+                    labels: formLabels,
+                    datasets: [{
+                        label: 'Avg Pts / Sport',
+                        data: formAvgs,
+                        backgroundColor: '#d4af37',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const slate = last5Slates[ctx.dataIndex];
+                                    return [
+                                        ` Avg / Sport: ${slate.avgPerSport.toFixed(2)} pts`,
+                                        ` Slate Total: ${slate.total.toFixed(2)} pts (${slate.sportsCount} Sports)`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Pts / Sport', color: '#888', font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.05)' }, 
+                            ticks: { color: '#888' } 
+                        },
+                        x: { grid: { display: false }, ticks: { color: '#888', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            const radarLabels = [];
+            const radarDataValues = [];
+            const allLeagueSports = Object.keys(leagueSportAvgs).sort();
+            
+            allLeagueSports.forEach(sport => {
+                const leagueAvg = leagueSportAvgs[sport];
+                if (leagueAvg && leagueAvg > 0) {
+                    radarLabels.push(sport);
+                    let sportAvg = 0;
+                    if (p.sportScores[sport] && p.sportScores[sport].length > 0) {
+                        sportAvg = p.sportScores[sport].reduce((a,b)=>a+b,0) / p.sportScores[sport].length;
+                    }
+                    const index = Math.min((sportAvg / leagueAvg) * 100, 200);
+                    radarDataValues.push(index.toFixed(1));
+                }
+            });
+
+            const radarWrapper = document.getElementById('radar-wrapper');
+            radarWrapper.innerHTML = '<canvas id="radarChart"></canvas>';
+            const radarCtx = document.getElementById('radarChart').getContext('2d');
+
+            if (radarLabels.length > 0) {
+                radarChartInstance = new Chart(radarCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: radarLabels,
+                        datasets: [{
+                            label: 'Strength Index',
+                            data: radarDataValues,
+                            backgroundColor: 'rgba(56, 189, 248, 0.25)',
+                            borderColor: '#38bdf8',
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#38bdf8',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(255, 255, 255, 0.08)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                                pointLabels: { color: '#cbd5e1', font: { size: 10, weight: '700' } },
+                                ticks: { display: false, min: 0 }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: function(context) { return ` Strength Index: ${context.formattedValue}`; } } }
+                        }
+                    }
+                });
+            } else {
+                radarWrapper.innerHTML = `
+                    <div style="height:100%; display:flex; justify-content:center; align-items:center; color:#888; font-style:italic; font-size:0.8rem;">
+                        Not enough sport data to generate profile.
+                    </div>
+                `;
+            }
+
+            modal.style.display = 'flex';
+            document.body.classList.add('modal-open');
+        };
+
+        load();
+    </script>
+</body>
+</html>
