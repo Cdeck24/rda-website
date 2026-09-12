@@ -116,13 +116,18 @@ export function parseCsvToObject(csvText) {
 // --- UNIFIED 3-PILLAR NAVIGATION & QUICK-INSPECT DRAWER ENGINE ---
 // ============================================================================
 export function initNav() {
-    const isV2 = window.location.pathname.includes('-v2');
-    const livePage = isV2 ? `live-v2.html?season=${currentSeason}` : `live-scores.html?season=${currentSeason}`;
-    const teamsPage = isV2 ? `teams-v2.html?season=${currentSeason}` : `teams.html?season=${currentSeason}`;
-    const standingsPage = isV2 ? `standings-v2.html?season=${currentSeason}` : `standings.html?season=${currentSeason}`;
-    const homePage = isV2 ? `index-v2.html?season=${currentSeason}` : `rda-home.html`;
+    const primaryNavItems = [
+        { id: 'nav-live', label: '⚡ Live', href: `live-v2.html?season=${currentSeason}` },
+        { id: 'nav-standings', label: 'Standings', href: `standings-v2.html?season=${currentSeason}` },
+        { id: 'nav-players', label: 'Players', href: `players-v2.html?season=${currentSeason}` }
+    ];
 
-    // Inject Navigation Bar Styles
+    const moreNavItems = [
+        { id: 'nav-schedule', label: 'Schedule', href: `schedule-v2.html?season=${currentSeason}` },
+        { id: 'nav-teams', label: 'Franchises', href: `teams-v2.html?season=${currentSeason}` },
+        { id: 'nav-records', label: 'Records', href: `records-v2.html?season=${currentSeason}` }
+    ];
+
     if (!document.getElementById('v2-nav-styles')) {
         const style = document.createElement('style');
         style.id = 'v2-nav-styles';
@@ -132,49 +137,48 @@ export function initNav() {
                 align-items: center;
                 justify-content: space-between;
                 max-width: 1100px;
-                margin: 0 auto 1.5rem auto;
-                padding: 0.5rem 1rem;
-                background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+                width: 100%;
+                margin: 0 auto 1.25rem auto;
+                padding: 0.25rem 0.4rem;
+                background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
                 border: 1px solid var(--border-subtle);
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-                gap: 0.75rem;
+                border-radius: 8px;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+                gap: 0.2rem;
                 box-sizing: border-box;
             }
             .nav-left {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                flex-wrap: wrap;
+                gap: 0.15rem;
+                min-width: 0;
+                flex: 1 1 auto;
             }
             .nav-brand {
                 font-family: 'Didot', serif;
                 font-weight: 800;
-                font-size: 1.1rem;
+                font-size: 0.85rem;
                 color: var(--gold-light);
                 text-decoration: none;
-                letter-spacing: 1px;
-                margin-right: 0.5rem;
-                display: flex;
-                align-items: center;
-                gap: 6px;
+                letter-spacing: 0.5px;
+                margin-right: 0.1rem;
+                padding-left: 0.1rem;
+                flex-shrink: 0;
             }
             .nav-button {
                 color: var(--text-muted);
                 text-decoration: none;
-                font-size: 0.88rem;
-                font-weight: 600;
-                padding: 0.45rem 0.85rem;
-                border-radius: 6px;
+                font-size: 0.65rem;
+                font-weight: 700;
+                padding: 0.25rem 0.35rem;
+                border-radius: 4px;
                 transition: all 0.2s ease;
-                display: inline-flex;
-                align-items: center;
-                gap: 5px;
+                white-space: nowrap;
+                text-transform: uppercase;
+                letter-spacing: 0.2px;
+                flex-shrink: 0;
             }
-            .nav-button:hover {
-                color: #fff;
-                background: rgba(255, 255, 255, 0.06);
-            }
+            .nav-button:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
             .nav-button.active {
                 color: var(--gold-light);
                 background: rgba(212, 175, 55, 0.15);
@@ -183,65 +187,78 @@ export function initNav() {
             .nav-right {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
+                gap: 0.2rem;
+                flex-shrink: 0;
             }
             .nav-season-select {
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.6);
                 border: 1px solid var(--border-gold);
                 color: var(--gold-light);
-                border-radius: 6px;
-                padding: 0.35rem 0.6rem;
-                font-size: 0.8rem;
-                font-weight: 700;
+                border-radius: 4px;
+                padding: 0.2rem 0.25rem;
+                font-size: 0.65rem;
+                font-weight: 800;
                 outline: none;
                 cursor: pointer;
-            }
-            /* More Dropdown */
-            .nav-dropdown {
-                position: relative;
-                display: inline-block;
+                width: 44px;
+                text-align: center;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
             }
             .nav-dropdown-btn {
                 background: transparent;
-                border: none;
+                border: 1px solid var(--border-subtle);
                 color: var(--text-muted);
-                font-size: 0.88rem;
-                font-weight: 600;
-                padding: 0.45rem 0.75rem;
-                border-radius: 6px;
+                font-size: 0.65rem;
+                font-weight: 700;
+                padding: 0.2rem 0.35rem;
+                border-radius: 4px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                gap: 2px;
+                text-transform: uppercase;
+                white-space: nowrap;
             }
-            .nav-dropdown-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+            .nav-dropdown-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
+            .nav-dropdown-btn.active {
+                color: var(--gold-light);
+                border-color: var(--border-gold);
+                background: rgba(212, 175, 55, 0.15);
+            }
             .nav-dropdown-menu {
                 display: none;
                 position: absolute;
-                top: 100%;
+                top: calc(100% + 5px);
                 right: 0;
                 background: var(--bg-navy-light);
-                min-width: 170px;
-                box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+                min-width: 150px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.7);
                 border: 1px solid var(--border-gold);
                 border-radius: 8px;
-                z-index: 1000;
-                padding: 0.4rem 0;
-                margin-top: 6px;
+                z-index: 2000;
+                padding: 0.35rem 0;
             }
             .nav-dropdown-menu.open { display: block; }
             .nav-dropdown-item {
                 display: block;
-                padding: 0.6rem 1rem;
+                padding: 0.55rem 0.85rem;
                 color: #cbd5e1;
-                font-size: 0.82rem;
+                font-size: 0.78rem;
                 text-decoration: none;
-                font-weight: 500;
-                transition: background 0.2s;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                transition: background 0.15s ease;
             }
             .nav-dropdown-item:hover {
                 background: rgba(212, 175, 55, 0.15);
                 color: var(--gold-light);
+            }
+            .nav-dropdown-item.active {
+                color: var(--gold-light);
+                background: rgba(212, 175, 55, 0.1);
             }
             /* Quick Inspect Slideout Drawer */
             .quick-drawer-backdrop {
@@ -311,44 +328,40 @@ export function initNav() {
                 overflow-y: auto;
                 flex: 1;
             }
-            @media (max-width: 650px) {
-                .nav-container { flex-direction: column; align-items: stretch; gap: 0.5rem; }
-                .nav-left { justify-content: center; }
-                .nav-right { justify-content: center; }
-            }
         `;
         document.head.appendChild(style);
     }
 
-    // Render Clean 3-Pillar Nav HTML
+    const currentPath = window.location.pathname.split('/').pop() || 'live-v2.html';
+    const isMoreActive = moreNavItems.some(item => currentPath === item.href.split('?')[0]);
+
     const navHTML = `
     <div class="nav-container">
         <div class="nav-left">
-            <a href="${homePage}" class="nav-brand">RDA</a>
-            <a href="${livePage}" class="nav-button" id="nav-live">⚡ Game Day</a>
-            <a href="${standingsPage}" class="nav-button" id="nav-standings">Standings</a>
-            <a href="${teamsPage}" class="nav-button" id="nav-teams">Franchises</a>
+            <a href="live-v2.html?season=${currentSeason}" class="nav-brand">RDA</a>
+            ${primaryNavItems.map(item => {
+                const target = item.href.split('?')[0];
+                const isActive = currentPath === target;
+                return `<a href="${item.href}" class="nav-button ${isActive ? 'active' : ''}" id="${item.id}">${item.label}</a>`;
+            }).join('')}
         </div>
         <div class="nav-right">
             <select class="nav-season-select" id="global-season-select" title="Select Season">
-                <option value="6" ${currentSeason === '6' ? 'selected' : ''}>Season 6</option>
-                <option value="5" ${currentSeason === '5' ? 'selected' : ''}>Season 5</option>
-                <option value="4" ${currentSeason === '4' ? 'selected' : ''}>Season 4</option>
-                <option value="3" ${currentSeason === '3' ? 'selected' : ''}>Season 3</option>
-                <option value="2" ${currentSeason === '2' ? 'selected' : ''}>Season 2</option>
-                <option value="1" ${currentSeason === '1' ? 'selected' : ''}>Season 1</option>
+                <option value="6" ${currentSeason === '6' ? 'selected' : ''}>S6</option>
+                <option value="5" ${currentSeason === '5' ? 'selected' : ''}>S5</option>
+                <option value="4" ${currentSeason === '4' ? 'selected' : ''}>S4</option>
+                <option value="3" ${currentSeason === '3' ? 'selected' : ''}>S3</option>
+                <option value="2" ${currentSeason === '2' ? 'selected' : ''}>S2</option>
+                <option value="1" ${currentSeason === '1' ? 'selected' : ''}>S1</option>
             </select>
             <div class="nav-dropdown">
-                <button class="nav-dropdown-btn" id="nav-more-toggle">More ▾</button>
+                <button class="nav-dropdown-btn ${isMoreActive ? 'active' : ''}" id="nav-more-toggle">More ▾</button>
                 <div class="nav-dropdown-menu" id="nav-more-menu">
-                    <a href="schedule.html?season=${currentSeason}" class="nav-dropdown-item">Full Schedule</a>
-                    <a href="players.html?season=${currentSeason}" class="nav-dropdown-item">Player Directory</a>
-                    <a href="transactions.html?season=${currentSeason}" class="nav-dropdown-item">Transactions Log</a>
-                    <a href="free-agents.html?season=${currentSeason}" class="nav-dropdown-item">Free Agents</a>
-                    <a href="trophies.html?season=${currentSeason}" class="nav-dropdown-item">Trophies</a>
-                    <a href="records.html" class="nav-dropdown-item">All-Time Records</a>
-                    <a href="all-star.html?season=${currentSeason}" class="nav-dropdown-item">All-Star Game</a>
-                    <a href="gms.html" class="nav-dropdown-item">GM Dashboard</a>
+                    ${moreNavItems.map(item => {
+                        const target = item.href.split('?')[0];
+                        const isActive = currentPath === target;
+                        return `<a href="${item.href}" class="nav-dropdown-item ${isActive ? 'active' : ''}">${item.label}</a>`;
+                    }).join('')}
                 </div>
             </div>
         </div>
@@ -370,11 +383,13 @@ export function initNav() {
     </div>
     `;
 
+    const existingNav = document.querySelector('.nav-container');
+    if (existingNav) existingNav.remove();
+
     const header = document.querySelector('h1');
     if (header) header.insertAdjacentHTML('afterend', navHTML);
     else document.body.insertAdjacentHTML('afterbegin', navHTML);
 
-    // Season Selector Handler
     const seasonSelect = document.getElementById('global-season-select');
     seasonSelect?.addEventListener('change', (e) => {
         const newSeason = e.target.value;
@@ -383,7 +398,6 @@ export function initNav() {
         window.location.href = currentUrl.toString();
     });
 
-    // More Dropdown Handler
     const moreBtn = document.getElementById('nav-more-toggle');
     const moreMenu = document.getElementById('nav-more-menu');
     moreBtn?.addEventListener('click', (e) => {
@@ -392,13 +406,6 @@ export function initNav() {
     });
     document.addEventListener('click', () => moreMenu?.classList.remove('open'));
 
-    // Highlight Active Link
-    const path = window.location.pathname;
-    if (path.includes('live')) document.getElementById('nav-live')?.classList.add('active');
-    if (path.includes('teams')) document.getElementById('nav-teams')?.classList.add('active');
-    if (path.includes('standings')) document.getElementById('nav-standings')?.classList.add('active');
-
-    // Quick Drawer Event Wiring
     initQuickDrawerListeners();
 }
 

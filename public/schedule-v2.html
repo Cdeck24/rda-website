@@ -514,7 +514,8 @@
             .schedule-content { padding: 0.5rem 0.5rem 3rem 0.5rem; }
             .controls-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; }
             .filter-select { width: 100%; }
-            .matchup-grid { grid-template-columns: 1fr; gap: 0.5rem; padding: 0.6rem; }
+            /* Keep 2-column grid active on mobile */
+            .matchup-grid { gap: 0.4rem !important; padding: 0.4rem !important; }
             .game-card-header { padding: 0.65rem 0.75rem; }
         }
 
@@ -544,7 +545,7 @@
     </div>
 
     <script type="module">
-        import { initNav, getSeasonData, currentSeason, getTeamLogoPath, parseCsvToObject } from './js/app-v2.js';
+        import { initNav, getSeasonData, currentSeason, getTeamLogoPath, parseCsvToObject } from './js/app-v2.js?v=4';
         initNav();
 
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
