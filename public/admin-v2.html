@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Admin Console</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global-v2.css">
+    <!-- Required for Hashids Token Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    <style>
+        .admin-container {
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 0.5rem 1rem 4rem 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .admin-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            text-align: left;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .admin-title-block h2 {
+            margin: 0;
+            color: var(--gold-mid);
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: 'Didot', serif;
+            line-height: 1.1;
+        }
+        .admin-title-block p {
+            margin: 0.25rem 0 0 0;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .auth-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 0.55rem 0.9rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .auth-user-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+            display: inline-block;
+        }
+
+        .btn-logout-small {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+            padding: 0.25rem 0.65rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-logout-small:hover { background: #ef4444; color: #fff; }
+
+        .login-box {
+            max-width: 320px;
+            margin: 2rem auto;
+            text-align: left;
+        }
+        .login-box input {
+            display: block;
+            margin-bottom: 0.75rem;
+            padding: 0.7rem 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .login-box input:focus { border-color: var(--gold-light); }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .form-group.full-width { grid-column: 1 / -1; }
+
+        .form-group label {
+            color: var(--gold-light);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.75px;
+            font-size: 0.72rem;
+            text-align: left;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-subtle);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            outline: none;
+            text-align: left;
+        }
+        .form-group select:focus,
+        .form-group input:focus {
+            border-color: var(--gold-mid);
+        }
+
+        .btn-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            margin-top: 1.25rem;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+        }
+
+        .btn {
+            padding: 0.75rem 0.85rem;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        .btn-primary-action {
+            grid-column: 1 / -1;
+            padding: 0.85rem 1rem;
+            font-size: 0.85rem;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-mid));
+            color: #000;
+            border-color: var(--border-gold);
+        }
+
+        .btn-orange { background: rgba(249, 115, 22, 0.15); border-color: rgba(249, 115, 22, 0.4); color: #fb923c; }
+        .btn-orange:hover { background: #f97316; color: #fff; }
+
+        .btn-red { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; }
+        .btn-red:hover { background: #ef4444; color: #fff; }
+
+        .btn-green { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
+        .btn-green:hover { background: #10b981; color: #fff; }
+
+        .btn-purple { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #a78bfa; }
+        .btn-purple:hover { background: #8b5cf6; color: #fff; }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #090d16;
+            border: 1px solid var(--border-subtle);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 0.45rem 0.85rem;
+            margin-top: 1.25rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        #output {
+            background: #050811;
+            color: #4ade80;
+            padding: 1rem;
+            border-radius: 0 0 8px 8px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            margin: 0;
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid var(--border-subtle);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 650px) {
+            .admin-container { padding: 0.5rem 0.5rem 3rem 0.5rem; }
+            .form-grid { grid-template-columns: 1fr; }
+            .btn-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <h1>RDA Admin Console</h1>
+    
+    <div class="admin-container">
+        <div class="admin-card">
+            <div class="admin-header">
+                <div class="admin-title-block">
+                    <h2>Admin Console</h2>
+                    <p>Score compiler, sheet logging engine, and league reports</p>
+                </div>
+            </div>
+
+            <!-- Login Screen -->
+            <div id="login-container" class="login-box hidden">
+                <div style="color: var(--gold-mid); font-size: 1rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.85rem;">Admin Authentication</div>
+                <input type="email" id="login-email" placeholder="Admin Email">
+                <input type="password" id="login-password" placeholder="Password">
+                <button id="btn-login" class="btn btn-primary-action" style="width: 100%;">Sign In</button>
+                <div id="login-error" style="color: var(--danger); margin-top: 0.6rem; font-size: 0.82rem; font-weight: bold;"></div>
+            </div>
+
+            <!-- Authenticated Controls -->
+            <div id="admin-controls" class="hidden">
+                <div class="auth-bar">
+                    <span class="auth-user-tag">
+                        <span class="auth-dot"></span>
+                        <span id="user-display">Authenticated</span>
+                    </span>
+                    <button id="btn-logout" class="btn-logout-small">Sign Out</button>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="seasonSelect">Season</label>
+                        <select id="seasonSelect" onchange="loadScheduleDates()">
+                            <option value="6" selected>Season 6</option>
+                            <option value="5">Season 5</option>
+                            <option value="4">Season 4</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dateSelect">Game Date</label>
+                        <select id="dateSelect"><option value="">Loading dates...</option></select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="gameType">Game Type</label>
+                        <select id="gameType">
+                            <option value="regular">Regular Season</option>
+                            <option value="playoff">Playoff Game</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width hidden" id="playoffSeriesGroup">
+                        <label for="playoffSeries">Playoff Series</label>
+                        <select id="playoffSeries">
+                            <option value="Wild-Card">Wild Card Round</option>
+                            <option value="Semi-Finals">Semi-Finals Round</option>
+                            <option value="Championship">Championship</option>
+                            <option value="Third-Place">3rd Place Match</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="btn-section">
+                    <button id="btn-fetch" class="btn btn-primary-action">⚡ Fetch & Write Scores</button>
+                    <div class="btn-row">
+                        <button id="btn-report" class="btn btn-green">Generate Report</button>
+                        <button id="btn-sync-fa" class="btn btn-purple">Sync Free Agents</button>
+                    </div>
+                    <div class="btn-row">
+                        <button id="btn-rewrite" class="btn btn-orange">Undo & Rewrite</button>
+                        <button id="btn-undo" class="btn btn-red">Undo Writes for Date</button>
+                    </div>
+                </div>
+
+                <div class="terminal-header">
+                    <span>Execution Console</span>
+                    <span id="terminal-status" style="color: var(--gold-light);">Idle</span>
+                </div>
+                <pre id="output">Waiting for command...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav } from './js/app-v2.js?v=6';
+        import { auth } from './js/firebase-config.js';
+        import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
+
+        initNav();
+
+        const APPS_SCRIPT_URL_SCORES = 'https://script.google.com/macros/s/AKfycbyY4rz_46uk2JnqO4y7Os-0LHSU4TL43jPrtG-GXYUC61XU2o1QXoK0qMpdTdwzmenG/exec';
+        const APPS_SCRIPT_URL_ROSTERS = 'https://script.google.com/macros/s/AKfycbxCThTL5b8sgFBlEuebH0yPt4w6ESR4fh16v22obah9toHXPTtLmYOG1iuoE_AD9s5qiQ/exec';
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f'; 
+        const REAL_VERSION = '27';
+
+        const seasonConfigs = {
+            '4': {
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
+                schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv'
+            },
+            '5': {
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
+                schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv'
+            },
+            '6': {
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
+                schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv'
+            }
+        };
+
+        const userDisplay = document.getElementById('user-display');
+        const loginContainer = document.getElementById('login-container');
+        const adminControls = document.getElementById('admin-controls');
+        const btnLogout = document.getElementById('btn-logout');
+        const btnLogin = document.getElementById('btn-login');
+        const output = document.getElementById('output');
+        const terminalStatus = document.getElementById('terminal-status');
+        const dateSelect = document.getElementById('dateSelect');
+        const seasonSelect = document.getElementById('seasonSelect');
+        const gameTypeSelect = document.getElementById('gameType');
+        const playoffSeriesGroup = document.getElementById('playoffSeriesGroup');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userDisplay.textContent = user.email;
+                loginContainer.classList.add('hidden');
+                adminControls.classList.remove('hidden');
+            } else {
+                loginContainer.classList.remove('hidden');
+                adminControls.classList.add('hidden');
+            }
+        });
+
+        btnLogin.addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const err = document.getElementById('login-error');
+            err.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                err.textContent = error.message;
+            }
+        });
+
+        btnLogout.addEventListener('click', () => signOut(auth));
+
+        gameTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'playoff') {
+                playoffSeriesGroup.classList.remove('hidden');
+            } else {
+                playoffSeriesGroup.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('btn-fetch').addEventListener('click', performFetchAndWrite);
+        document.getElementById('btn-undo').addEventListener('click', () => performUndo(false));
+        document.getElementById('btn-report').addEventListener('click', generateReport);
+        document.getElementById('btn-sync-fa').addEventListener('click', syncFreeAgents);
+
+        document.getElementById('btn-rewrite').addEventListener('click', async () => {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
+            if (!confirm(`WARNING: Are you sure you want to UNDO and REWRITE all data for ${selectedDate} in Season ${season}?`)) return;
+
+            const success = await performUndo(true);
+            if (success) {
+                output.textContent += "\n-----------------------\nStarting Rewrite process...\n";
+                await performFetchAndWrite();
+            }
+        });
+
+        function parseCSVLocal(csvText) {
+            if (!csvText) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            return rows.map(r => {
+                let inQuotes = false;
+                let currentVal = '';
+                const values = [];
+                for (let i = 0; i < r.length; i++) {
+                    const char = r[i];
+                    if (char === '"' && (i === 0 || r[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                return values;
+            });
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        const isSameDate = (csvDate, targetStr) => {
+            if (!csvDate) return false;
+            const cleanDate = String(csvDate).trim();
+            if (cleanDate === targetStr) return true;
+            const parsed = new Date(cleanDate);
+            if (!isNaN(parsed.getTime())) {
+                if (`${parsed.getMonth() + 1}/${parsed.getDate()}` === targetStr) return true;
+            }
+            const partsSlash = cleanDate.split('/');
+            if (partsSlash.length >= 2 && `${parseInt(partsSlash[0])}/${parseInt(partsSlash[1])}` === targetStr) return true;
+            return false;
+        };
+
+        window.loadScheduleDates = async function() {
+            const season = seasonSelect.value;
+            const config = seasonConfigs[season];
+            
+            try {
+                dateSelect.innerHTML = '<option value="">Loading dates...</option>';
+                const res = await fetch(workerProxy + '?url=' + encodeURIComponent(config.schedule));
+                if (!res.ok) throw new Error("Network response was not ok");
+                const text = await res.text();
+                
+                const rows = parseCSVLocal(text).filter(r => r.length > 0 && r[0] !== '');
+                const headers = rows[0].map(h => h.toLowerCase());
+                const dIdx = headers.findIndex(h => h.includes('date'));
+                
+                if (dIdx === -1) {
+                    dateSelect.innerHTML = '<option value="">Error: Date column not found</option>';
+                    return;
+                }
+
+                const uniqueDates = new Set();
+                rows.slice(1).forEach(r => {
+                    const d = r[dIdx]?.trim();
+                    if (d) uniqueDates.add(d);
+                });
+
+                const parseSortableDate = (dateStr) => {
+                    if (!dateStr) return 0;
+                    const parts = dateStr.split('/');
+                    if (parts.length >= 2) {
+                        const month = parseInt(parts[0], 10);
+                        const day = parseInt(parts[1], 10);
+                        let year = new Date().getFullYear();
+                        if (parts.length === 3) year = parseInt(parts[2], 10);
+                        if (year < 100) year += 2000;
+                        return new Date(year, month - 1, day).getTime();
+                    }
+                    const d = new Date(dateStr);
+                    return isNaN(d) ? 0 : d.getTime();
+                };
+
+                const sortedDates = [...uniqueDates].sort((a, b) => parseSortableDate(a) - parseSortableDate(b));
+
+                dateSelect.innerHTML = '';
+                sortedDates.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    dateSelect.appendChild(opt);
+                });
+
+                if (sortedDates.length === 0) dateSelect.innerHTML = '<option value="">No dates found in schedule</option>';
+            } catch (e) {
+                dateSelect.innerHTML = '<option value="">Error loading schedule</option>';
+            }
+        };
+        
+        window.loadScheduleDates();
+
+        function generateRequestToken() {
+            const timestampMs = Date.now();
+            const hasher = new Hashids("realwebapp", 16);
+            return hasher.encode(timestampMs);
+        }
+
+        async function performFetchAndWrite() {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            const config = seasonConfigs[season];
+            const isPlayoff = gameTypeSelect.value === 'playoff';
+
+            if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
+            
+            terminalStatus.textContent = 'Running';
+            terminalStatus.style.color = '#fb923c';
+            output.textContent = `Initializing fetch for Season ${season} on ${selectedDate}...\n`;
+
+            try {
+                const [playersRes, scheduleRes] = await Promise.all([
+                    fetch(workerProxy + '?url=' + encodeURIComponent(config.players)),
+                    fetch(workerProxy + '?url=' + encodeURIComponent(config.schedule))
+                ]);
+                
+                const playersCsvText = await playersRes.text();
+                const scheduleCsvText = await scheduleRes.text();
+
+                const scheduleRows = parseCSVLocal(scheduleCsvText);
+                const schedHeaders = scheduleRows[0].map(h => h.trim().toLowerCase());
+                const dIdx = schedHeaders.findIndex(h => h.includes('date'));
+                const t1Idx = schedHeaders.findIndex(h => h.includes('team1') || h.includes('team 1'));
+                const t2Idx = schedHeaders.findIndex(h => h.includes('team2') || h.includes('team 2'));
+
+                const todayGames = [];
+                scheduleRows.slice(1).forEach(r => {
+                    if (isSameDate(r[dIdx], selectedDate)) {
+                        todayGames.push({ team1: r[t1Idx]?.trim(), team2: r[t2Idx]?.trim() });
+                    }
+                });
+
+                if (todayGames.length === 0) {
+                    output.textContent += `\nNo games found in schedule for ${selectedDate}.`;
+                    terminalStatus.textContent = 'Idle';
+                    terminalStatus.style.color = 'var(--gold-light)';
+                    return;
+                }
+
+                const activeTeamsLower = new Set();
+                todayGames.forEach(g => { 
+                    if (g.team1) activeTeamsLower.add(g.team1.toLowerCase());
+                    if (g.team2) activeTeamsLower.add(g.team2.toLowerCase());
+                });
+
+                const playersRows = parseCSVLocal(playersCsvText);
+                const pHeaders = playersRows[0].map(h => h.trim().toLowerCase());
+                const uIdx = pHeaders.findIndex(h => h === 'username');
+                const uidIdx = pHeaders.findIndex(h => h.includes('user id') || h.includes('userid'));
+                const teamIdx = pHeaders.findIndex(h => h === 'team');
+                const playIdx = pHeaders.findIndex(h => h.includes('playing'));
+                const specificDateIdx = pHeaders.findIndex(h => h === selectedDate.toLowerCase());
+
+                const sportIdIndices = {};
+                pHeaders.forEach((h, i) => {
+                    const m = h.match(/^([a-z]+) id$/);
+                    if (m && h !== 'user id' && h !== 'draft id') sportIdIndices[m[1].toUpperCase()] = i;
+                });
+
+                const allPlayerDataForDay = {};
+                const fetchUrls = [];
+
+                playersRows.slice(1).forEach(row => {
+                    const originalTeam = row[teamIdx]?.trim();
+                    const teamLower = originalTeam?.toLowerCase();
+                    
+                    let isPlaying = true;
+                    if (specificDateIdx > -1 && row[specificDateIdx] !== undefined && row[specificDateIdx].trim() !== '') {
+                        const val = row[specificDateIdx].trim().toLowerCase();
+                        isPlaying = val === 'yes' || val === 'true' || val === '1';
+                    } else if (playIdx > -1 && row[playIdx] !== undefined && row[playIdx].trim() !== '') {
+                        const val = row[playIdx].trim().toLowerCase();
+                        isPlaying = val === 'yes' || val === 'true' || val === '1';
+                    }
+                    
+                    if (teamLower && activeTeamsLower.has(teamLower)) {
+                        const userId = row[uidIdx]?.trim();
+                        const username = row[uIdx]?.trim();
+                        if (!userId) return;
+
+                        if (!allPlayerDataForDay[userId]) {
+                            allPlayerDataForDay[userId] = { 
+                                userId, username, team: originalTeam, 
+                                isPlaying: isPlaying, 
+                                scoresBySport: {}, lineupsBySport: {}, totalScore: 0 
+                            };
+                        }
+
+                        for (const sport in sportIdIndices) {
+                            const draftId = row[sportIdIndices[sport]]?.trim();
+                            if (draftId) {
+                                fetchUrls.push({
+                                    url: `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${userId}?contestType=sport&source=home`,
+                                    userId, sport, team: originalTeam, retries: 0
+                                });
+                            }
+                        }
+                    }
+                });
+
+                output.textContent += `\nQueueing ${fetchUrls.length} stat requests to Real API...\n`;
+
+                let loaded = 0;
+                for (let i = 0; i < fetchUrls.length; i++) {
+                    const req = fetchUrls[i];
+                    const pData = allPlayerDataForDay[req.userId];
+                    
+                    try {
+                        const token = generateRequestToken();
+                        const proxyUrl = `${workerProxy}?url=${encodeURIComponent(req.url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
+                        
+                        const res = await fetch(proxyUrl);
+                        
+                        if (res.status === 429 && req.retries < 3) {
+                            req.retries++;
+                            fetchUrls.push(req);
+                            await sleep(3000);
+                            continue;
+                        }
+
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        
+                        const data = await res.json();
+                        
+                        let scoreDisplay = '0';
+                        if (data.info?.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
+                        else if (data.rankDisplayInfos?.length > 0) scoreDisplay = data.rankDisplayInfos[0].scoreDisplay || '0';
+                        else if (data.scoreDisplay) scoreDisplay = data.scoreDisplay;
+                        else if (data.info?.score !== undefined) scoreDisplay = data.info.score;
+                        else if (data.score !== undefined) scoreDisplay = data.score;
+                        
+                        const finalScore = parseFloat(String(scoreDisplay).replace(/,/g, '')) || 0;
+                        pData.scoresBySport[req.sport] = finalScore;
+
+                        let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
+                        if (!Array.isArray(extractedLineup)) {
+                            if (extractedLineup.players) extractedLineup = extractedLineup.players;
+                            else if (extractedLineup.items) extractedLineup = extractedLineup.items;
+                            else extractedLineup = [];
+                        }
+                        pData.lineupsBySport[req.sport] = extractedLineup;
+
+                        if (data.info?.user?.userName || data.user?.userName) {
+                            pData.username = data.info?.user?.userName || data.user?.userName;
+                        }
+
+                        loaded++;
+                        if (loaded % 5 === 0 || loaded === fetchUrls.length) output.textContent = `Fetched ${loaded}/${fetchUrls.length}...\n`;
+
+                    } catch (e) {
+                        pData.scoresBySport[req.sport] = 'Error';
+                        loaded++;
+                        output.textContent = `Fetched ${loaded}/${fetchUrls.length} (Failed ${pData.username})...\n`;
+                    }
+                    
+                    await sleep(350);
+                }
+
+                output.textContent += "\nApplying duplicate rules...\n";
+                const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn']);
+                const hashes = new Map();
+
+                Object.values(allPlayerDataForDay).forEach(p => {
+                    if (!p.isPlaying) return;
+                    for (const s in p.lineupsBySport) {
+                        const l = p.lineupsBySport[s];
+                        if (!Array.isArray(l) || !l.length) continue;
+                        const h = `${s}:${l.map(x => {
+                            const lp = x.player || x;
+                            return (lp.displayName || x.displayName || lp.name || x.name || '').trim();
+                        }).join(',')}`;
+                        if (!hashes.has(h)) hashes.set(h, []);
+                        hashes.get(h).push({ player: p, sport: s, score: p.scoresBySport[s] || 0 });
+                    }
+                });
+
+                for (const entries of hashes.values()) {
+                    if (entries.length <= 1) continue;
+                    
+                    const draftAccounts = entries.filter(e => draftUserIds.has(e.player.userId));
+                    const teamGroups = {};
+                    
+                    entries.forEach(e => {
+                        if (!teamGroups[e.player.team]) teamGroups[e.player.team] = [];
+                        teamGroups[e.player.team].push(e);
+                    });
+
+                    Object.values(teamGroups).forEach(teamEntries => {
+                        if (teamEntries.length > 1) {
+                            teamEntries.sort((a, b) => b.score - a.score);
+                            for (let j = 1; j < teamEntries.length; j++) {
+                                if (teamEntries[j].player.scoresBySport[teamEntries[j].sport] > 0) {
+                                    teamEntries[j].player.scoresBySport[teamEntries[j].sport] = 0;
+                                    output.textContent += `Voided: ${teamEntries[j].player.username} (${teamEntries[j].sport}) - Same Team Dup\n`;
+                                }
+                            }
+                        }
+                    });
+
+                    if (draftAccounts.length > 0) {
+                        entries.forEach(e => {
+                            if (!draftUserIds.has(e.player.userId)) {
+                                let voided = false;
+                                draftAccounts.forEach(da => {
+                                    if (da.player.userId !== 'WJqLyqAn' || e.sport === 'NHL') voided = true;
+                                });
+                                if (voided && e.player.scoresBySport[e.sport] > 0) {
+                                    e.player.scoresBySport[e.sport] = 0;
+                                    output.textContent += `Voided: ${e.player.username} (${e.sport}) - Draft Account Dup\n`;
+                                }
+                            }
+                        });
+                    }
+                }
+
+                output.textContent += `\nPreparing to write to Google Sheets...\n`;
+                const gamesToLog = [];
+                const playerStatsToLog = [];
+
+                Object.values(allPlayerDataForDay).forEach(player => {
+                    for (const sport in player.scoresBySport) {
+                        const score = player.scoresBySport[sport];
+                        if (typeof score === 'number') {
+                            playerStatsToLog.push({
+                                username: player.username, 
+                                userId: player.userId, 
+                                team: player.team, 
+                                score: score, 
+                                sport: sport,
+                                isBench: !player.isPlaying
+                            });
+                        }
+                    }
+                });
+
+                todayGames.forEach(game => {
+                    const t1 = game.team1, t2 = game.team2;
+                    let t1Score = 0, t2Score = 0;
+                    let t1SeriesWins = 0, t2SeriesWins = 0;
+
+                    const p1 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t1.toLowerCase());
+                    const p2 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t2.toLowerCase());
+
+                    const allSports = new Set();
+                    [...p1, ...p2].forEach(p => Object.keys(p.scoresBySport).forEach(s => allSports.add(s)));
+
+                    [...allSports].forEach(sport => {
+                        const s1 = p1.filter(p => p.isPlaying).reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
+                        const s2 = p2.filter(p => p.isPlaying).reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
+                        
+                        if (s1 > s2) t1SeriesWins++;
+                        else if (s2 > s1) t2SeriesWins++;
+                        
+                        t1Score += s1; t2Score += s2;
+                    });
+
+                    let winner = t1SeriesWins > t2SeriesWins ? t1 : (t2SeriesWins > t1SeriesWins ? t2 : (t1Score > t2Score ? t1 : t2));
+                
+                    gamesToLog.push({ 
+                        team1: t1, 
+                        team2: t2, 
+                        team1score: parseFloat(t1Score.toFixed(2)), 
+                        team2score: parseFloat(t2Score.toFixed(2)), 
+                        winner: winner, 
+                        team1SeriesWins: t1SeriesWins, 
+                        team2SeriesWins: t2SeriesWins 
+                    });
+                });
+
+                window.lastLoggedGames = gamesToLog;
+                window.lastPlayerStats = playerStatsToLog;
+                window.lastLoggedDate = selectedDate;
+
+                const payload = {
+                    action: 'log_games',
+                    date: selectedDate,
+                    season: season,
+                    isPlayoff: isPlayoff,
+                    games: gamesToLog,
+                    playerStats: playerStatsToLog
+                };
+
+                const postRes = await fetch(APPS_SCRIPT_URL_SCORES, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                const rawResponse = await postRes.text();
+                let data;
+                try {
+                    data = JSON.parse(rawResponse);
+                } catch(err) {
+                    throw new Error(`Google Script Error: ${rawResponse.substring(0, 100)}`);
+                }
+
+                if (data.status === 'error') throw new Error(data.message);
+
+                output.textContent += `\nSUCCESS! ${data.message}\n`;
+                terminalStatus.textContent = 'Completed';
+                terminalStatus.style.color = '#4ade80';
+
+            } catch (e) {
+                output.textContent += `\nCRITICAL ERROR: ${e.message}\nCheck console for details.`;
+                terminalStatus.textContent = 'Error';
+                terminalStatus.style.color = '#f87171';
+                console.error(e);
+            }
+        }
+
+        async function performUndo(skipConfirm = false) {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            const isPlayoff = gameTypeSelect.value === 'playoff';
+
+            if (!selectedDate) { output.textContent = 'Error: Please select a date to undo.'; return false; }
+            if (!skipConfirm && !confirm(`WARNING: Are you sure you want to UNDO all Google Sheet writes for ${selectedDate} in Season ${season}?`)) return false;
+
+            terminalStatus.textContent = 'Undoing';
+            terminalStatus.style.color = '#f87171';
+            output.textContent = `Reverting writes for ${selectedDate} in Google Sheets...\n`;
+            
+            try {
+                const payload = {
+                    action: 'undo_games',
+                    season: season,
+                    isPlayoff: isPlayoff,
+                    date: selectedDate
+                };
+
+                const res = await fetch(APPS_SCRIPT_URL_SCORES, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+
+                const rawResponse = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawResponse);
+                } catch(err) {
+                    throw new Error(`Google Script Error: ${rawResponse.substring(0, 100)}`);
+                }
+
+                if (data.status === 'error') throw new Error(data.message);
+
+                output.textContent += `SUCCESS! ${data.message}\n`;
+                terminalStatus.textContent = 'Reverted';
+                terminalStatus.style.color = '#4ade80';
+                return true;
+            } catch (e) {
+                output.textContent = `ERROR during undo: ${e.message}\nCheck console.`;
+                terminalStatus.textContent = 'Error';
+                terminalStatus.style.color = '#f87171';
+                console.error(e);
+                return false;
+            }
+        }
+
+        async function generateReport() {
+            const selectedDate = dateSelect.value.trim();
+            const season = seasonSelect.value;
+            
+            if (!selectedDate) {
+                output.textContent = "Error: Please select a date to generate the report.\n";
+                return;
+            }
+
+            terminalStatus.textContent = 'Generating';
+            terminalStatus.style.color = '#34d399';
+            output.textContent = `Fetching saved games for ${selectedDate}...\n`;
+
+            let gamesToReport = [];
+            let playersToReport = [];
+
+            if (window.lastLoggedGames && window.lastLoggedGames.length > 0 && window.lastLoggedDate === selectedDate) {
+                gamesToReport = window.lastLoggedGames;
+                playersToReport = window.lastPlayerStats.filter(p => !p.isBench);
+            } else {
+                try {
+                    const dbLinks = {
+                        '4': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=912328044&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=561111419&single=true&output=csv' },
+                        '5': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=556843426&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=292583226&single=true&output=csv' },
+                        '6': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=755000020&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=386743668&single=true&output=csv' }
+                    };
+
+                    const links = dbLinks[season];
+                    if (!links) throw new Error("No database links configured for Season " + season);
+
+                    const [gamesRes, playersRes] = await Promise.all([
+                        fetch(workerProxy + '?url=' + encodeURIComponent(links.g)),
+                        fetch(workerProxy + '?url=' + encodeURIComponent(links.p))
+                    ]);
+
+                    const gamesText = await gamesRes.text();
+                    const playersText = await playersRes.text();
+
+                    const gamesRows = parseCSVLocal(gamesText);
+                    const playersRows = parseCSVLocal(playersText);
+
+                    if (gamesRows.length > 1) {
+                        const gHeaders = gamesRows[0].map(h => h.trim().toLowerCase());
+                        const dIdx = gHeaders.indexOf('date');
+                        const t1Idx = gHeaders.indexOf('team1');
+                        const t2Idx = gHeaders.indexOf('team2');
+                        const t1ScoreIdx = gHeaders.findIndex(h => h === 'team1score' || h === 'team 1 score');
+                        const t2ScoreIdx = gHeaders.findIndex(h => h === 'team2score' || h === 'team 2 score');
+                        const t1SeriesIdx = gHeaders.findIndex(h => h.includes('team1series') || h.includes('team 1 series'));
+                        const t2SeriesIdx = gHeaders.findIndex(h => h.includes('team2series') || h.includes('team 2 series'));
+                        const winIdx = gHeaders.indexOf('winner');
+
+                        gamesRows.slice(1).forEach(r => {
+                            if (isSameDate(r[dIdx], selectedDate)) {
+                                gamesToReport.push({
+                                    team1: r[t1Idx],
+                                    team2: r[t2Idx],
+                                    team1score: parseFloat(r[t1ScoreIdx]) || 0,
+                                    team2score: parseFloat(r[t2ScoreIdx]) || 0,
+                                    team1SeriesWins: parseInt(r[t1SeriesIdx]) || 0,
+                                    team2SeriesWins: parseInt(r[t2SeriesIdx]) || 0,
+                                    winner: r[winIdx]
+                                });
+                            }
+                        });
+                    }
+
+                    if (playersRows.length > 1) {
+                        const pHeaders = playersRows[0].map(h => h.trim().toLowerCase());
+                        const dIdx = pHeaders.indexOf('date');
+                        const uIdx = pHeaders.indexOf('username');
+                        const sIdx = pHeaders.indexOf('score');
+                        const bIdx = pHeaders.findIndex(h => h.includes('isbench') || h.includes('bench'));
+                        const tIdx = pHeaders.indexOf('team');
+                        const spIdx = pHeaders.indexOf('sport');
+
+                        playersRows.slice(1).forEach(r => {
+                            if (isSameDate(r[dIdx], selectedDate)) {
+                                const isBench = r[bIdx] && (r[bIdx].toLowerCase() === 'true' || r[bIdx].toLowerCase() === 'yes' || r[bIdx] === '1');
+                                if (!isBench) {
+                                    playersToReport.push({
+                                        username: r[uIdx],
+                                        score: parseFloat(r[sIdx]) || 0,
+                                        team: tIdx > -1 ? r[tIdx] : 'Unknown',
+                                        sport: spIdx > -1 ? r[spIdx] : 'Unknown'
+                                    });
+                                }
+                            }
+                        });
+                    }
+
+                } catch (e) {
+                    output.textContent = "Error fetching saved games: " + e.message;
+                    terminalStatus.textContent = 'Error';
+                    terminalStatus.style.color = '#f87171';
+                    return;
+                }
+            }
+
+            if (gamesToReport.length === 0) {
+                output.textContent = `Error: No saved games found for ${selectedDate}. Note: If the auto-fetcher just ran, Google Sheets can take 5 minutes to update its public CSV cache.`;
+                terminalStatus.textContent = 'Idle';
+                terminalStatus.style.color = 'var(--gold-light)';
+                return;
+            }
+
+            let report = `🏆 **RDA DAILY RECAP - ${selectedDate}** 🏆\n\n`;
+            
+            gamesToReport.forEach(g => {
+                let wScore = Math.max(g.team1score, g.team2score);
+                let lScore = Math.min(g.team1score, g.team2score);
+                let wSeries = Math.max(g.team1SeriesWins, g.team2SeriesWins);
+                let lSeries = Math.min(g.team1SeriesWins, g.team2SeriesWins);
+                
+                let scoreText = (wSeries > 0 || lSeries > 0) ? `${wSeries}-${lSeries} (${wScore.toFixed(2)} - ${lScore.toFixed(2)})` : `${wScore.toFixed(2)} - ${lScore.toFixed(2)}`;
+                let loser = g.winner === g.team1 ? g.team2 : g.team1;
+                
+                report += `**${g.winner}** def. ${loser} | ${scoreText}\n`;
+
+                const t1 = g.team1;
+                const t2 = g.team2;
+                const gamePlayers = playersToReport.filter(p => p.team === t1 || p.team === t2);
+                const sports = [...new Set(gamePlayers.map(p => p.sport).filter(s => s))].sort();
+
+                if (sports.length > 0) {
+                    sports.forEach(sport => {
+                        const t1SportScore = gamePlayers.filter(p => p.team === t1 && p.sport === sport).reduce((sum, p) => sum + p.score, 0);
+                        const t2SportScore = gamePlayers.filter(p => p.team === t2 && p.sport === sport).reduce((sum, p) => sum + p.score, 0);
+                        
+                        if (t1SportScore > 0 || t2SportScore > 0) {
+                            let sportWinner = t1SportScore > t2SportScore ? t1 : (t2SportScore > t1SportScore ? t2 : 'TIE');
+                            let sportWinnerScore = Math.max(t1SportScore, t2SportScore);
+                            let sportLoserScore = Math.min(t1SportScore, t2SportScore);
+                            
+                            if (sportWinner === 'TIE') {
+                                 report += `> ${sport}: TIE (${t1SportScore.toFixed(2)} - ${t2SportScore.toFixed(2)})\n`;
+                            } else {
+                                 report += `> ${sport}: **${sportWinner}** ${sportWinnerScore.toFixed(2)} - ${sportLoserScore.toFixed(2)}\n`;
+                            }
+                        }
+                    });
+                }
+                report += `\n`;
+            });
+            
+            if (playersToReport && playersToReport.length > 0) {
+                const playerTotals = {};
+                const playerSports = {};
+                
+                playersToReport.forEach(p => {
+                    if (!playerTotals[p.username]) {
+                        playerTotals[p.username] = 0;
+                        playerSports[p.username] = {};
+                    }
+                    playerTotals[p.username] += p.score;
+                    if (p.sport) {
+                        playerSports[p.username][p.sport] = (playerSports[p.username][p.sport] || 0) + p.score;
+                    }
+                });
+                
+                const sortedPlayers = Object.entries(playerTotals)
+                    .map(([username, score]) => ({ username, score, sports: playerSports[username] }))
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 3);
+                
+                if (sortedPlayers.length > 0) {
+                    report += `👑 **TOP 3 PLAYERS OF THE DAY** 👑\n`;
+                    sortedPlayers.forEach((p, idx) => {
+                        const sportText = Object.entries(p.sports)
+                            .filter(([s, sc]) => sc > 0)
+                            .map(([s, sc]) => `${s}: ${sc.toFixed(2)}`)
+                            .join(', ');
+                        
+                        let sportDisplay = sportText ? ` (${sportText})` : '';
+                        report += `${idx + 1}. **${p.username}** - ${p.score.toFixed(2)} pts${sportDisplay}\n`;
+                    });
+                    report += `\n`;
+                }
+            }
+
+            if (playersToReport && playersToReport.length > 0) {
+                const sportLeaders = {};
+                
+                playersToReport.forEach(p => {
+                    if (p.sport && p.score > 0) {
+                        if (!sportLeaders[p.sport]) sportLeaders[p.sport] = [];
+                        sportLeaders[p.sport].push({ username: p.username, score: p.score, team: p.team });
+                    }
+                });
+                
+                const sortedSports = Object.keys(sportLeaders).sort();
+                
+                if (sortedSports.length > 0) {
+                    report += `🎖️ **TOP PERFORMERS BY SPORT** 🎖️\n`;
+                    sortedSports.forEach(sport => {
+                        const topInSport = sportLeaders[sport].sort((a, b) => b.score - a.score).slice(0, 3);
+                        report += `**${sport}:**\n`;
+                        topInSport.forEach((p, idx) => {
+                            report += `> ${idx + 1}. **${p.username}** - ${p.score.toFixed(2)}\n`;
+                        });
+                        report += `\n`;
+                    });
+                }
+            }
+            
+            output.textContent = "--- DISCORD REPORT ---\n\n" + report + "----------------------\n";
+            terminalStatus.textContent = 'Report Ready';
+            terminalStatus.style.color = '#34d399';
+        }
+
+        async function syncFreeAgents() {
+            terminalStatus.textContent = 'Syncing FA';
+            terminalStatus.style.color = '#a78bfa';
+            output.textContent = `Fetching replies from Free Agency Thread...\n`;
+            try {
+                const url = `https://web.realsports.io/comments/groups/46567/replies/178458037514000001?limit=100`;
+                const token = generateRequestToken();
+                const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
+                
+                const res = await fetch(proxyUrl);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                
+                let replies = data.replies || data.items || data;
+                if (!Array.isArray(replies)) {
+                    if (data.comments) replies = data.comments; 
+                    else if (data.data) replies = data.data;
+                    else throw new Error("Invalid response format from Real App.");
+                }
+                
+                const uniquePlayers = new Map();
+                replies.forEach(r => {
+                    const user = r.author || r.user || r;
+                    const userId = user.userId || user.id;
+                    const username = user.userName || user.username || user.name;
+                    
+                    if (userId && username && userId !== 'xnr5VpW3') {
+                        uniquePlayers.set(userId, { userId, username });
+                    }
+                });
+                
+                const playersArray = Array.from(uniquePlayers.values());
+                output.textContent += `Found ${playersArray.length} unique applicants. Sending to database...\n`;
+                
+                const payload = {
+                    action: 'add_players',
+                    players: playersArray
+                };
+                
+                const postRes = await fetch(APPS_SCRIPT_URL_ROSTERS, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const rawResponse = await postRes.text();
+                let result;
+                try {
+                    result = JSON.parse(rawResponse);
+                } catch(err) {
+                    throw new Error(`Google Script Error: ${rawResponse.substring(0, 100)}`);
+                }
+
+                if (result.status === 'error') throw new Error(result.message);
+                
+                output.textContent += `SUCCESS: ${result.message}\n`;
+                terminalStatus.textContent = 'Synced';
+                terminalStatus.style.color = '#4ade80';
+                
+            } catch (e) {
+                output.textContent += `ERROR: ${e.message}\n`;
+                terminalStatus.textContent = 'Error';
+                terminalStatus.style.color = '#f87171';
+            }
+        }
+    </script>
+</body>
+</html>

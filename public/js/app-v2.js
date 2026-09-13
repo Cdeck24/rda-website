@@ -113,7 +113,7 @@ export function parseCsvToObject(csvText) {
 }
 
 // ============================================================================
-// --- UNIFIED 3-PILLAR NAVIGATION & QUICK-INSPECT DRAWER ENGINE ---
+// --- UNIFIED NAVIGATION & QUICK-INSPECT DRAWER ENGINE ---
 // ============================================================================
 export function initNav() {
     const primaryNavItems = [
@@ -125,212 +125,185 @@ export function initNav() {
     const moreNavItems = [
         { id: 'nav-schedule', label: 'Schedule', href: `schedule-v2.html?season=${currentSeason}` },
         { id: 'nav-teams', label: 'Franchises', href: `teams-v2.html?season=${currentSeason}` },
-        { id: 'nav-records', label: 'Records', href: `records-v2.html?season=${currentSeason}` }
+        { id: 'nav-records', label: 'Records & Case', href: `records-v2.html?season=${currentSeason}` },
+        { id: 'nav-gms', label: 'GM Portal', href: `gms-v2.html` },
+        { id: 'nav-admin', label: 'Admin Console', href: `admin-v2.html` }
     ];
 
-    if (!document.getElementById('v2-nav-styles')) {
-        const style = document.createElement('style');
-        style.id = 'v2-nav-styles';
-        style.textContent = `
-            .nav-container {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                max-width: 1100px;
-                width: 100%;
-                margin: 0 auto 1.25rem auto;
-                padding: 0.25rem 0.4rem;
-                background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
-                border: 1px solid var(--border-subtle);
-                border-radius: 8px;
-                box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-                gap: 0.2rem;
-                box-sizing: border-box;
-            }
-            .nav-left {
-                display: flex;
-                align-items: center;
-                gap: 0.15rem;
-                min-width: 0;
-                flex: 1 1 auto;
-            }
-            .nav-brand {
-                font-family: 'Didot', serif;
-                font-weight: 800;
-                font-size: 0.85rem;
-                color: var(--gold-light);
-                text-decoration: none;
-                letter-spacing: 0.5px;
-                margin-right: 0.1rem;
-                padding-left: 0.1rem;
-                flex-shrink: 0;
-            }
-            .nav-button {
-                color: var(--text-muted);
-                text-decoration: none;
-                font-size: 0.65rem;
-                font-weight: 700;
-                padding: 0.25rem 0.35rem;
-                border-radius: 4px;
-                transition: all 0.2s ease;
-                white-space: nowrap;
-                text-transform: uppercase;
-                letter-spacing: 0.2px;
-                flex-shrink: 0;
-            }
-            .nav-button:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
-            .nav-button.active {
-                color: var(--gold-light);
-                background: rgba(212, 175, 55, 0.15);
-                border: 1px solid rgba(212, 175, 55, 0.35);
-            }
-            .nav-right {
-                display: flex;
-                align-items: center;
-                gap: 0.2rem;
-                flex-shrink: 0;
-            }
-            .nav-season-select {
-                background: rgba(0, 0, 0, 0.6);
-                border: 1px solid var(--border-gold);
-                color: var(--gold-light);
-                border-radius: 4px;
-                padding: 0.2rem 0.25rem;
-                font-size: 0.65rem;
-                font-weight: 800;
-                outline: none;
-                cursor: pointer;
-                width: 44px;
-                text-align: center;
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-            }
-            .nav-dropdown-btn {
-                background: transparent;
-                border: 1px solid var(--border-subtle);
-                color: var(--text-muted);
-                font-size: 0.65rem;
-                font-weight: 700;
-                padding: 0.2rem 0.35rem;
-                border-radius: 4px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 2px;
-                text-transform: uppercase;
-                white-space: nowrap;
-            }
-            .nav-dropdown-btn:hover { color: #fff; border-color: rgba(255,255,255,0.2); }
-            .nav-dropdown-btn.active {
-                color: var(--gold-light);
-                border-color: var(--border-gold);
-                background: rgba(212, 175, 55, 0.15);
-            }
-            .nav-dropdown-menu {
-                display: none;
-                position: absolute;
-                top: calc(100% + 5px);
-                right: 0;
-                background: var(--bg-navy-light);
-                min-width: 150px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-                border: 1px solid var(--border-gold);
-                border-radius: 8px;
-                z-index: 2000;
-                padding: 0.35rem 0;
-            }
-            .nav-dropdown-menu.open { display: block; }
-            .nav-dropdown-item {
-                display: block;
-                padding: 0.55rem 0.85rem;
-                color: #cbd5e1;
-                font-size: 0.78rem;
-                text-decoration: none;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                transition: background 0.15s ease;
-            }
-            .nav-dropdown-item:hover {
-                background: rgba(212, 175, 55, 0.15);
-                color: var(--gold-light);
-            }
-            .nav-dropdown-item.active {
-                color: var(--gold-light);
-                background: rgba(212, 175, 55, 0.1);
-            }
-            /* Quick Inspect Slideout Drawer */
-            .quick-drawer-backdrop {
-                position: fixed;
-                inset: 0;
-                background: rgba(0, 0, 0, 0.7);
-                backdrop-filter: blur(4px);
-                z-index: 9998;
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity 0.3s ease;
-            }
-            .quick-drawer-backdrop.open { opacity: 1; pointer-events: auto; }
-            .quick-drawer {
-                position: fixed;
-                top: 0;
-                right: 0;
-                width: 100%;
-                max-width: 380px;
-                height: 100%;
-                background: var(--bg-navy);
-                border-left: 1px solid var(--border-gold);
-                box-shadow: -10px 0 35px rgba(0, 0, 0, 0.7);
-                z-index: 9999;
-                transform: translateX(100%);
-                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-                display: flex;
-                flex-direction: column;
-                box-sizing: border-box;
-            }
-            .quick-drawer.open { transform: translateX(0); }
-            .quick-drawer-header {
-                padding: 1.25rem;
-                border-bottom: 1px solid var(--border-subtle);
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                background: rgba(0, 0, 0, 0.2);
-            }
-            .quick-drawer-title {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-weight: 700;
-                font-size: 1.1rem;
-                color: #fff;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-            .quick-drawer-close {
-                background: rgba(255, 255, 255, 0.05);
-                border: none;
-                color: var(--text-muted);
-                font-size: 1.4rem;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                line-height: 1;
-            }
-            .quick-drawer-close:hover { color: #fff; background: rgba(255, 255, 255, 0.15); }
-            .quick-drawer-body {
-                padding: 1.25rem;
-                overflow-y: auto;
-                flex: 1;
-            }
-        `;
-        document.head.appendChild(style);
-    }
+    const oldStyles = document.getElementById('v2-nav-styles');
+    if (oldStyles) oldStyles.remove();
+
+    const style = document.createElement('style');
+    style.id = 'v2-nav-styles';
+    style.textContent = `
+        .nav-container {
+            position: relative !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            max-width: 1100px !important;
+            width: 100% !important;
+            margin: 0 auto 1.5rem auto !important;
+            padding: 0.35rem 0.65rem !important;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+            border: 1px solid var(--border-subtle) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+            gap: 0.35rem !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
+        }
+        .nav-left {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.2rem !important;
+            min-width: 0 !important;
+            flex: 1 1 auto !important;
+        }
+        .nav-brand {
+            font-family: 'Didot', serif !important;
+            font-weight: 800 !important;
+            font-size: 0.95rem !important;
+            color: var(--gold-light) !important;
+            text-decoration: none !important;
+            letter-spacing: 0.5px !important;
+            margin-right: 0.25rem !important;
+            padding-left: 0.15rem !important;
+            flex-shrink: 0 !important;
+        }
+        .nav-button {
+            color: var(--text-muted) !important;
+            text-decoration: none !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            padding: 0.35rem 0.5rem !important;
+            border-radius: 5px !important;
+            transition: all 0.2s ease !important;
+            white-space: nowrap !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.25px !important;
+            flex-shrink: 0 !important;
+            border: 1px solid transparent !important;
+            background: transparent !important;
+            line-height: 1.2 !important;
+        }
+        .nav-button:hover {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+        }
+        .nav-button.active {
+            color: var(--gold-light) !important;
+            background: rgba(212, 175, 55, 0.15) !important;
+            border: 1px solid rgba(212, 175, 55, 0.35) !important;
+        }
+        .nav-right {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.35rem !important;
+            flex-shrink: 0 !important;
+            position: relative !important;
+            overflow: visible !important;
+        }
+        .nav-season-select {
+            width: 52px !important;
+            min-width: 52px !important;
+            max-width: 52px !important;
+            height: 28px !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            border: 1px solid var(--border-gold) !important;
+            color: var(--gold-light) !important;
+            border-radius: 5px !important;
+            padding: 0 0.25rem !important;
+            margin: 0 !important;
+            font-size: 0.72rem !important;
+            font-weight: 800 !important;
+            outline: none !important;
+            cursor: pointer !important;
+            flex-shrink: 0 !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
+            line-height: 26px !important;
+            display: inline-block !important;
+        }
+        .nav-dropdown {
+            position: relative !important;
+            display: inline-block !important;
+            overflow: visible !important;
+        }
+        .nav-dropdown-btn {
+            background: transparent !important;
+            border: 1px solid var(--border-subtle) !important;
+            color: var(--text-muted) !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            padding: 0 0.55rem !important;
+            border-radius: 5px !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 3px !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+            user-select: none !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+            line-height: 26px !important;
+            transition: all 0.2s ease !important;
+        }
+        .nav-dropdown-btn:hover, .nav-dropdown-btn.active {
+            color: var(--gold-light) !important;
+            border-color: var(--border-gold) !important;
+            background: rgba(212, 175, 55, 0.15) !important;
+        }
+        .nav-dropdown-menu {
+            display: none !important;
+            position: absolute !important;
+            top: calc(100% + 6px) !important;
+            right: 0 !important;
+            background: #0f172a !important;
+            min-width: 175px !important;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.95) !important;
+            border: 1px solid var(--border-gold) !important;
+            border-radius: 8px !important;
+            z-index: 100000 !important;
+            padding: 0.4rem 0 !important;
+            box-sizing: border-box !important;
+            flex-direction: column !important;
+        }
+        .nav-dropdown-menu.open {
+            display: flex !important;
+        }
+        .nav-dropdown-item {
+            display: block !important;
+            padding: 0.6rem 0.95rem !important;
+            color: #cbd5e1 !important;
+            font-size: 0.78rem !important;
+            text-decoration: none !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            transition: background 0.15s ease !important;
+            white-space: nowrap !important;
+            text-align: left !important;
+        }
+        .nav-dropdown-item:hover {
+            background: rgba(212, 175, 55, 0.15) !important;
+            color: var(--gold-light) !important;
+        }
+        .nav-dropdown-item.active {
+            color: var(--gold-light) !important;
+            background: rgba(212, 175, 55, 0.1) !important;
+        }
+
+        @media (max-width: 650px) {
+            .nav-container { padding: 0.3rem 0.5rem !important; gap: 0.25rem !important; }
+            .nav-button { font-size: 0.68rem !important; padding: 0.3rem 0.4rem !important; }
+            .nav-season-select { font-size: 0.68rem !important; }
+            .nav-dropdown-btn { padding: 0 0.4rem !important; font-size: 0.68rem !important; }
+        }
+    `;
+    document.head.appendChild(style);
 
     const currentPath = window.location.pathname.split('/').pop() || 'live-v2.html';
     const isMoreActive = moreNavItems.some(item => currentPath === item.href.split('?')[0]);
@@ -355,7 +328,7 @@ export function initNav() {
                 <option value="1" ${currentSeason === '1' ? 'selected' : ''}>S1</option>
             </select>
             <div class="nav-dropdown">
-                <button class="nav-dropdown-btn ${isMoreActive ? 'active' : ''}" id="nav-more-toggle">More ▾</button>
+                <button class="nav-dropdown-btn ${isMoreActive ? 'active' : ''}" id="nav-more-toggle" type="button">More ▾</button>
                 <div class="nav-dropdown-menu" id="nav-more-menu">
                     ${moreNavItems.map(item => {
                         const target = item.href.split('?')[0];
@@ -364,21 +337,6 @@ export function initNav() {
                     }).join('')}
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Global Quick-Inspect Drawer Markup -->
-    <div class="quick-drawer-backdrop" id="quick-drawer-backdrop"></div>
-    <div class="quick-drawer" id="quick-drawer">
-        <div class="quick-drawer-header">
-            <div class="quick-drawer-title" id="quick-drawer-title">
-                <img id="quick-drawer-logo" style="width: 32px; height: 32px; object-fit: contain;">
-                <span id="quick-drawer-name">Team</span>
-            </div>
-            <button class="quick-drawer-close" id="quick-drawer-close">&times;</button>
-        </div>
-        <div class="quick-drawer-body" id="quick-drawer-body">
-            <div style="color: var(--text-muted); font-style: italic; text-align: center; padding: 2rem 0;">Loading team dossier...</div>
         </div>
     </div>
     `;
@@ -391,20 +349,34 @@ export function initNav() {
     else document.body.insertAdjacentHTML('afterbegin', navHTML);
 
     const seasonSelect = document.getElementById('global-season-select');
-    seasonSelect?.addEventListener('change', (e) => {
-        const newSeason = e.target.value;
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('season', newSeason);
-        window.location.href = currentUrl.toString();
-    });
+    if (seasonSelect) {
+        seasonSelect.onchange = (e) => {
+            const newSeason = e.target.value;
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('season', newSeason);
+            window.location.href = currentUrl.toString();
+        };
+    }
 
     const moreBtn = document.getElementById('nav-more-toggle');
     const moreMenu = document.getElementById('nav-more-menu');
-    moreBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        moreMenu?.classList.toggle('open');
+    if (moreBtn && moreMenu) {
+        moreBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const isOpen = moreMenu.classList.toggle('open');
+            moreBtn.classList.toggle('active', isOpen || isMoreActive);
+        };
+    }
+
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('nav-more-menu');
+        const btn = document.getElementById('nav-more-toggle');
+        if (menu && !menu.contains(e.target) && e.target !== btn) {
+            menu.classList.remove('open');
+            if (!isMoreActive && btn) btn.classList.remove('active');
+        }
     });
-    document.addEventListener('click', () => moreMenu?.classList.remove('open'));
 
     initQuickDrawerListeners();
 }
