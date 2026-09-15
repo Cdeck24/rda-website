@@ -2,144 +2,456 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GM Dashboard | RDA</title>
+    <title>RDA GM Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/global-v2.css">
     <!-- Required for Hashids Token Generation (Free Agency API) -->
     <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
     <style>
-        .dashboard-container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .dashboard-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem 1rem 4rem 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.4s ease-out;
+        }
 
         .dashboard-header {
-            position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
+
+        .dashboard-title-block h2 {
+            margin: 0;
+            color: var(--gold-mid);
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: 'Didot', serif;
+            line-height: 1.1;
+        }
+        .dashboard-title-block p {
+            margin: 0.25rem 0 0 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
         .logout-btn {
-            position: absolute; right: 0; background: transparent; border: 1px solid var(--border-subtle);
-            color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 0.45rem 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .logout-btn:hover { border-color: var(--gold-mid); color: var(--gold-mid); }
-        
-        @media (max-width: 600px) {
-            .dashboard-header { flex-direction: column; gap: 1rem; }
-            .logout-btn { position: relative; right: auto; }
-            .tabs { gap: 0.5rem !important; }
-            .tab-btn { padding: 0.6rem 0.5rem !important; font-size: 0.85rem; flex: 1 1 auto; text-align: center; }
+        .logout-btn:hover {
+            border-color: var(--gold-mid);
+            color: var(--gold-light);
+            background: rgba(212, 175, 55, 0.1);
         }
 
-        .auth-container { text-align: center; margin-top: 10vh; }
-        .auth-container input { display: block; margin: 1rem auto; padding: 0.75rem; width: 100%; max-width: 300px; border-radius: 4px; border: 1px solid var(--border-gold); background: rgba(0,0,0,0.5); color: white; }
-        .auth-container button { padding: 0.75rem 2rem; background: var(--gold-mid); color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        /* Auth Screen */
+        .auth-container {
+            text-align: center;
+            max-width: 380px;
+            margin: 8vh auto 0 auto;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 2.2rem 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .auth-container input {
+            display: block;
+            margin: 0.75rem auto;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 6px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .auth-container input:focus { border-color: var(--gold-light); }
+        .auth-container button {
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-mid));
+            color: black;
+            border: none;
+            border-radius: 6px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .auth-container button:hover { opacity: 0.9; }
 
-        .tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem; }
-        .tab-btn { background: none; border: 1px solid var(--border-subtle); color: var(--text-muted); padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap; }
-        .tab-btn.active { background: rgba(212, 175, 55, 0.1); border-color: var(--gold-mid); color: var(--gold-mid); }
+        /* Unified Navigation Tabs */
+        .sub-nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            padding-bottom: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .sub-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            font-weight: 700;
+            padding: 0.45rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .sub-nav-btn:hover { color: #fff; }
+        .sub-nav-btn.active {
+            color: var(--gold-light);
+            border-bottom-color: var(--gold-mid);
+        }
 
-        .team-select { display: block; width: 100%; max-width: 300px; padding: 0.75rem; margin: 0 auto 1.5rem auto; background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--border-gold); border-radius: 4px; }
+        .team-select {
+            display: block;
+            width: 100%;
+            max-width: 320px;
+            padding: 0.55rem 0.85rem;
+            margin: 0 auto 1.25rem auto;
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--gold-light);
+            border: 1px solid var(--border-gold);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+        }
 
+        /* Lineup Date Navigator */
         .lineup-date-container {
-            display: flex; justify-content: center; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem;
-            background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-subtle); max-width: 400px; margin-left: auto; margin-right: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            background: rgba(15, 23, 42, 0.65);
+            padding: 0.85rem 1.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            max-width: 440px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
         }
         .nav-arrow {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: #fff; width: 40px; height: 40px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 1.2rem; font-weight: bold;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-subtle);
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            font-weight: bold;
+            flex-shrink: 0;
         }
-        .nav-arrow:hover { background: rgba(255,255,255,0.15); border-color: var(--gold-mid); color: var(--gold-mid); }
+        .nav-arrow:hover {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--gold-mid);
+            color: var(--gold-light);
+        }
         
-        .date-info { display: flex; flex-direction: column; align-items: center; min-width: 150px; }
-        .date-title { font-size: 1.3rem; font-weight: 700; color: #fff; }
-        .lock-status { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-top: 0.2rem; letter-spacing: 1px; }
+        .date-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 160px;
+            text-align: center;
+        }
+        .date-title { font-size: 1.2rem; font-weight: 800; color: #fff; line-height: 1.2; }
+        .lock-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 0.2rem; letter-spacing: 0.5px; }
         .status-open { color: #4ade80; }
         .status-locked { color: #f87171; }
         
-        .sport-badges { display: flex; gap: 0.3rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center; }
-        .sport-badge { background: var(--gold-mid); color: #000; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase; }
+        .sport-badges { display: flex; gap: 0.3rem; margin-top: 0.4rem; flex-wrap: wrap; justify-content: center; }
+        .sport-badge {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: var(--gold-mid);
+            font-size: 0.6rem;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
 
-        .player-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-card); border: 1px solid var(--border-subtle); margin-bottom: 0.5rem; border-radius: 6px; }
-        .player-row.locked { opacity: 0.8; }
+        .counter-box {
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 800;
+            margin-bottom: 1.25rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--border-subtle);
+            max-width: 440px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .counter-valid { color: #4ade80; border-color: rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.05); }
+        .counter-invalid { color: #f87171; border-color: rgba(248, 113, 113, 0.4); background: rgba(248, 113, 113, 0.05); }
+
+        /* Roster Rows */
+        .player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-subtle);
+            margin-bottom: 0.45rem;
+            border-radius: 8px;
+            transition: background 0.15s ease;
+        }
+        .player-row:hover { background: rgba(255, 255, 255, 0.03); }
+        .player-row.locked { opacity: 0.75; }
         
-        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--gold-mid); }
-        input:checked + .slider:before { transform: translateX(26px); }
-        input:disabled + .slider { cursor: not-allowed; opacity: 0.6; }
+        input:checked + .slider:before { transform: translateX(22px); }
+        input:disabled + .slider { cursor: not-allowed; opacity: 0.5; }
 
-        .status-label { font-size: 0.85rem; font-weight: bold; margin-right: 15px; text-transform: uppercase; width: 60px; display: inline-block; }
+        .status-label { font-size: 0.75rem; font-weight: 800; margin-right: 12px; text-transform: uppercase; width: 55px; display: inline-block; }
         .starter-label { color: #4ade80; }
         .bench-label { color: #f87171; }
 
-        .counter-box { text-align: center; font-size: 1.1rem; font-weight: bold; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); max-width: 400px; margin-left: auto; margin-right: auto; }
-        .counter-valid { color: #4ade80; border-color: #4ade80; }
-        .counter-invalid { color: #f87171; border-color: #f87171; }
+        .save-btn {
+            display: block;
+            width: 100%;
+            max-width: 320px;
+            margin: 1.5rem auto;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-mid));
+            color: black;
+            font-weight: 800;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.88rem;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+            transition: all 0.2s ease;
+        }
+        .save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .save-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; border: 1px solid #475569; transform: none; box-shadow: none; }
 
-        .fa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-        .fa-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1.5rem; text-align: left; position: relative; display: flex; flex-direction: column; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .fa-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; margin-bottom: 1rem; }
-        .fa-name { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
-        .fa-id { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; opacity: 0.5; }
+        /* Free Agency Grid */
+        .fa-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .fa-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1.25rem;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            box-sizing: border-box;
+        }
+        .fa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 0.6rem;
+            margin-bottom: 0.85rem;
+        }
+        .fa-name { font-size: 1.05rem; font-weight: 800; color: #fff; }
+        .fa-id { font-size: 0.68rem; color: var(--text-muted); font-family: monospace; opacity: 0.6; }
 
-        .sport-dropdown { width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-gold); color: var(--gold-light); border-radius: 4px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem; text-transform: uppercase; }
-        .sport-dropdown option { background: var(--bg-navy); color: var(--text-main); }
+        .sport-dropdown {
+            width: 100%;
+            padding: 0.45rem 0.6rem;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 0.85rem;
+            text-transform: uppercase;
+            outline: none;
+        }
+        .sport-dropdown option { background: var(--bg-navy); color: #fff; }
 
         .sport-stats-view { display: none; }
         .sport-stats-view.active { display: block; }
         
-        .stats-grid-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
-        .stat-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 8px; text-align: center; }
-        .stat-label { display: block; font-size: 0.6rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
-        .stat-value { display: block; font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        .stats-grid-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 0.85rem; }
+        .stat-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 6px 4px; text-align: center; }
+        .stat-label { display: block; font-size: 0.58rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; font-weight: 700; }
+        .stat-value { display: block; font-size: 0.82rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
 
-        .claim-btn { width: 100%; margin-top: auto; padding: 0.75rem; background: var(--gold-mid); color: black; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: filter 0.2s; }
-        .claim-btn:hover { filter: brightness(1.1); }
+        .claim-btn {
+            width: 100%;
+            margin-top: auto;
+            padding: 0.65rem;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            border-radius: 6px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.78rem;
+            transition: all 0.2s ease;
+        }
+        .claim-btn:hover { background: var(--gold-mid); color: #000; }
 
-        .trade-analyzer-container { display: flex; flex-wrap: wrap; gap: 2rem; }
-        .team-side { flex: 1; min-width: 300px; background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-subtle); overflow-x: auto; }
-        .data-table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 1rem; min-width: 300px; }
-        .data-table th, .data-table td { padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--border-subtle); }
-        .data-table th { color: var(--gold-mid); font-size: 0.8rem; text-transform: uppercase; }
+        /* Trade Analyzer */
+        .trade-analyzer-container { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .team-side {
+            flex: 1;
+            min-width: 290px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-subtle);
+            box-sizing: border-box;
+            overflow-x: auto;
+        }
+        .data-table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 0.5rem; white-space: nowrap; }
+        .data-table th, .data-table td { padding: 0.65rem 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.82rem; }
+        .data-table th { color: var(--gold-mid); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px); }
-        .modal-content { background: #1e293b; padding: 2rem; border-radius: 8px; border: 1px solid var(--border-gold); width: 90%; max-width: 400px; }
+        /* Claim Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(6px);
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .modal-content {
+            background: var(--bg-navy);
+            padding: 1.75rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-gold);
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            box-sizing: border-box;
+        }
 
-        .save-btn { display: block; width: 100%; max-width: 300px; margin: 2rem auto; padding: 1rem; background: var(--gold-mid); color: black; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
-        .save-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; border: 1px solid #475569; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--gold-mid);
+            color: black;
+            padding: 0.85rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 800;
+            display: none;
+            z-index: 10000;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            font-size: 0.85rem;
+        }
 
-        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--gold-mid); color: black; padding: 1rem 2rem; border-radius: 4px; font-weight: bold; display: none; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .top-filter-dropdown {
+            padding: 0.45rem 0.8rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            width: 100%;
+            max-width: 320px;
+            outline: none;
+        }
 
-        .top-filter-dropdown { padding: 0.6rem 1rem; background: rgba(0,0,0,0.5); border: 1px solid var(--border-gold); color: var(--gold-light); border-radius: 6px; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-transform: uppercase; width: 100%; max-width: 300px; }
+        @media (max-width: 650px) {
+            .dashboard-container { padding: 0.5rem 0.5rem 3rem 0.5rem; }
+            .dashboard-title-block h2 { font-size: 1.4rem; }
+            .team-side { min-width: 100%; }
+        }
     </style>
 </head>
 <body>
-
-    <!-- Nav injected by JS -->
+    <h1>RDA GM Dashboard</h1>
 
     <div id="login-screen" class="dashboard-container auth-container">
-        <img src="images/logo.png" alt="RDA" style="width: 120px; margin-bottom: 1rem;" onerror="this.style.display='none'">
-        <h2 style="color: var(--gold-mid); text-transform: uppercase; letter-spacing: 2px;">GM Access</h2>
+        <img src="images/logo.png" alt="RDA" style="width: 80px; margin-bottom: 0.75rem;" onerror="this.style.display='none'">
+        <h2 style="color: var(--gold-mid); text-transform: uppercase; letter-spacing: 2px; font-size: 1.3rem; margin: 0 0 1rem 0;">GM Access</h2>
         <input type="email" id="email" placeholder="Email Address">
         <input type="password" id="password" placeholder="Password">
         <button onclick="handleLogin()">Login</button>
-        <p id="login-error" style="color: #ef4444; margin-top: 1rem; font-weight: bold;"></p>
-        <div style="margin-top: 2rem;">
-            <a href="index.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">&larr; Back to Portal</a>
+        <p id="login-error" style="color: #ef4444; margin-top: 0.75rem; font-weight: bold; font-size: 0.85rem;"></p>
+        <div style="margin-top: 1.25rem;">
+            <a href="index.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.8rem; font-weight: 700;">&larr; Back to Live Center</a>
         </div>
     </div>
 
     <div id="dashboard-screen" class="dashboard-container" style="display: none;">
-        
         <div class="dashboard-header">
-            <h2 style="margin: 0; color: var(--gold-mid); font-size: 2rem; text-transform: uppercase; letter-spacing: 1px;">GM Dashboard</h2>
+            <div class="dashboard-title-block">
+                <h2>GM Dashboard</h2>
+                <p>Lineup submissions, waiver claims, and front-office tools</p>
+            </div>
             <button onclick="handleLogout()" class="logout-btn">Sign Out</button>
         </div>
         
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('lineups', this)">Lineups</button>
-            <button class="tab-btn" onclick="switchTab('transactions', this)">Free Agency</button>
-            <button class="tab-btn" onclick="switchTab('trades', this)">Trade Analyzer</button>
+        <div class="sub-nav-container">
+            <button class="sub-nav-btn active" onclick="switchTab('lineups', this)">Lineups</button>
+            <button class="sub-nav-btn" onclick="switchTab('transactions', this)">Free Agency</button>
+            <button class="sub-nav-btn" onclick="switchTab('trades', this)">Trade Analyzer</button>
         </div>
 
+        <!-- LINEUPS SECTION -->
         <div id="lineups-section" class="dashboard-section">
             <select id="team-select" class="team-select" onchange="loadRoster()">
                 <option value="">Select Team...</option>
@@ -163,62 +475,58 @@
             <button class="save-btn" onclick="saveLineup()" style="display: none;" id="save-btn">Save Lineup</button>
         </div>
 
+        <!-- FREE AGENCY SECTION -->
         <div id="transactions-section" class="dashboard-section" style="display: none;">
-            
-            <div id="my-claims-box" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-gold); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
-                <h3 style="color: var(--gold-mid); margin: 0 0 1rem 0; text-transform: uppercase;">My Surviving Claims</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem; line-height: 1.5;">
-                    This list only shows claims where you currently hold the highest waiver priority. If a claim disappears from here, you have been outbid, and any secondary claims you hold are automatically promoted.
+            <div id="my-claims-box" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-gold); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                <h3 style="color: var(--gold-mid); margin: 0 0 0.5rem 0; text-transform: uppercase; font-size: 0.95rem; letter-spacing: 0.75px;">My Surviving Claims</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0 0 1rem 0; line-height: 1.4;">
+                    This list only shows claims where you currently hold the highest waiver priority. If a claim disappears from here, you have been outbid, and secondary claims are automatically promoted.
                 </p>
                 <div id="my-claims-list">Loading claims...</div>
             </div>
 
-            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 2rem;">
-                <h2 style="margin: 0; color: #fff;">Available Free Agents</h2>
-                
-                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 8px; text-align: center; max-width: 800px; margin: 0 auto;">
-                    <h3 style="color: var(--gold-mid); margin: 0 0 0.5rem 0; font-size: 0.9rem; text-transform: uppercase;">Current Waiver Order:</h3>
-                    <p id="waiver-order-display" style="color: #ccc; margin: 0; font-size: 0.85rem; line-height: 1.5;">
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.85rem; margin-bottom: 1.5rem;">
+                <div style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-subtle); padding: 0.85rem 1rem; border-radius: 8px; text-align: center; width: 100%; max-width: 800px; box-sizing: border-box;">
+                    <div style="color: var(--gold-mid); margin-bottom: 0.35rem; font-size: 0.75rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Current Waiver Order</div>
+                    <div id="waiver-order-display" style="color: #cbd5e1; margin: 0; font-size: 0.82rem; line-height: 1.4;">
                         Loading live waiver order from database...
-                    </p>
-                    <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem; font-style: italic;">
-                        Note: Your second claim drops to the end of the line. You will be blocked if a higher priority team has already claimed a player.
-                    </p>
+                    </div>
                 </div>
 
                 <select id="top-sport-filter" class="top-filter-dropdown" onchange="filterAndSortGrid()">
                     <option value="ALL">All Sports</option>
                 </select>
             </div>
+            
             <div id="fa-grid" class="fa-grid">
                 <div style="color: var(--text-muted); padding: 2rem; grid-column: 1/-1; text-align: center;">Loading Live Stats...</div>
             </div>
         </div>
 
+        <!-- TRADE ANALYZER SECTION -->
         <div id="trades-section" class="dashboard-section" style="display: none;">
-            <h2 style="text-align: center; margin-bottom: 0.5rem; color: #fff;">Compare Teams</h2>
-            <div style="text-align: center; margin-bottom: 1.5rem;">
-                <select id="trade-stats-toggle" class="team-select" style="max-width: 250px; display: inline-block; margin: 0; padding: 0.5rem;" onchange="toggleTradeStatsMode()">
+            <div style="text-align: center; margin-bottom: 1.25rem;">
+                <select id="trade-stats-toggle" class="team-select" style="max-width: 260px; display: inline-block; margin: 0; padding: 0.45rem 0.8rem;" onchange="toggleTradeStatsMode()">
                     <option value="current">Current Season Stats</option>
                     <option value="career">Career Stats (All Seasons)</option>
                 </select>
             </div>
             <div class="trade-analyzer-container">
                 <div class="team-side">
-                    <select id="trade-team-1" class="team-select" style="margin-bottom: 1rem;" onchange="loadTradeSide(1)">
+                    <select id="trade-team-1" class="team-select" style="margin-bottom: 0.75rem;" onchange="loadTradeSide(1)">
                         <option value="">Select Team 1...</option>
                     </select>
                     <table class="data-table">
-                        <thead><tr><th>Player</th><th>Start GP</th><th>Start Pts</th><th>Bench Pts</th><th>PPG</th></tr></thead>
+                        <thead><tr><th>Player</th><th style="text-align:center;">GP</th><th style="text-align:right;">Start Pts</th><th style="text-align:right;">Bench</th><th style="text-align:right;">PPG</th></tr></thead>
                         <tbody id="trade-roster-1"></tbody>
                     </table>
                 </div>
                 <div class="team-side">
-                    <select id="trade-team-2" class="team-select" style="margin-bottom: 1rem;" onchange="loadTradeSide(2)">
+                    <select id="trade-team-2" class="team-select" style="margin-bottom: 0.75rem;" onchange="loadTradeSide(2)">
                         <option value="">Select Team 2...</option>
                     </select>
                     <table class="data-table">
-                        <thead><tr><th>Player</th><th>Start GP</th><th>Start Pts</th><th>Bench Pts</th><th>PPG</th></tr></thead>
+                        <thead><tr><th>Player</th><th style="text-align:center;">GP</th><th style="text-align:right;">Start Pts</th><th style="text-align:right;">Bench</th><th style="text-align:right;">PPG</th></tr></thead>
                         <tbody id="trade-roster-2"></tbody>
                     </table>
                 </div>
@@ -229,14 +537,14 @@
     <!-- Claim Modal -->
     <div id="claim-modal" class="modal">
         <div class="modal-content">
-            <h2 id="claim-title" style="margin-top:0; color: var(--gold-light);">Claim Player</h2>
-            <p style="color:var(--text-muted); margin-bottom: 1rem;">Select a player to drop (Required):</p>
+            <h3 id="claim-title" style="margin:0 0 0.5rem 0; color: var(--gold-light);">Claim Player</h3>
+            <p style="color:var(--text-muted); margin-bottom: 1rem; font-size: 0.82rem;">Select a player to drop (Required):</p>
             <select id="drop-select" class="team-select" style="margin-bottom: 1rem; width: 100%; max-width: 100%;">
                 <option value="">Select player to drop...</option>
             </select>
-            <div style="display: flex; gap: 1rem;">
-                <button onclick="submitClaim()" style="flex:1; padding: 0.75rem; background: var(--gold-mid); color:black; font-weight:bold; border:none; border-radius:4px; cursor:pointer;">Submit Claim</button>
-                <button onclick="closeModal()" style="flex:1; padding: 0.75rem; background: #334155; color:white; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+            <div style="display: flex; gap: 0.75rem;">
+                <button onclick="submitClaim()" style="flex:1; padding: 0.65rem; background: var(--gold-mid); color:black; font-weight:800; border:none; border-radius:6px; cursor:pointer; text-transform:uppercase; font-size:0.75rem;">Submit Claim</button>
+                <button onclick="closeModal()" style="flex:1; padding: 0.65rem; background: #334155; color:white; border:none; border-radius:6px; cursor:pointer; text-transform:uppercase; font-size:0.75rem;">Cancel</button>
             </div>
         </div>
     </div>
@@ -247,17 +555,12 @@
         import { auth, db } from './js/firebase-config.js';
         import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
         import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
-        import { initNav, currentSeason, HISTORICAL_CSVS, PLAYER_MAPPINGS_CSV } from './js/app.js';
+        import { initNav, currentSeason, HISTORICAL_CSVS, PLAYER_MAPPINGS_CSV } from './js/app.js?v=7';
 
-        // Apply Global Nav
         initNav();
 
-        // =========================================================================
-        // IMPORTANT: PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-        // =========================================================================
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCThTL5b8sgFBlEuebH0yPt4w6ESR4fh16v22obah9toHXPTtLmYOG1iuoE_AD9s5qiQ/exec';
 
-        // GM Mapping - Restricts emails to specific teams for secure client-side auth
         const GM_MAP = {
             "dragons@rda.com": "Dragons", "bajas@rda.com": "Bajas", "buffaloes@rda.com": "Buffaloes",
             "kings@rda.com": "Kings", "underdogs@rda.com": "Underdogs", "knights@rda.com": "Knights",
@@ -266,7 +569,6 @@
         };
         const ADMIN_EMAILS = ["coledecker04@gmail.com"];
 
-        // Global State Variables
         let allPlayersData = [];
         let allFaData = [];
         let playerStatsCache = {}; 
@@ -277,7 +579,6 @@
         let selectedFA = null;
         const globalDiscoveredSports = new Set(); 
         
-        // Lineup Date State
         window.gamedays = [];
         window.gamedaySports = {};
         window.gamedayLocks = {};
@@ -333,24 +634,14 @@
 
         const cleanName = (str) => str ? str.toString().replace(/@/g, '').trim().toLowerCase() : '';
 
-        // Bulletproof CSV Parser to strip BOM characters and double quotes correctly
         function parseCsvLocal(csvText) {
-            if (!csvText || csvText.trim().startsWith('<')) {
-                console.warn("Invalid CSV received.");
-                return [];
-            }
-            
+            if (!csvText || csvText.trim().startsWith('<')) return [];
             const rows = csvText.trim().split(/\r?\n/);
             if (rows.length < 2) return [];
-            
-            // Auto-detect Tab or Comma separated
             const delimiter = rows[0].includes('\t') ? '\t' : ',';
-            
-            // Aggressively clean headers of invisible BOM characters and quotes
             const headers = rows[0].split(delimiter).map(h => 
                 h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase()
             );
-            
             return rows.slice(1).map(row => {
                 let inQuotes = false; let currentVal = ''; const values = [];
                 for (let i = 0; i < row.length; i++) {
@@ -360,11 +651,10 @@
                     else currentVal += char;
                 }
                 values.push(currentVal.trim());
-                
                 const obj = {};
                 headers.forEach((h, i) => {
                     let val = values[i] !== undefined ? values[i] : '';
-                    obj[h] = val.replace(/^"|"$/g, '').trim(); // Strip surrounding quotes
+                    obj[h] = val.replace(/^"|"$/g, '').trim();
                 });
                 return obj;
             });
@@ -372,7 +662,6 @@
 
         async function initDashboard() {
             try {
-                // Get the current season's schedule URL to extract dates
                 const scheduleUrl = HISTORICAL_CSVS[currentSeason]?.schedule || HISTORICAL_CSVS['6']?.schedule || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv';
 
                 const [res, faRes, schedRes] = await Promise.all([
@@ -385,13 +674,11 @@
                 allFaData = parseCsvLocal(await faRes.text());
                 const schedData = parseCsvLocal(await schedRes.text());
 
-                // Parse Schedule Dates & Sports
                 if (schedData.length > 0) {
                     const uniqueDates = new Set();
                     window.gamedaySports = {};
                     window.gamedayLocks = {};
                     
-                    // Auto-find sport and lock columns
                     const sampleHeaders = Object.keys(schedData[0]);
                     const sportCols = sampleHeaders.filter(h => h.startsWith('sport'));
                     const lockCol = sampleHeaders.find(h => h.includes('lock'));
@@ -402,14 +689,12 @@
                         const cleanDate = dateVal.trim();
                         uniqueDates.add(cleanDate);
                         
-                        // Grab active sports for this date
                         if (!window.gamedaySports[cleanDate]) window.gamedaySports[cleanDate] = new Set();
                         sportCols.forEach(col => {
                             const val = row[col];
                             if (val && val.trim() !== '') window.gamedaySports[cleanDate].add(val.trim());
                         });
 
-                        // Grab dynamic lock time
                         if (!window.gamedayLocks[cleanDate]) {
                             let lTime = lockCol ? row[lockCol] : null;
                             window.gamedayLocks[cleanDate] = lTime && lTime.trim() !== '' ? lTime.trim() : "7:00 PM";
@@ -417,19 +702,14 @@
                     });
 
                     window.gamedays = Array.from(uniqueDates);
-                    
-                    // Sort the gamedays array chronologically
                     window.gamedays.sort((a, b) => {
                         const dateA = new Date(`${a}/${new Date().getFullYear()}`);
                         const dateB = new Date(`${b}/${new Date().getFullYear()}`);
                         return dateA - dateB;
                     });
 
-                    // Set active date to today or next upcoming (Rolls over at 10 AM EST)
                     const estNow = new Date(new Date().toLocaleString("en-US", {timeZone: "America/New_York"}));
-                    if (estNow.getHours() < 10) {
-                        estNow.setDate(estNow.getDate() - 1);
-                    }
+                    if (estNow.getHours() < 10) estNow.setDate(estNow.getDate() - 1);
                     const today = new Date(estNow.getFullYear(), estNow.getMonth(), estNow.getDate());
                     today.setHours(0,0,0,0);
                     let minDiff = Infinity;
@@ -479,8 +759,6 @@
                 }
 
                 loadFreeAgentsLive();
-                
-                // Fetch Claims if on transaction tab, or proactively
                 window.loadMyClaims();
                 
             } catch (e) { 
@@ -490,49 +768,40 @@
         }
 
         function isLineupLocked(dateStr) {
-            // Get current time explicitly forced to EST
             const now = new Date();
             const estDateString = now.toLocaleString("en-US", {timeZone: "America/New_York"});
             const estNow = new Date(estDateString);
             
-            // Parse target dateStr (e.g. "7/27")
             const parts = dateStr.split('/');
             if (parts.length < 2) return false;
             const month = parseInt(parts[0], 10) - 1;
             const day = parseInt(parts[1], 10);
             
             let year = estNow.getFullYear();
-            // Handle cross-year edge case (e.g., date is Jan, current is Dec)
             if (month === 0 && estNow.getMonth() === 11) year += 1;
             else if (month === 11 && estNow.getMonth() === 0) year -= 1;
 
             const targetDateStart = new Date(year, month, day);
             const todayStart = new Date(estNow.getFullYear(), estNow.getMonth(), estNow.getDate());
             
-            // If the selected game date is strictly in the past (yesterday or older), it is permanently locked.
             if (targetDateStart < todayStart) return true; 
-            
-            // If the selected game date is strictly in the future (tomorrow or later), it is always open.
             if (targetDateStart > todayStart) return false; 
             
-            // If the selected game date is TODAY, dynamically check against the specific lock time.
             const lockStr = window.gamedayLocks[dateStr] || "7:00 PM";
-            let lockHours = 19; // Default 7 PM
+            let lockHours = 19;
             let lockMins = 0;
 
             try {
-                // Safely parse formats like "4:30 PM", "12:00 PM", "20:00"
                 const match = lockStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
                 if (match) {
                     let h = parseInt(match[1], 10);
                     lockMins = parseInt(match[2], 10);
                     const ampm = match[3] ? match[3].toUpperCase() : null;
-                    
                     if (ampm === 'PM' && h < 12) h += 12;
                     if (ampm === 'AM' && h === 12) h = 0;
                     lockHours = h;
                 }
-            } catch(e) { console.warn("Failed to parse lock time:", lockStr); }
+            } catch(e) {}
 
             if (estNow.getHours() > lockHours) return true;
             if (estNow.getHours() === lockHours && estNow.getMinutes() >= lockMins) return true;
@@ -565,11 +834,9 @@
                 lockEl.className = 'lock-status status-open';
             }
             
-            // Render Sports
             const sports = Array.from(window.gamedaySports[dateStr] || []);
             document.getElementById('display-sports').innerHTML = sports.map(s => `<span class="sport-badge">${s}</span>`).join('');
             
-            // Re-render the roster applying the correct lock status and date-specific status
             window.loadRoster();
         };
 
@@ -589,14 +856,13 @@
             const saveBtn = document.getElementById('save-btn');
 
             if (counterBox && saveBtn) {
-                // Determine if we show the save button
                 const dateStr = window.gamedays[window.currentDateIndex];
                 const isLocked = dateStr ? isLineupLocked(dateStr) : false;
 
                 if (starters === 8 && bench === 2) {
                     counterBox.classList.remove('counter-invalid');
                     counterBox.classList.add('counter-valid');
-                    if (!isLocked) saveBtn.style.display = 'block'; // Only show if not locked
+                    if (!isLocked) saveBtn.style.display = 'block';
                 } else {
                     counterBox.classList.remove('counter-valid');
                     counterBox.classList.add('counter-invalid');
@@ -604,7 +870,6 @@
                 }
             }
 
-            // Update green/red labels
             document.querySelectorAll('.player-row').forEach(row => {
                 const isPlaying = row.querySelector('.playing-toggle').checked;
                 const label = row.querySelector('.status-label');
@@ -636,7 +901,6 @@
             let html = '';
             dropSelect.innerHTML = '<option value="">Select player to drop...</option>';
 
-            // Helper to normalize dates for matching (e.g. "08/13" -> "8/13")
             const normalizeMD = (d) => {
                 if (!d) return "";
                 const parts = String(d).split('/');
@@ -650,14 +914,12 @@
                 let playVal = '';
                 let targetKey = null;
 
-                // 1. Search for a matching date column in the player's keys from the CSV
                 if (targetMD) {
                     for (let key in p) {
                         if (normalizeMD(key) === targetMD) {
                             targetKey = key;
                             break;
                         }
-                        // Try parsing as date just in case it exported weirdly
                         const parsed = new Date(key);
                         if (!isNaN(parsed.getTime()) && key.includes('/')) {
                             if ((parsed.getMonth() + 1) + "/" + parsed.getDate() === targetMD) {
@@ -668,7 +930,6 @@
                     }
                 }
                 
-                // 2. Read from the date-specific column first, fallback to default 'playing?'
                 if (targetKey && p[targetKey] !== undefined && p[targetKey].trim() !== '') {
                     playVal = p[targetKey];
                 } else {
@@ -682,7 +943,7 @@
                     <div class="player-row ${isLocked ? 'locked' : ''}" data-user="${p.username}">
                         <div style="display:flex; align-items:center;">
                             <span class="status-label ${isPlaying ? 'starter-label' : 'bench-label'}">${isPlaying ? 'Starter' : 'Bench'}</span>
-                            <strong style="color: var(--text-main); font-size: 1.1rem;">${p.username}</strong>
+                            <strong style="color: #fff; font-size: 0.95rem;">${p.username}</strong>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" class="playing-toggle" onchange="updateCounter()" ${isPlaying ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
@@ -702,9 +963,7 @@
             const btn = document.getElementById('save-btn');
             btn.innerText = "Saving...";
             
-            // NOTE: Passes the explicitly selected date from the UI to the backend so the Admin knows which day this is meant for.
             const lineupDate = window.gamedays[window.currentDateIndex];
-            
             const updates = [];
             document.querySelectorAll('.player-row').forEach(row => {
                 updates.push({
@@ -723,7 +982,6 @@
                 const data = await res.json();
                 if(data.status === 'error') throw new Error(data.message);
                 
-                // --- UPDATE LOCAL CACHE SO IT DOESN'T REVERT WHEN SWITCHING TABS OR DATES ---
                 const normalizeMD = (d) => {
                     if (!d) return "";
                     const parts = String(d).split('/');
@@ -739,7 +997,7 @@
                         for (let key in player) {
                             if (normalizeMD(key) === targetMD) { foundKey = key; break; }
                         }
-                        if (!foundKey) foundKey = targetMD; // create a new key if it didn't exist in CSV yet
+                        if (!foundKey) foundKey = targetMD;
                         player[foundKey] = u.playing;
                     }
                 });
@@ -752,13 +1010,12 @@
             window.updateCounter(); 
         };
 
-        // Number Parser Helper to strip commas from thousands (e.g. 1,234.50 -> 1234.50)
         const getNum = (val) => {
             if (val === undefined || val === null || String(val).trim() === '') return 0;
             return parseFloat(String(val).replace(/,/g, '')) || 0;
         };
 
-async function loadPlayerStatsForTrades() {
+        async function loadPlayerStatsForTrades() {
             try {
                 let playersData = [];
                 const csvUrl = HISTORICAL_CSVS[currentSeason]?.['players'];
@@ -803,7 +1060,7 @@ async function loadPlayerStatsForTrades() {
                         if (d.date) {
                             tempDates[key].add(d.date);
                         } else {
-                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
+                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || 1;
                             playerStatsCache[key].games += gp;
                         }
                     }
@@ -822,7 +1079,6 @@ async function loadPlayerStatsForTrades() {
             careerStatsCache = {};
             const tempDates = {};
 
-            // Fetch player mappings to resolve past usernames / User IDs
             let playerAliasMap = {};
             let userIdToCanonical = {};
 
@@ -833,35 +1089,29 @@ async function loadPlayerStatsForTrades() {
                     pMapData.forEach(row => {
                         const currentUname = row['current username'] || row['username'] || row['current name'] || row['display name'] || row['player'];
                         const uid = row['user id'] || row['userid'] || row['id'];
-                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || row['past names'] || row['previous name'] || row['past name'] || '';
+                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || row['past names'] || '';
 
                         if (currentUname) {
                             const canonicalKey = uid ? uid.trim() : currentUname.replace(/@/g, '').trim().toLowerCase();
 
-                            if (uid) {
-                                userIdToCanonical[uid.trim()] = canonicalKey;
-                            }
-
+                            if (uid) userIdToCanonical[uid.trim()] = canonicalKey;
                             const cleanCurrent = currentUname.replace(/@/g, '').trim().toLowerCase();
                             playerAliasMap[cleanCurrent] = canonicalKey;
 
                             if (pastUsernamesStr) {
                                 pastUsernamesStr.split(',').forEach(pName => {
                                     const cleanPast = pName.replace(/@/g, '').trim().toLowerCase();
-                                    if (cleanPast) {
-                                        playerAliasMap[cleanPast] = canonicalKey;
-                                    }
+                                    if (cleanPast) playerAliasMap[cleanPast] = canonicalKey;
                                 });
                             }
                         }
                     });
                 }
-            } catch (e) { console.warn("Failed to fetch player mappings in GM Dashboard.", e); }
-            
-            // Helper function to process both regular season and playoff arrays identically
-const processDataList = (playersData, seasonPrefix) => {
+            } catch (e) {}
+
+            const processDataList = (playersData, seasonPrefix) => {
                 playersData.forEach(d => {
-                    const rawName = d.username || d.user || d.name || d.player || d['player name'] || d.discord || d['discord name'] || d['discord username'];
+                    const rawName = d.username || d.user || d.name || d.player || d['player name'] || d.discord;
                     if (!rawName) return;
                     
                     const uidRaw = d['user id'] || d.userid || d.userId || d.id || d.firestore_id;
@@ -869,15 +1119,10 @@ const processDataList = (playersData, seasonPrefix) => {
                     const cleanNameKey = cleanName(rawName);
                     
                     let key = null;
-                    if (cleanUid && userIdToCanonical[cleanUid]) {
-                        key = userIdToCanonical[cleanUid];
-                    } else if (playerAliasMap[cleanNameKey]) {
-                        key = playerAliasMap[cleanNameKey];
-                    } else if (cleanUid) {
-                        key = cleanUid;
-                    } else {
-                        key = cleanNameKey;
-                    }
+                    if (cleanUid && userIdToCanonical[cleanUid]) key = userIdToCanonical[cleanUid];
+                    else if (playerAliasMap[cleanNameKey]) key = playerAliasMap[cleanNameKey];
+                    else if (cleanUid) key = cleanUid;
+                    else key = cleanNameKey;
 
                     if (!careerStatsCache[key]) {
                         careerStatsCache[key] = { total: 0, benchTotal: 0, games: 0 };
@@ -898,50 +1143,41 @@ const processDataList = (playersData, seasonPrefix) => {
                         if (d.date) {
                             tempDates[key].add(`${seasonPrefix}-${d.date}`);
                         } else {
-                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || parseInt(d['total matches']) || parseInt(d['total games']) || 1;
+                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || 1;
                             careerStatsCache[key].games += gp;
                         }
                     }
                 });
             };
-            
-            // Loop through all defined historical seasons
+
             const seasonsToFetch = Object.keys(HISTORICAL_CSVS);
             
             for (const s of seasonsToFetch) {
-                // 1. Fetch Regular Season Stats
                 try {
                     let playersData = [];
                     const csvUrl = HISTORICAL_CSVS[s]?.['players'];
-                    
                     if (csvUrl) {
                         const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
                         if (res.ok) playersData = parseCsvLocal(await res.text());
                     } else {
-                        // Fallback to Firestore for active seasons without CSVs
                         const snaps = await getDocs(collection(db, `s${s}-players`));
                         snaps.forEach(doc => playersData.push(doc.data()));
                     }
-                    
                     processDataList(playersData, `s${s}`);
-                } catch (e) { console.error(`Failed to load regular season stats for season ${s}`, e); }
+                } catch (e) {}
 
-                // 2. Fetch Playoff Stats (If they exist)
                 try {
                     let playoffData = [];
                     const playoffCsvUrl = HISTORICAL_CSVS[s]?.['playoff-players'];
-                    
                     if (playoffCsvUrl) {
                         const res = await fetch(workerProxy + '?url=' + encodeURIComponent(playoffCsvUrl));
                         if (res.ok) playoffData = parseCsvLocal(await res.text());
                     } else {
-                        // Fallback to Firestore for active playoff seasons
                         const snaps = await getDocs(collection(db, `s${s}-playoff-players`));
                         snaps.forEach(doc => playoffData.push(doc.data()));
                     }
-                    
                     processDataList(playoffData, `s${s}-playoffs`);
-                } catch (e) { console.error(`Failed to load playoff stats for season ${s}`, e); }
+                } catch (e) {}
             }
             
             Object.keys(careerStatsCache).forEach(key => {
@@ -958,8 +1194,8 @@ const processDataList = (playersData, seasonPrefix) => {
             if (isCareerMode && !careerStatsLoaded) {
                 const t1 = document.getElementById('trade-roster-1');
                 const t2 = document.getElementById('trade-roster-2');
-                if (t1) t1.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
-                if (t2) t2.innerHTML = '<tr><td colspan="4" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
+                if (t1) t1.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
+                if (t2) t2.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
                 await loadCareerStats();
             }
             
@@ -967,7 +1203,7 @@ const processDataList = (playersData, seasonPrefix) => {
             window.loadTradeSide(2);
         };
 
-window.loadTradeSide = (sideNum) => {
+        window.loadTradeSide = (sideNum) => {
             const team = document.getElementById(`trade-team-${sideNum}`).value;
             const tbody = document.getElementById(`trade-roster-${sideNum}`);
             
@@ -1000,7 +1236,6 @@ window.loadTradeSide = (sideNum) => {
                     games = cacheToUse[keyName].games || 0;
                 }
 
-                // PPG is calculated strictly on starter points / starter games played
                 const ppg = games > 0 ? (total / games).toFixed(2) : '0.00';
                 
                 teamTotalPts += total; 
@@ -1008,21 +1243,21 @@ window.loadTradeSide = (sideNum) => {
                 teamTotalGames += games;
                 
                 html += `<tr>
-                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);"><strong>${p.username}</strong></td>
-                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted);">${games}</td>
-                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-main);">${total.toFixed(2)}</td>
-                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #888;">${benchTotal > 0 ? benchTotal.toFixed(2) : '-'}</td>
-                    <td style="padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--gold-mid); font-weight: 600;">${ppg}</td>
+                    <td style="color: #fff; font-weight:700;">${p.username}</td>
+                    <td style="color: var(--text-muted); text-align:center;">${games}</td>
+                    <td style="color: #4ade80; text-align:right; font-weight:700;">${total.toFixed(2)}</td>
+                    <td style="color: #94a3b8; text-align:right;">${benchTotal > 0 ? benchTotal.toFixed(2) : '-'}</td>
+                    <td style="color: var(--gold-mid); font-weight: 800; text-align:right;">${ppg}</td>
                 </tr>`;
             });
 
             const teamPPG = teamTotalGames > 0 ? (teamTotalPts / teamTotalGames).toFixed(2) : '0.00';
-            html += `<tr style="background: rgba(212,175,55,0.1); border-top: 2px solid var(--gold-mid);">
-                <td style="padding: 0.75rem 0.5rem; color: var(--gold-light);"><strong>TOTALS</strong></td>
-                <td style="padding: 0.75rem 0; color: var(--gold-light);">${teamTotalGames}</td>
-                <td style="padding: 0.75rem 0; color:var(--gold-mid); font-weight:bold;">${teamTotalPts.toFixed(2)}</td>
-                <td style="padding: 0.75rem 0; color: #888;">${teamTotalBench > 0 ? teamTotalBench.toFixed(2) : '-'}</td>
-                <td style="padding: 0.75rem 0; color:var(--gold-mid); font-weight:bold;">${teamPPG}</td>
+            html += `<tr style="background: rgba(212,175,55,0.08); border-top: 1px solid var(--border-gold);">
+                <td style="color: var(--gold-light); font-weight:800;">TOTALS</td>
+                <td style="color: var(--gold-light); text-align:center; font-weight:800;">${teamTotalGames}</td>
+                <td style="color: #4ade80; font-weight:800; text-align:right;">${teamTotalPts.toFixed(2)}</td>
+                <td style="color: #94a3b8; text-align:right;">${teamTotalBench > 0 ? teamTotalBench.toFixed(2) : '-'}</td>
+                <td style="color: var(--gold-mid); font-weight:900; text-align:right;">${teamPPG}</td>
             </tr>`;
 
             tbody.innerHTML = html;
@@ -1032,9 +1267,8 @@ window.loadTradeSide = (sideNum) => {
             if (!myTeam) return;
             const listEl = document.getElementById('my-claims-list');
             const orderDisplayEl = document.getElementById('waiver-order-display');
-            listEl.innerHTML = '<div style="color: var(--text-muted);">Syncing secure ledger...</div>';
+            listEl.innerHTML = '<div style="color: var(--text-muted); font-size:0.85rem;">Syncing secure ledger...</div>';
             
-            // 1. Fetch live waiver order from CSV directly
             try {
                 const csvRes = await fetch(workerProxy + '?url=' + encodeURIComponent(waiverOrderCsvUrl));
                 if (csvRes.ok) {
@@ -1042,15 +1276,12 @@ window.loadTradeSide = (sideNum) => {
                     const rows = parseCsvLocal(csvText);
                     
                     if (rows.length > 0) {
-                        // Find the column that contains the team names
                         const headers = Object.keys(rows[0]);
                         const teamColKey = headers.find(h => h.includes('team name') || h.includes('team')) || headers[1];
                         
                         if (teamColKey) {
                             const orderList = rows.map(r => r[teamColKey]).filter(t => t && t.trim() !== '');
-                            const displayStr = orderList.map((team, idx) => {
-                                return `${idx + 1}. ${team}`;
-                            }).join(' | ');
+                            const displayStr = orderList.map((team, idx) => `${idx + 1}. ${team}`).join(' | ');
                             if (orderDisplayEl) orderDisplayEl.innerText = displayStr;
                         }
                     } else {
@@ -1058,17 +1289,14 @@ window.loadTradeSide = (sideNum) => {
                     }
                 }
             } catch (e) {
-                console.warn("Failed to fetch waiver order from CSV", e);
                 if (orderDisplayEl) orderDisplayEl.innerText = "Failed to load waiver order.";
             }
 
-            // Admin skips checking their own personal claims
             if (myTeam === 'ADMIN') {
-                listEl.innerHTML = '<div style="color: var(--text-muted); font-style: italic;">Admins do not have personal claims.</div>';
+                listEl.innerHTML = '<div style="color: var(--text-muted); font-style: italic; font-size:0.85rem;">Admins do not have personal claims.</div>';
                 return;
             }
 
-            // 2. Fetch Active Claims from Apps Script
             try {
                 const res = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
@@ -1080,19 +1308,19 @@ window.loadTradeSide = (sideNum) => {
                 
                 if (data.status === 'success' && data.claims && data.claims.length > 0) {
                     listEl.innerHTML = data.claims.map((c) => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; background: var(--bg-card); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-subtle); margin-bottom: 0.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.3); padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--border-subtle); margin-bottom: 0.5rem; flex-wrap:wrap; gap:0.5rem;">
                             <div>
-                                <span style="color: var(--gold-mid); font-weight:bold; margin-right:10px;">Priority ${c.priority}</span>
-                                <span style="color: white; font-weight:bold; font-size: 1.1rem;">Add: ${c.add}</span>
-                                <span style="color: var(--text-muted); margin-left: 10px; font-size: 0.85rem;">(Drop: ${c.drop || 'None'})</span>
+                                <span style="color: var(--gold-mid); font-weight:800; margin-right:8px; font-size:0.8rem; text-transform:uppercase;">Priority ${c.priority}</span>
+                                <span style="color: white; font-weight:700; font-size: 0.95rem;">Add: ${c.add}</span>
+                                <span style="color: var(--text-muted); margin-left: 6px; font-size: 0.8rem;">(Drop: ${c.drop || 'None'})</span>
                             </div>
-                            <button onclick="cancelClaim('${c.add.replace(/'/g, "\\'")}')" style="background: var(--danger); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: bold;">Cancel</button>
+                            <button onclick="cancelClaim('${c.add.replace(/'/g, "\\'")}')" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; padding: 0.4rem 0.75rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: 800; text-transform:uppercase;">Cancel</button>
                         </div>
                     `).join('');
                 } else {
-                    listEl.innerHTML = '<div style="color: var(--text-muted); font-style: italic;">No active claims. You have not submitted a claim or have been outbid on all requests.</div>';
+                    listEl.innerHTML = '<div style="color: var(--text-muted); font-style: italic; font-size:0.85rem;">No active claims. You have not submitted a claim or have been outbid on all requests.</div>';
                 }
-            } catch (e) { listEl.innerHTML = '<div style="color: #ef4444;">Failed to load claims.</div>'; }
+            } catch (e) { listEl.innerHTML = '<div style="color: #ef4444; font-size:0.85rem;">Failed to load claims.</div>'; }
         };
 
         window.cancelClaim = async (addPlayer) => {
@@ -1145,7 +1373,6 @@ window.loadTradeSide = (sideNum) => {
 
         function generateRequestToken() {
             const timestampMs = Date.now();
-            // @ts-ignore
             const hasher = new Hashids("realwebapp", 16); return hasher.encode(timestampMs);
         }
 
@@ -1257,7 +1484,7 @@ window.loadTradeSide = (sideNum) => {
                 if (!uid) continue;
 
                 const cardId = `card-${uid}`;
-                const skeletonHtml = `<div class="fa-card" id="${cardId}" data-power-overall="-1"><div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><div class="stats-loading" style="color:var(--text-muted); font-style:italic; font-size:0.9rem;">Syncing stats...</div></div>`;
+                const skeletonHtml = `<div class="fa-card" id="${cardId}" data-power-overall="-1"><div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><div class="stats-loading" style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">Syncing stats...</div></div>`;
                 container.insertAdjacentHTML('beforeend', skeletonHtml);
 
                 try {
@@ -1283,7 +1510,7 @@ window.loadTradeSide = (sideNum) => {
                     updateFilterDropdown(); await new Promise(r => setTimeout(r, 200)); 
                 } catch (err) {
                     const card = document.getElementById(cardId);
-                    if (card) { card.querySelector('.stats-loading').innerHTML = `<span style="color:var(--danger)">Update Failed</span>`; card.dataset.powerOverall = -1; }
+                    if (card) { card.querySelector('.stats-loading').innerHTML = `<span style="color:var(--danger); font-size:0.8rem;">Update Failed</span>`; card.dataset.powerOverall = -1; }
                 }
             }
             updateFilterDropdown(); window.filterAndSortGrid();
@@ -1334,9 +1561,9 @@ window.loadTradeSide = (sideNum) => {
 
         function createCardHTML(uid, name, statsObj) {
             let keys = Object.keys(statsObj).sort();
-            const safeName = name.replace(/'/g, "\\'"); // Escape apostrophes for modal
+            const safeName = name.replace(/'/g, "\\'");
             
-            if (keys.length === 0) return `<div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><div style="text-align:center; font-style:italic; padding:1rem; color:var(--text-muted); flex-grow: 1;">No active stats found</div><button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
+            if (keys.length === 0) return `<div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><div style="text-align:center; font-style:italic; padding:1rem; color:var(--text-muted); flex-grow: 1; font-size:0.85rem;">No active stats found</div><button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
 
             const allIndex = keys.indexOf("ALL_SPORTS");
             if (allIndex > -1) { keys.splice(allIndex, 1); keys.unshift("ALL_SPORTS"); }
@@ -1356,7 +1583,7 @@ window.loadTradeSide = (sideNum) => {
                 });
 
                 const activeClass = index === 0 ? 'active' : '';
-                viewsHtml += `<div class="sport-stats-view ${activeClass}" data-sport="${key}"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; color:var(--gold-mid); font-size:0.9rem; font-weight:700; text-transform:uppercase;"><span>Highest Score</span><span>${headerScore}</span></div><div class="stats-grid-row">${gridHtml}</div></div>`;
+                viewsHtml += `<div class="sport-stats-view ${activeClass}" data-sport="${key}"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; color:var(--gold-mid); font-size:0.8rem; font-weight:800; text-transform:uppercase;"><span>Highest Score</span><span>${headerScore}</span></div><div class="stats-grid-row">${gridHtml}</div></div>`;
             });
 
             return `<div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><select class="sport-dropdown" onchange="switchSport(this)">${optionsHtml}</select><div class="stats-container" style="flex-grow: 1;">${viewsHtml}</div><button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
@@ -1369,7 +1596,7 @@ window.loadTradeSide = (sideNum) => {
 
         window.switchTab = (tabId, element) => {
             document.querySelectorAll('.dashboard-section').forEach(el => el.style.display = 'none');
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sub-nav-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId + '-section').style.display = 'block';
             if(element) element.classList.add('active');
             if (tabId === 'transactions') window.loadMyClaims();
