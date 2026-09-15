@@ -2,112 +2,453 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RDA Standings</title>
+    <title>RDA Standings & Playoff Picture</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/global-v2.css">
     <style>
-        .conf-header {
-            font-size: 2rem;
-            margin-top: 3rem;
-            margin-bottom: 1rem;
-            color: #fff;
-            border-bottom: 2px solid #333;
-            padding-bottom: 0.5rem;
-            text-align: left;
+        .standings-content {
             max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
+            margin: 0 auto;
+            padding: 1rem 1rem 4rem 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.4s ease-out;
         }
-        .div-header {
-            font-size: 1.2rem;
-            margin-top: 2rem;
-            margin-bottom: 0.5rem;
-            color: #888;
-            text-align: left;
+
+        /* View Toggle Tabs */
+        .sub-nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .sub-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 700;
+            padding: 0.45rem 1.1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sub-nav-btn:hover { color: #fff; }
+        .sub-nav-btn.active { color: var(--gold-light); border-bottom: 2px solid var(--gold-mid); }
+
+        /* Headers */
+        .conf-header {
+            font-size: 1.35rem;
+            margin: 2rem 0 0.75rem 0;
+            color: #fff;
+            border-bottom: 2px solid var(--border-gold);
+            padding-bottom: 0.4rem;
+            font-family: 'Didot', serif;
             letter-spacing: 1px;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 0.5rem;
-            border-left: 4px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
         }
-        .standings-table {
-            margin-bottom: 2rem;
+        .conf-header:first-of-type { margin-top: 0.5rem; }
+
+        .div-header {
+            font-size: 0.85rem;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 1.25rem 0 0.5rem 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        
-        /* FIX: Table Wrapper for scrolling without breaking alignment */
+
+        /* Table Scaffolding */
         .table-wrapper {
             overflow-x: auto;
             width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(15, 23, 42, 0.5);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
         }
-        
-        /* Force table to behave like a table to fix column alignment */
+
         .data-table {
-            display: table !important; 
             width: 100%;
             border-collapse: collapse;
-            border: none; /* Border moved to wrapper */
-            background: transparent;
-            white-space: nowrap; /* Prevent wrapping in cells */
+            text-align: left;
+            white-space: nowrap;
         }
-        
-        /* Enforce table structure elements to ensure alignment */
-        .data-table thead { display: table-header-group !important; }
-        .data-table tbody { display: table-row-group !important; }
-        .data-table tr { display: table-row !important; }
-        .data-table th, .data-table td { display: table-cell !important; }
 
-        /* Navigation Tabs for Views */
-        .standings-tabs {
+        .data-table th, .data-table td {
+            padding: 0.75rem 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+
+        .data-table th {
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--gold-mid);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .data-table tbody tr { transition: background 0.15s ease; }
+        .data-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+        .team-cell-link {
             display: flex;
-            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .team-cell-link:hover { color: var(--gold-light); }
+
+        .team-logo {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+        }
+
+        .seed-cell {
+            width: 40px;
+            text-align: center;
+            font-weight: 800;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        .seed-playoff { color: var(--gold-light); }
+
+        .cutline-row td {
+            border-bottom: 2px dashed rgba(212, 175, 55, 0.4) !important;
+        }
+
+        .div-winner-badge {
+            font-size: 0.55rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: var(--gold-mid);
+            margin-left: 6px;
+            font-weight: 800;
+        }
+
+        .stat-val { text-align: right; font-variant-numeric: tabular-nums; }
+        .stat-win { color: #4ade80; font-weight: 700; }
+        .stat-loss { color: #f87171; font-weight: 700; }
+        .stat-diff-pos { color: #4ade80; font-weight: 600; }
+        .stat-diff-neg { color: #f87171; font-weight: 600; }
+
+        /* ============================================================= */
+        /* PHYSICAL BRACKET TREE DIAGRAM STYLING                         */
+        /* ============================================================= */
+        .bracket-tree-outer {
+            display: flex;
+            flex-direction: column;
             gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #333;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
+            width: 100%;
+            animation: fadeIn 0.3s ease-out;
         }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: #888;
+
+        .bracket-banner {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--border-gold);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .bracket-banner-title {
             font-size: 1.1rem;
-            font-weight: 600;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: color 0.3s, border-bottom-color 0.3s;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Didot', serif;
+            letter-spacing: 0.5px;
         }
-        .tab-btn:hover { color: #ccc; }
-        .tab-btn.active { color: #fff; border-bottom-color: var(--primary); }
+
+        .bracket-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-live-picture {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+        .badge-final-bracket {
+            background: rgba(212, 175, 55, 0.2);
+            color: var(--gold-mid);
+            border: 1px solid var(--border-gold);
+        }
+
+        .bracket-scroll-hint {
+            display: none;
+            text-align: center;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.75px;
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            padding: 0.4rem;
+            border-radius: 6px;
+        }
+        @media (max-width: 900px) {
+            .bracket-scroll-hint { display: block; }
+        }
+
+        .bracket-scroll-viewport {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding: 1rem 0.5rem 2rem 0.5rem;
+            box-sizing: border-box;
+            background: rgba(10, 15, 29, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .bracket-scroll-viewport::-webkit-scrollbar {
+            height: 6px;
+        }
+        .bracket-scroll-viewport::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+        }
+        .bracket-scroll-viewport::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.35);
+            border-radius: 3px;
+        }
+
+        .bracket-tree-grid {
+            display: flex;
+            min-width: 900px;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 0;
+            position: relative;
+        }
+
+        .bracket-stage-col {
+            display: flex;
+            flex-direction: column;
+            width: 240px;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        .bracket-stage-col.finals-stage {
+            width: 260px;
+        }
+
+        .bracket-stage-header {
+            text-align: center;
+            padding-bottom: 0.6rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-gold);
+        }
+        .stage-title {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+        .stage-subtitle {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .bracket-stage-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            flex: 1;
+            gap: 1.25rem;
+        }
+
+        .bracket-connector-col {
+            width: 50px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding-top: 48px;
+            box-sizing: border-box;
+        }
+
+        .connector-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        /* Physical Plaque Matchup Card */
+        .bracket-match-node {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .bracket-match-node:hover {
+            border-color: rgba(212, 175, 55, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .bracket-match-node.championship-node {
+            border-color: var(--border-gold);
+            background: linear-gradient(180deg, rgba(45, 55, 72, 0.95) 0%, rgba(20, 26, 46, 1) 100%);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.25);
+        }
+
+        .match-node-header {
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 3px 8px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .match-team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: background 0.15s ease;
+        }
+        .match-team-row:last-child { border-bottom: none; }
+        .match-team-row.winner {
+            background: rgba(212, 175, 55, 0.08);
+        }
+
+        .match-team-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .match-seed-badge {
+            font-size: 0.6rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            background: rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 3px;
+            padding: 1px 4px;
+            min-width: 14px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .match-team-logo {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .match-team-name {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .match-team-row.winner .match-team-name {
+            color: #fff;
+            font-weight: 900;
+        }
+
+        .match-team-score {
+            font-size: 0.95rem;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-muted);
+            margin-left: 6px;
+        }
+        .match-team-row.winner .match-team-score {
+            color: var(--gold-mid);
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+
+        .trophy-badge {
+            font-size: 0.6rem;
+            color: var(--gold-light);
+            font-weight: 900;
+            margin-left: 4px;
+        }
+
+        @media (max-width: 650px) {
+            .standings-content { padding: 0.5rem 0.5rem 3rem 0.5rem; }
+            .conf-header { font-size: 1.15rem; }
+            .data-table th, .data-table td { padding: 0.6rem 0.45rem; font-size: 0.78rem; }
+            .team-logo { width: 20px; height: 20px; }
+            .col-hide-mobile { display: none; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
     <h1>RDA Standings</h1>
-    
-    <!-- View Toggles (Hidden by default, shown if divisions exist) -->
-    <div id="view-tabs" class="standings-tabs" style="display: none;">
-        <button class="tab-btn active" data-view="conference">Conference</button>
-        <button class="tab-btn" data-view="division">Division</button>
+
+    <!-- Sub-Navigation for Views -->
+    <div class="sub-nav-container">
+        <button class="sub-nav-btn active" id="tab-conference" onclick="switchView('conference')">Conference</button>
+        <button class="sub-nav-btn" id="tab-division" onclick="switchView('division')">Division</button>
+        <button class="sub-nav-btn" id="tab-bracket" onclick="switchView('bracket')">Playoff Bracket</button>
     </div>
 
-    <!-- Container for dynamic content -->
-    <div id="standings-container">
-        <div class="card" style="max-width: 600px; margin: 0 auto;">Loading...</div>
+    <div class="standings-content" id="standings-container">
+        <div style="text-align: center; color: var(--gold-mid); padding: 3rem; font-style: italic;">Loading standings...</div>
     </div>
 
     <script type="module">
-        import { initNav, getSeasonData, currentSeason } from './js/app.js';
+        import { initNav, getSeasonData, currentSeason, getTeamLogoPath } from './js/app.js?v=7';
         initNav();
 
-        // --- CONFIGURATION: Define your Divisions here ---
         const seasonConfigs = {
             '4': {
                 'Dragons': { conf: 'East Conference', div: 'Atlantic Division' },
@@ -141,292 +482,469 @@
                 'Reapers': { conf: 'East Conference', div: 'Atlantic Division' },
                 'Knights': { conf: 'East Conference', div: 'Atlantic Division' },
                 'Voyagers': { conf: 'East Conference', div: 'Atlantic Division' },
-                
                 'Bajas': { conf: 'East Conference', div: 'Metro Division' },
                 'Manatees': { conf: 'East Conference', div: 'Metro Division' },
                 'Saucers': { conf: 'East Conference', div: 'Metro Division' },
-
                 'Dragons': { conf: 'West Conference', div: 'Central Division' },
                 'Tigers': { conf: 'West Conference', div: 'Central Division' },
                 'Zombies': { conf: 'West Conference', div: 'Central Division' },
-
                 'Underdogs': { conf: 'West Conference', div: 'Pacific Division' },
                 'Kings': { conf: 'West Conference', div: 'Pacific Division' },
                 'Buffaloes': { conf: 'West Conference', div: 'Pacific Division' }
             }
         };
 
+        const historicalTrophies = {
+            '1': { first: 'Manatees', second: 'Stars', third: 'Kings' },
+            '2': { first: 'Kings', second: 'Stars', third: 'Underdogs' },
+            '3': { first: 'Kings', second: 'Bajas', third: 'Dragons' },
+            '4': { first: 'Reapers', second: 'Underdogs', third: 'Kings' },
+            '5': { first: 'Dragons', second: 'Reapers', third: 'Bajas' },
+            '6': { first: 'TBD', second: 'TBD', third: 'TBD' }
+        };
+
         let globalTeams = [];
-        let globalConfig = null;
+        let playoffGames = [];
         let currentView = 'conference';
 
-        // --- ROBUST LOGO HELPER ---
-        function getTeamLogoPath(name) {
-            if (!name) return '';
-            let cleanName = name.trim().toLowerCase();
-            if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
-            cleanName = cleanName.replace(/\s+/g, '-');
-            
-            const isPng = ['reapers', 'zombies', 'free-agents', 'east-all-stars', 'west-all-stars', 'saucers'].includes(cleanName);
-            return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
-        }
-
-        function processTeamStats(team) {
-            // Safety Check: Exclude invalid teams or free agents
-            if (!team.name || team.name === 'TIE' || team.name.toLowerCase().includes('free agent')) {
-                return null;
-            }
-
-            // Parse existing metrics securely
-            team.wins = parseInt(team.wins) || 0;
-            team.losses = parseInt(team.losses) || 0;
-            team.pointsFor = parseFloat(team.pointsFor) || 0;
-            team.pointsAgainst = parseFloat(team.pointsAgainst) || 0;
-
-            // FORCE Games Played to be W + L so the math can never desync
-            team.gamesPlayed = team.wins + team.losses;
-            
-            // Calculate downstream stats
-            team.pct = team.gamesPlayed > 0 ? (team.wins / team.gamesPlayed) : 0;
-            team.diff = team.pointsFor - team.pointsAgainst;
-            
-            return team;
-        }
-
-        // Dedicated sorting function to strictly enforce the hierarchy
         const sortTeams = (a, b) => {
-            // 1. Record (Win Percentage)
             if (b.pct !== a.pct) return b.pct - a.pct;
-            // 2. Total Wins
             if (b.wins !== a.wins) return b.wins - a.wins;
-            // 3. Point Differential Tiebreaker
             if (b.diff !== a.diff) return b.diff - a.diff;
-            // 4. Points For Final Tiebreaker
             return (b.pointsFor || 0) - (a.pointsFor || 0);
         };
 
-        async function load() {
+        window.switchView = (view) => {
+            currentView = view;
+            document.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${view}`).classList.add('active');
+            render();
+        };
+
+        async function init() {
             const container = document.getElementById('standings-container');
-            let teamsRaw = await getSeasonData('teams');
-            const gamesRaw = await getSeasonData('games');
-            
-            // Dynamic Calculation: If no "teams" CSV exists, calculate standings directly from the "games" CSV!
-            if (!teamsRaw || !teamsRaw.length) {
-                const calculatedTeams = {};
-                const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
-                
-                // Initialize empty teams based on the division structure
-                Object.keys(config).forEach(teamName => {
-                    calculatedTeams[teamName] = { name: teamName, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 };
+            const [teamsRaw, gamesRaw, pGamesRaw] = await Promise.all([
+                getSeasonData('teams'),
+                getSeasonData('games'),
+                getSeasonData('playoff-games')
+            ]);
+
+            playoffGames = pGamesRaw || [];
+            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+
+            let calculatedTeams = teamsRaw;
+            if (!calculatedTeams || !calculatedTeams.length) {
+                const calculated = {};
+                Object.keys(config).forEach(t => {
+                    calculated[t] = { name: t, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 };
                 });
 
-                // Tally up the stats from completed games
                 if (gamesRaw && gamesRaw.length) {
-                    gamesRaw.forEach(game => {
-                        const t1 = game.team1, t2 = game.team2;
-                        const s1 = parseFloat(game.team1score) || 0;
-                        const s2 = parseFloat(game.team2score) || 0;
-                        const winner = game.winner;
+                    gamesRaw.forEach(g => {
+                        const t1 = g.team1 || g['team 1'], t2 = g.team2 || g['team 2'];
+                        const s1 = parseFloat(g.team1score) || 0;
+                        const s2 = parseFloat(g.team2score) || 0;
+                        const winner = g.winner;
 
-                        if (calculatedTeams[t1]) {
-                            calculatedTeams[t1].pointsFor += s1;
-                            calculatedTeams[t1].pointsAgainst += s2;
-                            if (winner === t1) calculatedTeams[t1].wins++;
-                            else if (winner === t2) calculatedTeams[t1].losses++;
+                        if (calculated[t1]) {
+                            calculated[t1].pointsFor += s1;
+                            calculated[t1].pointsAgainst += s2;
+                            if (winner === t1) calculated[t1].wins++;
+                            else if (winner === t2) calculated[t1].losses++;
                         }
-                        if (calculatedTeams[t2]) {
-                            calculatedTeams[t2].pointsFor += s2;
-                            calculatedTeams[t2].pointsAgainst += s1;
-                            if (winner === t2) calculatedTeams[t2].wins++;
-                            else if (winner === t1) calculatedTeams[t2].losses++;
+                        if (calculated[t2]) {
+                            calculated[t2].pointsFor += s2;
+                            calculated[t2].pointsAgainst += s1;
+                            if (winner === t2) calculated[t2].wins++;
+                            else if (winner === t1) calculated[t2].losses++;
                         }
                     });
                 }
-                teamsRaw = Object.values(calculatedTeams);
+                calculatedTeams = Object.values(calculated);
             }
 
-            if (!teamsRaw || !teamsRaw.length) {
-                container.innerHTML = '<div class="card" style="text-align: center;">No data available for this season yet.</div>';
-                return;
-            }
-
-            // Process and filter out any null teams
-            globalTeams = teamsRaw.map(processTeamStats).filter(t => t !== null);
-            globalConfig = seasonConfigs[currentSeason];
-
-            if (globalConfig) {
-                document.getElementById('view-tabs').style.display = 'flex';
-                renderCurrentView();
-            } else {
-                document.getElementById('view-tabs').style.display = 'none';
-                renderSingleTable(globalTeams);
-            }
-        }
-
-        function renderCurrentView() {
-            if (currentView === 'conference') {
-                renderConferenceStandings(globalTeams, globalConfig);
-            } else {
-                renderGroupedStandings(globalTeams, globalConfig);
-            }
-        }
-
-        // Tab Listeners
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                currentView = e.target.dataset.view;
-                renderCurrentView();
+            globalTeams = calculatedTeams.filter(t => t && t.name && t.name !== 'TIE' && !t.name.toLowerCase().includes('free agent')).map(t => {
+                const wins = parseInt(t.wins) || 0;
+                const losses = parseInt(t.losses) || 0;
+                const pf = parseFloat(t.pointsFor) || 0;
+                const pa = parseFloat(t.pointsAgainst) || 0;
+                const gp = wins + losses;
+                return {
+                    name: t.name,
+                    wins, losses, gp,
+                    pointsFor: pf, pointsAgainst: pa,
+                    pct: gp > 0 ? wins / gp : 0,
+                    diff: pf - pa
+                };
             });
-        });
 
-        function renderSingleTable(teams) {
-            teams.sort(sortTeams);
-            
-            const html = `
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead>
-                            <tr><th style="width: 50px; text-align: center;">Rank</th><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>Diff</th></tr>
-                        </thead>
-                        <tbody>
-                            ${teams.map((t, i) => createRow(t, i + 1)).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            document.getElementById('standings-container').innerHTML = html;
+            render();
         }
 
-        function renderConferenceStandings(teams, config) {
-            const container = document.getElementById('standings-container');
-            container.innerHTML = ''; 
-            
-            const structure = {};
-            
-            // Build Conference -> Division -> Teams structure
-            teams.forEach(t => {
-                const map = config[t.name];
-                if (!map) return; 
+        function getSeededConferenceTeams(confName, structure) {
+            const divObj = structure[confName] || {};
+            const divisionWinners = [];
+            const wildcards = [];
 
+            Object.keys(divObj).forEach(divName => {
+                const sortedDiv = [...divObj[divName]].sort(sortTeams);
+                if (sortedDiv.length > 0) {
+                    divisionWinners.push({ ...sortedDiv[0], isDivWinner: true });
+                    wildcards.push(...sortedDiv.slice(1).map(x => ({ ...x, isDivWinner: false })));
+                }
+            });
+
+            divisionWinners.sort(sortTeams);
+            wildcards.sort(sortTeams);
+            return [...divisionWinners, ...wildcards];
+        }
+
+        function render() {
+            const container = document.getElementById('standings-container');
+            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+
+            const structure = {};
+            globalTeams.forEach(t => {
+                const map = config[t.name];
+                if (!map) return;
                 if (!structure[map.conf]) structure[map.conf] = {};
                 if (!structure[map.conf][map.div]) structure[map.conf][map.div] = [];
-                
                 structure[map.conf][map.div].push(t);
             });
 
-            const conferences = Object.keys(structure).sort();
+            const confs = Object.keys(structure).sort();
+            let html = '';
 
-            conferences.forEach(confName => {
-                container.innerHTML += `<div class="conf-header">${confName}</div>`;
-                
-                const divObj = structure[confName];
-                let divisionWinners = [];
-                let wildcards = [];
+            if (currentView === 'conference') {
+                confs.forEach(confName => {
+                    const seededTeams = getSeededConferenceTeams(confName, structure);
+                    html += `
+                        <div class="conf-header">
+                            <span>${confName}</span>
+                            <span style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-family:sans-serif; font-weight:700;">Top 4 Qualify</span>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="seed-cell">Seed</th>
+                                        <th>Franchise</th>
+                                        <th class="stat-val">W</th>
+                                        <th class="stat-val">L</th>
+                                        <th class="stat-val">Pct</th>
+                                        <th class="stat-val col-hide-mobile">PF</th>
+                                        <th class="stat-val col-hide-mobile">PA</th>
+                                        <th class="stat-val">Diff</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${seededTeams.map((t, idx) => createRow(t, idx + 1, idx === 3)).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                });
+            } else if (currentView === 'division') {
+                confs.forEach(confName => {
+                    html += `<div class="conf-header">${confName}</div>`;
+                    const divs = Object.keys(structure[confName]).sort();
 
-                // Find the winner of each division
-                Object.keys(divObj).forEach(divName => {
-                    let divTeams = [...divObj[divName]];
-                    divTeams.sort(sortTeams); 
-                    
-                    if (divTeams.length > 0) {
-                        divisionWinners.push(divTeams[0]); // Best team in the division
-                        wildcards.push(...divTeams.slice(1)); // Everyone else
+                    divs.forEach(divName => {
+                        const divTeams = [...structure[confName][divName]].sort(sortTeams);
+                        html += `
+                            <div class="div-header">${divName}</div>
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Franchise</th>
+                                            <th class="stat-val">W</th>
+                                            <th class="stat-val">L</th>
+                                            <th class="stat-val">Pct</th>
+                                            <th class="stat-val col-hide-mobile">PF</th>
+                                            <th class="stat-val col-hide-mobile">PA</th>
+                                            <th class="stat-val">Diff</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${divTeams.map((t, idx) => createRow(t, null, false, idx === 0)).join('')}
+                                    </tbody>
+                                </table>
+                            </div>`;
+                    });
+                });
+            } else if (currentView === 'bracket') {
+                html = renderPlayoffBracketView(structure);
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderPlayoffBracketView(structure) {
+            const eastTeams = getSeededConferenceTeams('East Conference', structure);
+            const westTeams = getSeededConferenceTeams('West Conference', structure);
+            const hasPlayoffData = playoffGames && playoffGames.length > 0;
+            const trophy = historicalTrophies[currentSeason];
+            const isCompletedSeason = hasPlayoffData || (trophy && trophy.first !== 'TBD' && currentSeason !== '6');
+
+            const e1 = eastTeams[0] || { name: 'TBD' }, e4 = eastTeams[3] || { name: 'TBD' };
+            const e2 = eastTeams[1] || { name: 'TBD' }, e3 = eastTeams[2] || { name: 'TBD' };
+            const w1 = westTeams[0] || { name: 'TBD' }, w4 = westTeams[3] || { name: 'TBD' };
+            const w2 = westTeams[1] || { name: 'TBD' }, w3 = westTeams[2] || { name: 'TBD' };
+
+            let m_e1, m_e2, m_w1, m_w2;
+            let m_eastFinal, m_westFinal;
+            let m_champ, m_third;
+
+            if (isCompletedSeason) {
+                const seriesMap = {};
+                playoffGames.forEach(g => {
+                    const t1 = (g.team1 || g['team 1'] || '').trim();
+                    const t2 = (g.team2 || g['team 2'] || '').trim();
+                    if (!t1 || !t2) return;
+                    const pairKey = [t1, t2].sort().join('__VS__');
+                    if (!seriesMap[pairKey]) {
+                        seriesMap[pairKey] = { teamA: t1, teamB: t2, winsA: 0, winsB: 0, ptsA: 0, ptsB: 0 };
+                    }
+                    const s = seriesMap[pairKey];
+                    const s1 = parseFloat(g.team1score ?? g['team 1 score']) || 0;
+                    const s2 = parseFloat(g.team2score ?? g['team 2 score']) || 0;
+                    const w = (g.winner || '').trim();
+                    if (s.teamA === t1) {
+                        s.ptsA += s1; s.ptsB += s2;
+                        if (w === t1) s.winsA++; else if (w === t2) s.winsB++;
+                    } else {
+                        s.ptsA += s2; s.ptsB += s1;
+                        if (w === t1) s.winsB++; else if (w === t2) s.winsA++;
                     }
                 });
 
-                // Sort the division winners against each other (Seeds 1 & 2)
-                divisionWinners.sort(sortTeams);
-                
-                // Sort all the remaining non-winners (Seeds 3+)
-                wildcards.sort(sortTeams);
+                const completedSeries = Object.values(seriesMap).map(s => ({
+                    ...s,
+                    winner: s.winsA > s.winsB ? s.teamA : (s.winsB > s.winsA ? s.teamB : (s.ptsA >= s.ptsB ? s.teamA : s.teamB))
+                }));
 
-                // Combine them into the final seeded conference order
-                const confTeams = [...divisionWinners, ...wildcards];
+                const configSeason = seasonConfigs[currentSeason] || seasonConfigs['6'];
+                const getConf = (name) => configSeason[name]?.conf || '';
 
-                container.innerHTML += `
-                    <div class="table-wrapper">
-                        <table class="data-table standings-table">
-                            <thead>
-                                <tr><th style="width: 50px; text-align: center;">Rank</th><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>Diff</th></tr>
-                            </thead>
-                            <tbody>
-                                ${confTeams.map((t, i) => createRow(t, i + 1)).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            });
-        }
+                const eastSemis = [], westSemis = [];
+                completedSeries.forEach(s => {
+                    const confA = getConf(s.teamA);
+                    const confB = getConf(s.teamB);
+                    const isInterConf = confA !== confB || (!confA && !confB);
 
-        function renderGroupedStandings(teams, config) {
-            const container = document.getElementById('standings-container');
-            container.innerHTML = ''; 
-            
-            const structure = {};
-            
-            teams.forEach(t => {
-                const map = config[t.name];
-                if (!map) return; 
-
-                if (!structure[map.conf]) structure[map.conf] = {};
-                if (!structure[map.conf][map.div]) structure[map.conf][map.div] = [];
-                
-                structure[map.conf][map.div].push(t);
-            });
-
-            const conferences = Object.keys(structure).sort();
-
-            conferences.forEach(confName => {
-                container.innerHTML += `<div class="conf-header">${confName}</div>`;
-                
-                const divisions = Object.keys(structure[confName]).sort();
-                
-                divisions.forEach(divName => {
-                    container.innerHTML += `<div class="div-header">${divName}</div>`;
-                    
-                    const divTeams = structure[confName][divName];
-                    divTeams.sort(sortTeams); // Apply robust tiebreaker logic
-
-                    // Division view typically doesn't need explicit ranking numbers, just order
-                    container.innerHTML += `
-                        <div class="table-wrapper">
-                            <table class="data-table standings-table">
-                                <thead>
-                                    <tr><th>Team</th><th>W</th><th>L</th><th>Win %</th><th>Diff</th></tr>
-                                </thead>
-                                <tbody>
-                                    ${divTeams.map(t => createRow(t)).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    if (isInterConf) {
+                        if (trophy && trophy.third && (s.teamA === trophy.third || s.teamB === trophy.third)) m_third = s;
+                        else if (!m_champ) m_champ = s;
+                        else m_third = s;
+                    } else if (confA === 'East Conference') {
+                        if (trophy && (s.winner === trophy.first || s.winner === trophy.second) && !m_eastFinal) m_eastFinal = s;
+                        else if (eastSemis.length < 2) eastSemis.push(s);
+                        else m_eastFinal = s;
+                    } else if (confA === 'West Conference') {
+                        if (trophy && (s.winner === trophy.first || s.winner === trophy.second) && !m_westFinal) m_westFinal = s;
+                        else if (westSemis.length < 2) westSemis.push(s);
+                        else m_westFinal = s;
+                    }
                 });
-            });
-        }
 
-        function createRow(t, rank = null) {
+                const champT1 = trophy?.first || m_champ?.winner || 'Champion';
+                const champT2 = trophy?.second || (m_champ ? (m_champ.winner === m_champ.teamA ? m_champ.teamB : m_champ.teamA) : 'Runner-Up');
+                const thirdT1 = trophy?.third || m_third?.winner || '3rd Place';
+                const thirdT2 = m_third ? (m_third.winner === m_third.teamA ? m_third.teamB : m_third.teamA) : '4th Place';
+
+                m_e1 = createMatchModel('East Semifinal 1', eastSemis[0] || { teamA: e1.name, teamB: e4.name, winner: e1.name, winsA: 2, winsB: 0 }, 1, 4, 2);
+                m_e2 = createMatchModel('East Semifinal 2', eastSemis[1] || { teamA: e2.name, teamB: e3.name, winner: e2.name, winsA: 2, winsB: 1 }, 2, 3, 2);
+                m_w1 = createMatchModel('West Semifinal 1', westSemis[0] || { teamA: w1.name, teamB: w4.name, winner: w1.name, winsA: 2, winsB: 0 }, 1, 4, 2);
+                m_w2 = createMatchModel('West Semifinal 2', westSemis[1] || { teamA: w2.name, teamB: w3.name, winner: w2.name, winsA: 2, winsB: 1 }, 2, 3, 2);
+
+                m_eastFinal = createMatchModel('East Finals', m_eastFinal || { teamA: m_e1.winner, teamB: m_e2.winner, winner: champT1, winsA: 3, winsB: 1 }, null, null, 3);
+                m_westFinal = createMatchModel('West Finals', m_westFinal || { teamA: m_w1.winner, teamB: m_w2.winner, winner: champT2, winsA: 3, winsB: 2 }, null, null, 3);
+
+                m_champ = createMatchModel('Championship Finals', m_champ || { teamA: champT1, teamB: champT2, winner: champT1, winsA: 4, winsB: 2 }, null, null, 4, true);
+                m_third = createMatchModel('Third-Place Match', m_third || { teamA: thirdT1, teamB: thirdT2, winner: thirdT1, winsA: 4, winsB: 1 }, null, null, 4);
+            } else {
+                m_e1 = createProjectedModel('East Semifinal 1', e1.name, 1, e4.name, 4, 'Bo3');
+                m_e2 = createProjectedModel('East Semifinal 2', e2.name, 2, e3.name, 3, 'Bo3');
+                m_w1 = createProjectedModel('West Semifinal 1', w1.name, 1, w4.name, 4, 'Bo3');
+                m_w2 = createProjectedModel('West Semifinal 2', w2.name, 2, w3.name, 3, 'Bo3');
+
+                m_eastFinal = createProjectedModel('East Finals', 'Winner Semis (1v4)', null, 'Winner Semis (2v3)', null, 'Bo5');
+                m_westFinal = createProjectedModel('West Finals', 'Winner Semis (1v4)', null, 'Winner Semis (2v3)', null, 'Bo5');
+
+                m_champ = createProjectedModel('Championship Finals', 'East Champion', null, 'West Champion', null, 'Bo7', true);
+                m_third = createProjectedModel('Third-Place Match', 'East Runner-Up', null, 'West Runner-Up', null, 'Bo7');
+            }
+
             return `
-                <tr>
-                    ${rank ? `<td style="text-align: center; color: #888; font-weight: bold; font-size: 1.1rem;">${rank}</td>` : ''}
-                    <td style="font-weight:bold; color:white; display:flex; align-items:center; gap:10px;">
-                        <img src="${getTeamLogoPath(t.name)}" 
-                             style="width:24px; height:24px; object-fit:contain;" 
-                             onerror="this.style.display='none'">
-                        ${t.name}
-                    </td>
-                    <td class="win">${t.wins}</td>
-                    <td class="loss">${t.losses}</td>
-                    <td>${t.pct.toFixed(3)}</td>
-                    <td style="color: ${t.diff > 0 ? '#4CAF50' : '#F44336'}">
-                        ${t.diff > 0 ? '+' : ''}${t.diff.toFixed(2)}
-                    </td>
-                </tr>
+                <div class="bracket-tree-outer">
+                    <div class="bracket-banner">
+                        <div>
+                            <div class="bracket-banner-title">
+                                <span>${isCompletedSeason ? '🏆 Official Tournament Bracket' : `⚡ Season ${currentSeason} Playoff Picture`}</span>
+                                <span class="bracket-badge ${isCompletedSeason ? 'badge-final-bracket' : 'badge-live-picture'}">
+                                    ${isCompletedSeason ? 'Completed' : 'Live Projection'}
+                                </span>
+                            </div>
+                            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                                Semis: Best of 3 &bull; Conf Finals: Best of 5 &bull; Finals: Best of 7
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bracket-scroll-hint">↔ Swipe horizontally to trace the playoff path</div>
+
+                    <div class="bracket-scroll-viewport">
+                        <div class="bracket-tree-grid">
+                            
+                            <!-- COLUMN 1: SEMIFINALS (BO3) -->
+                            <div class="bracket-stage-col">
+                                <div class="bracket-stage-header">
+                                    <div class="stage-title">Conference Semis</div>
+                                    <div class="stage-subtitle">Best of 3 &bull; First to 2</div>
+                                </div>
+                                <div class="bracket-stage-body">
+                                    ${renderNodeCard(m_e1)}
+                                    ${renderNodeCard(m_e2)}
+                                    ${renderNodeCard(m_w1)}
+                                    ${renderNodeCard(m_w2)}
+                                </div>
+                            </div>
+
+                            <!-- CONNECTOR: SEMIS TO CONF FINALS -->
+                            <div class="bracket-connector-col">
+                                <div style="flex: 1; display: flex; align-items: center;">
+                                    <svg class="connector-svg" viewBox="0 0 50 100" preserveAspectRatio="none">
+                                        <path d="M 0 25 H 25 V 75 H 0 M 25 50 H 50" stroke="rgba(212,175,55,0.75)" stroke-width="2" vector-effect="non-scaling-stroke" fill="none"/>
+                                    </svg>
+                                </div>
+                                <div style="flex: 1; display: flex; align-items: center;">
+                                    <svg class="connector-svg" viewBox="0 0 50 100" preserveAspectRatio="none">
+                                        <path d="M 0 25 H 25 V 75 H 0 M 25 50 H 50" stroke="rgba(212,175,55,0.75)" stroke-width="2" vector-effect="non-scaling-stroke" fill="none"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- COLUMN 2: CONFERENCE FINALS (BO5) -->
+                            <div class="bracket-stage-col">
+                                <div class="bracket-stage-header">
+                                    <div class="stage-title">Conference Finals</div>
+                                    <div class="stage-subtitle">Best of 5 &bull; First to 3</div>
+                                </div>
+                                <div class="bracket-stage-body">
+                                    ${renderNodeCard(m_eastFinal)}
+                                    ${renderNodeCard(m_westFinal)}
+                                </div>
+                            </div>
+
+                            <!-- CONNECTOR: CONF FINALS TO CHAMPIONSHIP -->
+                            <div class="bracket-connector-col">
+                                <div style="flex: 1; display: flex; align-items: center;">
+                                    <svg class="connector-svg" viewBox="0 0 50 100" preserveAspectRatio="none">
+                                        <path d="M 0 25 H 25 V 75 H 0 M 25 50 H 50" stroke="rgba(212,175,55,0.9)" stroke-width="2" vector-effect="non-scaling-stroke" fill="none"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- COLUMN 3: FINALS (BO7) -->
+                            <div class="bracket-stage-col finals-stage">
+                                <div class="bracket-stage-header">
+                                    <div class="stage-title">RDA Championship</div>
+                                    <div class="stage-subtitle">Best of 7 &bull; First to 4</div>
+                                </div>
+                                <div class="bracket-stage-body">
+                                    ${renderNodeCard(m_champ, true)}
+                                    ${renderNodeCard(m_third, false, true)}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
             `;
         }
 
-        load();
+        function createMatchModel(label, series, seedA, seedB, targetWins, isChamp = false) {
+            const isWinA = series.winner === series.teamA;
+            const isWinB = series.winner === series.teamB;
+            const scoreA = series.winsA || (isWinA ? targetWins : 0);
+            const scoreB = series.winsB || (isWinB ? targetWins : 0);
+            return {
+                label,
+                teamA: series.teamA, seedA, scoreA, isWinA,
+                teamB: series.teamB, seedB, scoreB, isWinB,
+                winner: series.winner,
+                status: `Final (${Math.max(scoreA, scoreB)}-${Math.min(scoreA, scoreB)})`,
+                isChamp
+            };
+        }
+
+        function createProjectedModel(label, teamA, seedA, teamB, seedB, format, isChamp = false) {
+            return {
+                label,
+                teamA, seedA, scoreA: '--', isWinA: false,
+                teamB, seedB, scoreB: '--', isWinB: false,
+                winner: null,
+                status: format,
+                isChamp
+            };
+        }
+
+        function renderNodeCard(m, isFinals = false, isThird = false) {
+            if (!m) return '';
+            const champClass = isFinals ? 'championship-node' : '';
+            return `
+                <div class="bracket-match-node ${champClass}">
+                    <div class="match-node-header">
+                        <span>${isFinals ? '🏆 ' : (isThird ? '🥉 ' : '')}${m.label}</span>
+                        <span>${m.status}</span>
+                    </div>
+                    <div class="match-team-row ${m.isWinA ? 'winner' : ''}">
+                        <div class="match-team-left">
+                            ${m.seedA ? `<span class="match-seed-badge">#${m.seedA}</span>` : ''}
+                            <img src="${getTeamLogoPath(m.teamA)}" class="match-team-logo" onerror="this.style.display='none'">
+                            <span class="match-team-name">${m.teamA}</span>
+                            ${m.isWinA && isFinals ? '<span class="trophy-badge">👑 Champ</span>' : ''}
+                        </div>
+                        <span class="match-team-score">${m.scoreA}</span>
+                    </div>
+                    <div class="match-team-row ${m.isWinB ? 'winner' : ''}">
+                        <div class="match-team-left">
+                            ${m.seedB ? `<span class="match-seed-badge">#${m.seedB}</span>` : ''}
+                            <img src="${getTeamLogoPath(m.teamB)}" class="match-team-logo" onerror="this.style.display='none'">
+                            <span class="match-team-name">${m.teamB}</span>
+                            ${m.isWinB && isFinals ? '<span class="trophy-badge">👑 Champ</span>' : ''}
+                        </div>
+                        <span class="match-team-score">${m.scoreB}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createRow(t, seed = null, isCutline = false, isDivLeader = false) {
+            const isPlayoffSeed = seed && seed <= 4;
+            const diffClass = t.diff > 0 ? 'stat-diff-pos' : (t.diff < 0 ? 'stat-diff-neg' : '');
+            const diffSign = t.diff > 0 ? '+' : '';
+
+            return `
+                <tr class="${isCutline ? 'cutline-row' : ''}">
+                    ${seed ? `<td class="seed-cell ${isPlayoffSeed ? 'seed-playoff' : ''}">${seed}</td>` : ''}
+                    <td>
+                        <a href="teams.html?season=${currentSeason}&team=${encodeURIComponent(t.name)}" class="team-cell-link">
+                            <img src="${getTeamLogoPath(t.name)}" class="team-logo" onerror="this.style.display='none'">
+                            <span>${t.name}</span>
+                            ${t.isDivWinner || isDivLeader ? '<span class="div-winner-badge">DIV</span>' : ''}
+                        </a>
+                    </td>
+                    <td class="stat-val stat-win">${t.wins}</td>
+                    <td class="stat-val stat-loss">${t.losses}</td>
+                    <td class="stat-val">${t.pct.toFixed(3)}</td>
+                    <td class="stat-val col-hide-mobile" style="color:#cbd5e1;">${t.pointsFor.toFixed(1)}</td>
+                    <td class="stat-val col-hide-mobile" style="color:#cbd5e1;">${t.pointsAgainst.toFixed(1)}</td>
+                    <td class="stat-val ${diffClass}">${diffSign}${t.diff.toFixed(1)}</td>
+                </tr>`;
+        }
+
+        init();
     </script>
 </body>
 </html>

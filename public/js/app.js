@@ -9,7 +9,6 @@ const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
 
 // ============================================================================
 // --- HISTORICAL SPREADSHEET CONFIGURATION ---
-// Paste your "Publish to Web -> CSV" links in the appropriate slots below.
 // ============================================================================
 export const HISTORICAL_CSVS = {
     '1': {
@@ -51,26 +50,28 @@ export const HISTORICAL_CSVS = {
     }
 };
 
-// Aliases mappings
 export const TEAM_MAPPINGS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS0STj0Sra5tbc7Empve1bBUXJk7hTcN87fGs5Hguq1H_WrE4rybOPfypHWym_f1Ut6LQYv8Kdvn1H_/pub?gid=1391711589&single=true&output=csv';
 export const PLAYER_MAPPINGS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS0STj0Sra5tbc7Empve1bBUXJk7hTcN87fGs5Hguq1H_WrE4rybOPfypHWym_f1Ut6LQYv8Kdvn1H_/pub?gid=0&single=true&output=csv';
 
-// Helper to convert CSV string into an array of database-like objects
-function parseCsvToObject(csvText) {
-    if (!csvText) return [];
-    
-    // Aggressive BOM stripping logic for Google Sheets 
-    if (csvText.trim().startsWith('<')) {
-        console.warn("Invalid CSV received (likely HTML/404).");
-        return [];
-    }
+// Team Logo Resolver
+export function getTeamLogoPath(name) {
+    if (!name) return 'https://placehold.co/50x50/0a0a0a/fff?text=?';
+    let cleanName = name.trim().toLowerCase();
+    if (cleanName.startsWith('the ')) cleanName = cleanName.substring(4);
+    if (cleanName.includes('east')) return 'images/teams/east-logo.png';
+    if (cleanName.includes('west')) return 'images/teams/west-logo.png';
+    cleanName = cleanName.replace(/\s+/g, '-');
+    const isPng = ['reapers', 'zombies', 'free-agents', 'east-all-stars', 'west-all-stars', 'saucers'].includes(cleanName);
+    return `images/teams/${cleanName}-logo${isPng ? '.png' : '.PNG'}`;
+}
 
+// CSV Parser Helper
+export function parseCsvToObject(csvText) {
+    if (!csvText || csvText.trim().startsWith('<')) return [];
     const rows = csvText.trim().split(/\r?\n/);
     if (rows.length < 2) return [];
 
     const delimiter = rows[0].includes('\t') ? '\t' : ',';
-    
-    // Clean headers of BOMs and quotes
     const headers = rows[0].split(delimiter).map(h => 
         h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase()
     );
@@ -97,8 +98,6 @@ function parseCsvToObject(csvText) {
         headers.forEach((header, i) => {
             let val = values[i] !== undefined ? values[i] : '';
             val = val.replace(/^"|"$/g, '').trim();
-            
-            // Convert numbers/booleans dynamically
             if (val !== '' && !isNaN(val)) {
                 obj[header] = Number(val);
             } else if (val.toLowerCase() === 'true') {
@@ -113,72 +112,458 @@ function parseCsvToObject(csvText) {
     });
 }
 
-// Initialize Navigation Bar
+// ============================================================================
+// --- UNIFIED 3-PILLAR NAVIGATION & QUICK-INSPECT DRAWER ENGINE ---
+// ============================================================================
 export function initNav() {
-    // Enabled Live for Season 4, Season 5, and Season 6
-    const showLive = ['4', '5', '6'].includes(currentSeason);
+    const primaryNavItems = [
+        { id: 'nav-live', label: '⚡ Live', href: `index.html?season=${currentSeason}` },
+        { id: 'nav-standings', label: 'Standings', href: `standings.html?season=${currentSeason}` },
+        { id: 'nav-players', label: 'Players', href: `players.html?season=${currentSeason}` }
+    ];
+
+    const moreNavItems = [
+        { id: 'nav-schedule', label: 'Schedule', href: `schedule.html?season=${currentSeason}` },
+        { id: 'nav-teams', label: 'Franchises', href: `teams.html?season=${currentSeason}` },
+        { id: 'nav-records', label: 'Records & Case', href: `records.html?season=${currentSeason}` },
+        { id: 'nav-gms', label: 'GM Portal', href: `gms.html` },
+        { id: 'nav-admin', label: 'Admin Console', href: `admin.html` }
+    ];
+
+    const oldStyles = document.getElementById('v2-nav-styles');
+    if (oldStyles) oldStyles.remove();
+
+    const style = document.createElement('style');
+    style.id = 'v2-nav-styles';
+    style.textContent = `
+        .nav-container {
+            position: relative !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            max-width: 1100px !important;
+            width: 100% !important;
+            margin: 0 auto 1.25rem auto !important;
+            padding: 0.35rem 0.65rem !important;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+            border: 1px solid var(--border-subtle) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+            gap: 0.35rem !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
+        }
+        .nav-left {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.2rem !important;
+            min-width: 0 !important;
+            flex: 1 1 auto !important;
+        }
+        .nav-brand {
+            font-family: 'Didot', serif !important;
+            font-weight: 800 !important;
+            font-size: 0.95rem !important;
+            color: var(--gold-light) !important;
+            text-decoration: none !important;
+            letter-spacing: 0.5px !important;
+            margin-right: 0.25rem !important;
+            padding-left: 0.15rem !important;
+            flex-shrink: 0 !important;
+        }
+        .nav-button {
+            color: var(--text-muted) !important;
+            text-decoration: none !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            padding: 0.35rem 0.5rem !important;
+            border-radius: 5px !important;
+            transition: all 0.2s ease !important;
+            white-space: nowrap !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.25px !important;
+            flex-shrink: 0 !important;
+            border: 1px solid transparent !important;
+            background: transparent !important;
+            line-height: 1.2 !important;
+        }
+        .nav-button:hover {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+        }
+        .nav-button.active {
+            color: var(--gold-light) !important;
+            background: rgba(212, 175, 55, 0.15) !important;
+            border: 1px solid rgba(212, 175, 55, 0.35) !important;
+        }
+        .nav-right {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.35rem !important;
+            flex-shrink: 0 !important;
+            position: relative !important;
+            overflow: visible !important;
+        }
+        .nav-season-select {
+            width: 52px !important;
+            min-width: 52px !important;
+            max-width: 52px !important;
+            height: 28px !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            border: 1px solid var(--border-gold) !important;
+            color: var(--gold-light) !important;
+            border-radius: 5px !important;
+            padding: 0 0.25rem !important;
+            margin: 0 !important;
+            font-size: 0.72rem !important;
+            font-weight: 800 !important;
+            outline: none !important;
+            cursor: pointer !important;
+            flex-shrink: 0 !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
+            line-height: 26px !important;
+            display: inline-block !important;
+        }
+        .nav-dropdown {
+            position: relative !important;
+            display: inline-block !important;
+            overflow: visible !important;
+        }
+        .nav-dropdown-btn {
+            background: transparent !important;
+            border: 1px solid var(--border-subtle) !important;
+            color: var(--text-muted) !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            padding: 0 0.55rem !important;
+            border-radius: 5px !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 3px !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+            user-select: none !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+            line-height: 26px !important;
+            transition: all 0.2s ease !important;
+        }
+        .nav-dropdown-btn:hover, .nav-dropdown-btn.active {
+            color: var(--gold-light);
+            border-color: var(--border-gold);
+            background: rgba(212, 175, 55, 0.15);
+        }
+        .nav-dropdown-menu {
+            display: none !important;
+            position: absolute !important;
+            top: calc(100% + 6px) !important;
+            right: 0 !important;
+            background: #0f172a !important;
+            min-width: 175px !important;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.95) !important;
+            border: 1px solid var(--border-gold) !important;
+            border-radius: 8px !important;
+            z-index: 100000 !important;
+            padding: 0.4rem 0 !important;
+            box-sizing: border-box !important;
+            flex-direction: column !important;
+        }
+        .nav-dropdown-menu.open {
+            display: flex !important;
+        }
+        .nav-dropdown-item {
+            display: block !important;
+            padding: 0.6rem 0.95rem !important;
+            color: #cbd5e1 !important;
+            font-size: 0.78rem !important;
+            text-decoration: none !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            transition: background 0.15s ease !important;
+            white-space: nowrap !important;
+            text-align: left !important;
+        }
+        .nav-dropdown-item:hover {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold-light);
+        }
+        .nav-dropdown-item.active {
+            color: var(--gold-light);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        /* Quick Inspect Slideout Drawer */
+        .quick-drawer-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 99998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .quick-drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+        .quick-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            max-width: 380px;
+            height: 100%;
+            background: var(--bg-navy);
+            border-left: 1px solid var(--border-gold);
+            box-shadow: -10px 0 35px rgba(0, 0, 0, 0.7);
+            z-index: 99999;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        .quick-drawer.open { transform: translateX(0); }
+        .quick-drawer-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .quick-drawer-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .quick-drawer-close {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .quick-drawer-close:hover { color: #fff; background: rgba(255, 255, 255, 0.15); }
+        .quick-drawer-body {
+            padding: 1.25rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        @media (max-width: 650px) {
+            .nav-container { padding: 0.3rem 0.5rem !important; gap: 0.25rem !important; }
+            .nav-button { font-size: 0.68rem !important; padding: 0.3rem 0.4rem !important; }
+            .nav-season-select { font-size: 0.68rem !important; }
+            .nav-dropdown-btn { padding: 0 0.4rem !important; font-size: 0.68rem !important; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    const rawPath = window.location.pathname.split('/').pop();
+    const currentPath = (!rawPath || rawPath === '' || rawPath === '/') ? 'index.html' : rawPath;
+    const isMoreActive = moreNavItems.some(item => currentPath === item.href.split('?')[0]);
 
     const navHTML = `
     <div class="nav-container">
-        <div class="nav-bar">
-            <a href="rda-home.html" class="nav-button">Home</a>
-            <a href="hub.html?season=${currentSeason}" class="nav-button" id="nav-hub">Hub</a>
-            ${showLive ? `<a href="live-scores.html?season=${currentSeason}" class="nav-button" id="nav-live">Live</a>` : ''}
-            <a href="teams.html?season=${currentSeason}" class="nav-button" id="nav-teams">Teams</a>
-            <a href="standings.html?season=${currentSeason}" class="nav-button" id="nav-standings">Standings</a>
-            <a href="schedule.html?season=${currentSeason}" class="nav-button" id="nav-schedule">Schedule</a>
-            <a href="players.html?season=${currentSeason}" class="nav-button" id="nav-players">Players</a>
-            <a href="free-agents.html?season=${currentSeason}" class="nav-button" id="nav-fa">Free Agents</a>
-            <a href="transactions.html?season=${currentSeason}" class="nav-button" id="nav-transactions">Transactions</a>
-            <a href="analytics.html?season=${currentSeason}" class="nav-button" id="nav-analytics">Analytics</a>
-            <a href="trophies.html?season=${currentSeason}" class="nav-button" id="nav-trophies">Trophies</a>
-            <a href="records.html" class="nav-button" id="nav-records">Records</a>
-            <a href="gms.html" class="nav-button" id="nav-gm">GM Dashboard</a>
-            <a href="all-star.html" class="nav-button" id="nav-allstar">All-Star</a>
+        <div class="nav-left">
+            <a href="index.html?season=${currentSeason}" class="nav-brand">RDA</a>
+            ${primaryNavItems.map(item => {
+                const target = item.href.split('?')[0];
+                const isActive = currentPath === target;
+                return `<a href="${item.href}" class="nav-button ${isActive ? 'active' : ''}" id="${item.id}">${item.label}</a>`;
+            }).join('')}
+        </div>
+        <div class="nav-right">
+            <select class="nav-season-select" id="global-season-select" title="Select Season">
+                <option value="6" ${currentSeason === '6' ? 'selected' : ''}>S6</option>
+                <option value="5" ${currentSeason === '5' ? 'selected' : ''}>S5</option>
+                <option value="4" ${currentSeason === '4' ? 'selected' : ''}>S4</option>
+                <option value="3" ${currentSeason === '3' ? 'selected' : ''}>S3</option>
+                <option value="2" ${currentSeason === '2' ? 'selected' : ''}>S2</option>
+                <option value="1" ${currentSeason === '1' ? 'selected' : ''}>S1</option>
+            </select>
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-btn ${isMoreActive ? 'active' : ''}" id="nav-more-toggle" type="button">More ▾</button>
+                <div class="nav-dropdown-menu" id="nav-more-menu">
+                    ${moreNavItems.map(item => {
+                        const target = item.href.split('?')[0];
+                        const isActive = currentPath === target;
+                        return `<a href="${item.href}" class="nav-dropdown-item ${isActive ? 'active' : ''}">${item.label}</a>`;
+                    }).join('')}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Quick-Inspect Drawer Markup -->
+    <div class="quick-drawer-backdrop" id="quick-drawer-backdrop"></div>
+    <div class="quick-drawer" id="quick-drawer">
+        <div class="quick-drawer-header">
+            <div class="quick-drawer-title" id="quick-drawer-title">
+                <img id="quick-drawer-logo" style="width: 32px; height: 32px; object-fit: contain;">
+                <span id="quick-drawer-name">Team</span>
+            </div>
+            <button class="quick-drawer-close" id="quick-drawer-close">&times;</button>
+        </div>
+        <div class="quick-drawer-body" id="quick-drawer-body">
+            <div style="color: var(--text-muted); font-style: italic; text-align: center; padding: 2rem 0;">Loading team dossier...</div>
         </div>
     </div>
     `;
 
-    // Insert Nav AFTER the Header (H1)
+    const existingNav = document.querySelector('.nav-container');
+    if (existingNav) existingNav.remove();
+
     const header = document.querySelector('h1');
-    if (header) {
-        header.insertAdjacentHTML('afterend', navHTML);
-    } else {
-        document.body.insertAdjacentHTML('afterbegin', navHTML);
-    }
-    
-    // Highlight Active Link
-    const path = window.location.pathname;
-    if(path.includes('hub')) document.getElementById('nav-hub')?.classList.add('active');
-    if(path.includes('live')) document.getElementById('nav-live')?.classList.add('active');
-    if(path.includes('teams')) document.getElementById('nav-teams')?.classList.add('active');
-    if(path.includes('standings')) document.getElementById('nav-standings')?.classList.add('active');
-    if(path.includes('schedule')) document.getElementById('nav-schedule')?.classList.add('active');
-    if(path.includes('players')) document.getElementById('nav-players')?.classList.add('active');
-    if(path.includes('free-agents')) document.getElementById('nav-fa')?.classList.add('active');
-    if(path.includes('transactions')) document.getElementById('nav-transactions')?.classList.add('active');
-    if(path.includes('analytics')) document.getElementById('nav-analytics')?.classList.add('active');
-    if(path.includes('trophies')) document.getElementById('nav-trophies')?.classList.add('active');
-    if(path.includes('records')) document.getElementById('nav-records')?.classList.add('active');
-    if(path.includes('gms')) document.getElementById('nav-gm')?.classList.add('active');
-    if(path.includes('all-star')) document.getElementById('nav-allstar')?.classList.add('active');
-    // Update Page Title
-    if (header && document.title.includes('RDA')) {
-       const pageName = document.title.split('RDA')[1] || '';
-       header.innerText = `RDA Season ${currentSeason} ${pageName}`;
-    }
+    if (header) header.insertAdjacentHTML('afterend', navHTML);
+    else document.body.insertAdjacentHTML('afterbegin', navHTML);
+
+    const seasonSelect = document.getElementById('global-season-select');
+    seasonSelect?.addEventListener('change', (e) => {
+        const newSeason = e.target.value;
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('season', newSeason);
+        window.location.href = currentUrl.toString();
+    });
+
+    const moreBtn = document.getElementById('nav-more-toggle');
+    const moreMenu = document.getElementById('nav-more-menu');
+    moreBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const isOpen = moreMenu?.classList.toggle('open');
+        moreBtn.classList.toggle('active', isOpen || isMoreActive);
+    });
+    document.addEventListener('click', (e) => {
+        if (moreMenu && !moreMenu.contains(e.target) && e.target !== moreBtn) {
+            moreMenu.classList.remove('open');
+            if (!isMoreActive) moreBtn?.classList.remove('active');
+        }
+    });
+
+    initQuickDrawerListeners();
 }
 
-// Universal Data Fetcher (Handles Caching & Routing to CSVs)
+// ============================================================================
+// --- GLOBAL QUICK-INSPECT DRAWER LOGIC ---
+// ============================================================================
+function initQuickDrawerListeners() {
+    const backdrop = document.getElementById('quick-drawer-backdrop');
+    const drawer = document.getElementById('quick-drawer');
+    const closeBtn = document.getElementById('quick-drawer-close');
+
+    const closeDrawer = () => {
+        backdrop?.classList.remove('open');
+        drawer?.classList.remove('open');
+    };
+
+    backdrop?.addEventListener('click', closeDrawer);
+    closeBtn?.addEventListener('click', closeDrawer);
+
+    document.body.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-team]');
+        if (target) {
+            e.preventDefault();
+            const teamName = target.getAttribute('data-team');
+            if (teamName) window.openTeamQuickDrawer(teamName);
+        }
+    });
+}
+
+window.openTeamQuickDrawer = async function(teamName) {
+    const backdrop = document.getElementById('quick-drawer-backdrop');
+    const drawer = document.getElementById('quick-drawer');
+    const logoEl = document.getElementById('quick-drawer-logo');
+    const nameEl = document.getElementById('quick-drawer-name');
+    const bodyEl = document.getElementById('quick-drawer-body');
+
+    if (!drawer) return;
+
+    nameEl.textContent = teamName;
+    logoEl.src = getTeamLogoPath(teamName);
+    bodyEl.innerHTML = `<div style="color: var(--text-muted); font-style: italic; text-align: center; padding: 2rem 0;">Loading franchise dossier...</div>`;
+
+    backdrop.classList.add('open');
+    drawer.classList.add('open');
+
+    try {
+        const teamUrl = `teams.html?season=${currentSeason}&team=${encodeURIComponent(teamName)}`;
+
+        const [playersData, gamesData] = await Promise.all([
+            getSeasonData('players'),
+            getSeasonData('games')
+        ]);
+
+        const teamPlayers = (playersData || []).filter(p => (p.team || '').toLowerCase() === teamName.toLowerCase());
+        
+        let wins = 0, losses = 0;
+        (gamesData || []).forEach(g => {
+            if (g.winner === teamName) wins++;
+            else if ((g.team1 === teamName || g.team2 === teamName) && g.winner && g.winner !== 'TIE') losses++;
+        });
+
+        const topScorers = teamPlayers
+            .map(p => ({ name: p.username || p.displayName, score: parseFloat(p.score || p.totalscore || 0) }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
+
+        bodyEl.innerHTML = `
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem;">
+                <div style="flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 0.75rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Record</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--gold-light); font-family: 'Didot', serif;">${wins} - ${losses}</div>
+                </div>
+                <div style="flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 0.75rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Roster Size</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: #fff;">${teamPlayers.length}</div>
+                </div>
+            </div>
+
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--gold-mid); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">
+                Key Point Contributors
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.5rem;">
+                ${topScorers.length ? topScorers.map(p => `
+                    <div style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04); font-size: 0.85rem;">
+                        <span style="color: #fff; font-weight: 600;">${p.name}</span>
+                        <span style="color: var(--gold-light); font-weight: 700;">${p.score.toFixed(2)} pts</span>
+                    </div>
+                `).join('') : '<div style="color: #666; font-size: 0.8rem; font-style: italic;">No player data logged.</div>'}
+            </div>
+
+            <a href="${teamUrl}" style="display: block; width: 100%; text-align: center; background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1)); border: 1px solid var(--border-gold); color: var(--gold-light); padding: 0.75rem 0; border-radius: 6px; font-weight: 700; text-decoration: none; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;">
+                View Full Franchise Page →
+            </a>
+        `;
+    } catch (err) {
+        bodyEl.innerHTML = `<div style="color: var(--danger); font-size: 0.85rem; text-align: center;">Error loading team profile.</div>`;
+    }
+};
+
+// ============================================================================
+// --- UNIVERSAL DATA FETCHER ---
+// ============================================================================
 export async function getSeasonData(collectionType) {
     const cacheKey = `rda_s${currentSeason}_${collectionType}`;
     const csvUrl = HISTORICAL_CSVS[currentSeason]?.[collectionType];
 
-    // If a CSV link is provided, bypass the database!
     if (csvUrl) {
-        // Only use local caching for older seasons so updates show instantly
         const shouldCache = ['1', '2', '3'].includes(currentSeason);
-        
         if (shouldCache) {
             const cached = localStorage.getItem(cacheKey);
             if (cached) return JSON.parse(cached);
@@ -200,21 +585,5 @@ export async function getSeasonData(collectionType) {
         }
     }
 
-    // --- Allow Season 4, Season 5, AND Season 6 to query Firestore! ---
-    if (!['4', '5', '6'].includes(currentSeason)) {
-        console.warn(`No CSV configured for historical season ${currentSeason} ${collectionType}. Skipping Firestore.`);
-        return [];
-    }
-
-    // Default Fallback: Read from Firestore Database for the active season
-    const fsCollection = `s${currentSeason}-${collectionType}`;
-    
-    try {
-        const q = query(collection(db, fsCollection));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.warn("Data fetch warning:", error);
-        return [];
-    }
+    return [];
 }
