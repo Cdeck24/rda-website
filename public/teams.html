@@ -516,11 +516,12 @@
                     </div>
                 </div>
 
-                <!-- 4-Pillar Franchise Tabs -->
+                <!-- 5-Pillar Franchise Tabs -->
                 <div class="sub-nav-container">
                     <button class="sub-nav-btn active" onclick="switchSubTab('tab-overview', this)">Overview</button>
                     <button class="sub-nav-btn" onclick="switchSubTab('tab-roster', this)">Roster</button>
                     <button class="sub-nav-btn" onclick="switchSubTab('tab-schedule', this)">Schedule</button>
+                    <button class="sub-nav-btn" onclick="switchSubTab('tab-sports', this)">Sport Breakdown</button>
                     <button class="sub-nav-btn" onclick="switchSubTab('tab-front-office', this)">Front Office</button>
                 </div>
 
@@ -587,7 +588,26 @@
                     </div>
                 </div>
 
-                <!-- PANE 3: SCHEDULE -->
+                <!-- PANE 3: SPORT BREAKDOWN -->
+                <div id="tab-sports" class="tab-pane">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Sport</th>
+                                    <th style="text-align:center;">Team Avg Pts</th>
+                                    <th style="text-align:center;">League Avg Pts</th>
+                                    <th style="text-align:right;">Percentile Rank</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sport-breakdown-tbody">
+                               <tr><td colspan="4" style="text-align: center; color: #888;">Loading sport breakdown...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PANE 4: SCHEDULE -->
                 <div id="tab-schedule" class="tab-pane">
                     <div class="table-wrapper">
                         <table class="data-table">
@@ -605,7 +625,7 @@
                     </div>
                 </div>
 
-                <!-- PANE 4: FRONT OFFICE -->
+                <!-- PANE 5: FRONT OFFICE -->
                 <div id="tab-front-office" class="tab-pane">
                     <h3 style="color: var(--gold-mid); text-transform: uppercase; font-size: 0.85rem; margin-bottom: 0.75rem; letter-spacing: 1px;">Draft Capital</h3>
                     <div class="draft-capital-grid">
@@ -825,9 +845,9 @@
                 document.getElementById('team-form-tracker').innerHTML = fHtml;
             }
 
-            // 4. Radar Chart
-            const leagueSportTotals = {}, leagueSportCounts = {};
-            const teamSportTotals = {}, teamSportCounts = {};
+            // 4. Sport Strength & Percentile Calculations
+            const teamSportScores = {};
+            const allTeamsSportScores = {};
 
             allPlayers.forEach(p => {
                 const sport = (p.sport || '').toUpperCase().trim();
@@ -836,22 +856,110 @@
                 const isBench = p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true';
 
                 if (score > 0 && !isBench) {
-                    leagueSportTotals[sport] = (leagueSportTotals[sport] || 0) + score;
-                    leagueSportCounts[sport] = (leagueSportCounts[sport] || 0) + 1;
+                    const team = getRealTeam(p.team);
+                    if (!allTeamsSportScores[sport]) allTeamsSportScores[sport] = {};
+                    if (!allTeamsSportScores[sport][team]) allTeamsSportScores[sport][team] = [];
+                    allTeamsSportScores[sport][team].push(score);
+
                     if (teamNamesToQuery.includes(p.team)) {
-                        teamSportTotals[sport] = (teamSportTotals[sport] || 0) + score;
-                        teamSportCounts[sport] = (teamSportCounts[sport] || 0) + 1;
+                        if (!teamSportScores[sport]) teamSportScores[sport] = [];
+                        teamSportScores[sport].push(score);
                     }
                 }
             });
 
+            const teamSportAvgs = {};
+            Object.entries(teamSportScores).forEach(([sport, scores]) => {
+                teamSportAvgs[sport] = scores.reduce((a, b) => a + b, 0) / scores.length;
+            });
+
+            // Build Sport Breakdown Table Data
+            const sportBreakdownTbody = document.getElementById('sport-breakdown-tbody');
+            let sportBreakdownHtml = '';
+            
+            const leagueSportAllAverages = {};
+            Object.entries(allTeamsSportScores).forEach(([sport, teamScoresMap]) => {
+                let totalSportPts = 0;
+                let totalSportEntries = 0;
+                Object.values(teamScoresMap).forEach(scoresArr => {
+                    scoresArr.forEach(s => {
+                        totalSportPts += s;
+                        totalSportEntries++;
+                    });
+                });
+                leagueSportAllAverages[sport] = totalSportEntries > 0 ? totalSportPts / totalSportEntries : 0;
+            });
+
+            const sortedSportsList = Object.keys(allTeamsSportScores).sort();
+            
+            sortedSportsList.forEach(sport => {
+                const myTeamAvg = teamSportAvgs[sport] !== undefined ? teamSportAvgs[sport] : 0;
+                const leagueAvg = leagueSportAllAverages[sport] || 0;
+                
+                const teamAvgsForSport = [];
+                Object.entries(allTeamsSportScores[sport]).forEach(([tName, tScores]) => {
+                    const avg = tScores.reduce((a, b) => a + b, 0) / tScores.length;
+                    teamAvgsForSport.push({ team: tName, avg });
+                });
+                teamAvgsForSport.sort((a, b) => b.avg - a.avg);
+                
+                const totalTeamsInSport = teamAvgsForSport.length;
+                let percentile = 50;
+                if (totalTeamsInSport > 0 && myTeamAvg > 0) {
+                    const rankIdx = teamAvgsForSport.findIndex(item => 
+                        teamNamesToQuery.some(t => t.toLowerCase() === item.team.toLowerCase())
+                    );
+                    if (rankIdx !== -1) {
+                        const rank = rankIdx + 1;
+                        percentile = Math.round(((totalTeamsInSport - rank) / (totalTeamsInSport - 1 || 1)) * 100);
+                        percentile = Math.max(0, Math.min(100, percentile));
+                    }
+                }
+
+                let badgeColor = '#94a3b8';
+                if (percentile >= 75) badgeColor = '#4ade80';
+                else if (percentile <= 25) badgeColor = '#f87171';
+
+                sportBreakdownHtml += `
+                    <tr>
+                        <td style="font-weight: 800; color: #fff; text-transform: uppercase;">${sport}</td>
+                        <td style="text-align:center; font-weight:700; color:var(--gold-light);">${myTeamAvg > 0 ? myTeamAvg.toFixed(2) : '-'}</td>
+                        <td style="text-align:center; color:var(--text-muted);">${leagueAvg > 0 ? leagueAvg.toFixed(2) : '-'}</td>
+                        <td style="text-align:right; font-weight:800; color:${badgeColor};">${myTeamAvg > 0 ? `${percentile}th %tile` : 'No Data'}</td>
+                    </tr>
+                `;
+            });
+
+            sportBreakdownTbody.innerHTML = sportBreakdownHtml || '<tr><td colspan="4" style="text-align:center; color:#888;">No sport data available.</td></tr>';
+
+            // Compute Percentile Ranks for Radar Chart
             const radarLabels = [], radarValues = [];
-            Object.keys(leagueSportTotals).sort().forEach(sport => {
-                const lAvg = leagueSportTotals[sport] / leagueSportCounts[sport];
-                if (lAvg > 0) {
+            sortedSportsList.forEach(sport => {
+                const teamAvgsForSport = [];
+                const teamMapScores = allTeamsSportScores[sport];
+
+                Object.entries(teamMapScores).forEach(([tName, tScores]) => {
+                    const avg = tScores.reduce((a, b) => a + b, 0) / tScores.length;
+                    teamAvgsForSport.push({ team: tName, avg });
+                });
+
+                teamAvgsForSport.sort((a, b) => b.avg - a.avg);
+                const totalTeamsInSport = teamAvgsForSport.length;
+
+                if (totalTeamsInSport > 0 && teamSportAvgs[sport] !== undefined) {
                     radarLabels.push(sport);
-                    const tAvg = teamSportCounts[sport] ? (teamSportTotals[sport] / teamSportCounts[sport]) : 0;
-                    radarValues.push(Math.min((tAvg / lAvg) * 100, 150).toFixed(1));
+                    
+                    const rankIdx = teamAvgsForSport.findIndex(item => 
+                        teamNamesToQuery.some(t => t.toLowerCase() === item.team.toLowerCase())
+                    );
+
+                    let percentile = 50;
+                    if (rankIdx !== -1) {
+                        const rank = rankIdx + 1;
+                        percentile = Math.round(((totalTeamsInSport - rank) / (totalTeamsInSport - 1 || 1)) * 100);
+                        percentile = Math.max(5, Math.min(100, percentile));
+                    }
+                    radarValues.push(percentile);
                 }
             });
 
@@ -876,11 +984,22 @@
                             r: {
                                 angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                                 grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                                pointLabels: { color: '#e2e8f0', font: { size: 10, weight: 'bold' } },
-                                ticks: { display: false, min: 0, max: 150 }
+                                pointLabels: { color: '#e2e8f0', font: { size: 11, weight: 'bold' } },
+                                ticks: { display: false, min: 0, max: 100 },
+                                suggestedMin: 0,
+                                suggestedMax: 100
                             }
                         },
-                        plugins: { legend: { display: false } }
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ` Rank Percentile: ${context.formattedValue}th %tile`;
+                                    }
+                                }
+                            }
+                        }
                     }
                 });
             } else {
