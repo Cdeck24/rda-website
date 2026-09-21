@@ -150,9 +150,7 @@
         .stat-diff-pos { color: #4ade80; font-weight: 600; }
         .stat-diff-neg { color: #f87171; font-weight: 600; }
 
-        /* ============================================================= */
-        /* PHYSICAL BRACKET TREE DIAGRAM STYLING                         */
-        /* ============================================================= */
+        /* Bracket Tree Diagram Styling */
         .bracket-tree-outer {
             display: flex;
             flex-direction: column;
@@ -234,16 +232,9 @@
             box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
         }
 
-        .bracket-scroll-viewport::-webkit-scrollbar {
-            height: 6px;
-        }
-        .bracket-scroll-viewport::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.3);
-        }
-        .bracket-scroll-viewport::-webkit-scrollbar-thumb {
-            background: rgba(212, 175, 55, 0.35);
-            border-radius: 3px;
-        }
+        .bracket-scroll-viewport::-webkit-scrollbar { height: 6px; }
+        .bracket-scroll-viewport::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        .bracket-scroll-viewport::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.35); border-radius: 3px; }
 
         .bracket-tree-grid {
             display: flex;
@@ -261,9 +252,7 @@
             flex-shrink: 0;
             box-sizing: border-box;
         }
-        .bracket-stage-col.finals-stage {
-            width: 260px;
-        }
+        .bracket-stage-col.finals-stage { width: 260px; }
 
         .bracket-stage-header {
             text-align: center;
@@ -310,7 +299,6 @@
             overflow: visible;
         }
 
-        /* Physical Plaque Matchup Card */
         .bracket-match-node {
             background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
             border: 1px solid var(--border-subtle);
@@ -396,6 +384,10 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .match-team-name.placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
         .match-team-row.winner .match-team-name {
             color: #fff;
             font-weight: 900;
@@ -434,7 +426,6 @@
 <body>
     <h1>RDA Standings</h1>
 
-    <!-- Sub-Navigation for Views -->
     <div class="sub-nav-container">
         <button class="sub-nav-btn active" id="tab-conference" onclick="switchView('conference')">Conference</button>
         <button class="sub-nav-btn" id="tab-division" onclick="switchView('division')">Division</button>
@@ -522,7 +513,6 @@
         };
 
         async function init() {
-            const container = document.getElementById('standings-container');
             const [teamsRaw, gamesRaw, pGamesRaw] = await Promise.all([
                 getSeasonData('teams'),
                 getSeasonData('games'),
@@ -682,45 +672,92 @@
         function renderPlayoffBracketView(structure) {
             const eastTeams = getSeededConferenceTeams('East Conference', structure);
             const westTeams = getSeededConferenceTeams('West Conference', structure);
-            const hasPlayoffData = playoffGames && playoffGames.length > 0;
             const trophy = historicalTrophies[currentSeason];
-            const isCompletedSeason = hasPlayoffData || (trophy && trophy.first !== 'TBD' && currentSeason !== '6');
+            const isHistoricalCompleted = (currentSeason !== '6' && trophy && trophy.first !== 'TBD');
 
             const e1 = eastTeams[0] || { name: 'TBD' }, e4 = eastTeams[3] || { name: 'TBD' };
             const e2 = eastTeams[1] || { name: 'TBD' }, e3 = eastTeams[2] || { name: 'TBD' };
             const w1 = westTeams[0] || { name: 'TBD' }, w4 = westTeams[3] || { name: 'TBD' };
             const w2 = westTeams[1] || { name: 'TBD' }, w3 = westTeams[2] || { name: 'TBD' };
 
-            let m_e1, m_e2, m_w1, m_w2;
-            let m_eastFinal, m_westFinal;
-            let m_champ, m_third;
+            // Aggregate series wins from played playoff games
+            const seriesMap = {};
+            (playoffGames || []).forEach(g => {
+                const t1 = (g.team1 || g['team 1'] || g.away || '').trim();
+                const t2 = (g.team2 || g['team 2'] || g.home || '').trim();
+                if (!t1 || !t2 || t1 === 'TBD' || t2 === 'TBD') return;
 
-            if (isCompletedSeason) {
-                const seriesMap = {};
-                playoffGames.forEach(g => {
-                    const t1 = (g.team1 || g['team 1'] || '').trim();
-                    const t2 = (g.team2 || g['team 2'] || '').trim();
-                    if (!t1 || !t2) return;
-                    const pairKey = [t1, t2].sort().join('__VS__');
-                    if (!seriesMap[pairKey]) {
-                        seriesMap[pairKey] = { teamA: t1, teamB: t2, winsA: 0, winsB: 0, ptsA: 0, ptsB: 0 };
-                    }
-                    const s = seriesMap[pairKey];
-                    const s1 = parseFloat(g.team1score ?? g['team 1 score']) || 0;
-                    const s2 = parseFloat(g.team2score ?? g['team 2 score']) || 0;
-                    const w = (g.winner || '').trim();
-                    if (s.teamA === t1) {
-                        s.ptsA += s1; s.ptsB += s2;
-                        if (w === t1) s.winsA++; else if (w === t2) s.winsB++;
-                    } else {
-                        s.ptsA += s2; s.ptsB += s1;
-                        if (w === t1) s.winsB++; else if (w === t2) s.winsA++;
-                    }
-                });
+                const pairKey = [t1.toLowerCase(), t2.toLowerCase()].sort().join('__VS__');
+                if (!seriesMap[pairKey]) {
+                    seriesMap[pairKey] = { teamA: t1, teamB: t2, winsA: 0, winsB: 0, games: 0 };
+                }
+                const s = seriesMap[pairKey];
+                const w = (g.winner || '').trim().toLowerCase();
+                s.games++;
 
+                if (s.teamA.toLowerCase() === t1.toLowerCase()) {
+                    if (w === t1.toLowerCase()) s.winsA++;
+                    else if (w === t2.toLowerCase()) s.winsB++;
+                } else {
+                    if (w === t1.toLowerCase()) s.winsB++;
+                    else if (w === t2.toLowerCase()) s.winsA++;
+                }
+            });
+
+            function resolveMatch(label, teamA, seedA, teamB, seedB, targetWins, isChamp = false) {
+                const isPlaceholderA = !teamA || teamA === 'TBD' || teamA.startsWith('Winner') || teamA.includes('Champion') || teamA.includes('Runner-Up');
+                const isPlaceholderB = !teamB || teamB === 'TBD' || teamB.startsWith('Winner') || teamB.includes('Champion') || teamB.includes('Runner-Up');
+
+                if (isPlaceholderA || isPlaceholderB) {
+                    return {
+                        label,
+                        teamA: teamA || 'TBD', seedA, scoreA: '--', isWinA: false,
+                        teamB: teamB || 'TBD', seedB, scoreB: '--', isWinB: false,
+                        winner: null, loser: null,
+                        status: `Best of ${targetWins === 2 ? 3 : (targetWins === 3 ? 5 : 7)}`,
+                        isComplete: false, isChamp
+                    };
+                }
+
+                const pairKey = [teamA.toLowerCase(), teamB.toLowerCase()].sort().join('__VS__');
+                const s = seriesMap[pairKey];
+
+                if (!s || s.games === 0) {
+                    return {
+                        label,
+                        teamA, seedA, scoreA: '--', isWinA: false,
+                        teamB, seedB, scoreB: '--', isWinB: false,
+                        winner: null, loser: null,
+                        status: `Best of ${targetWins === 2 ? 3 : (targetWins === 3 ? 5 : 7)}`,
+                        isComplete: false, isChamp
+                    };
+                }
+
+                const isTeamAFirst = (s.teamA.toLowerCase() === teamA.toLowerCase());
+                const winsA = isTeamAFirst ? s.winsA : s.winsB;
+                const winsB = isTeamAFirst ? s.winsB : s.winsA;
+
+                const isWinA = winsA >= targetWins;
+                const isWinB = winsB >= targetWins;
+                const isComplete = isWinA || isWinB;
+
+                return {
+                    label,
+                    teamA, seedA, scoreA: winsA, isWinA,
+                    teamB, seedB, scoreB: winsB, isWinB,
+                    winner: isWinA ? teamA : (isWinB ? teamB : null),
+                    loser: isWinA ? teamB : (isWinB ? teamA : null),
+                    status: isComplete ? `FINAL (${Math.max(winsA, winsB)}-${Math.min(winsA, winsB)})` : `IN PROGRESS (${winsA}-${winsB})`,
+                    isComplete, isChamp
+                };
+            }
+
+            let m_e1, m_e2, m_w1, m_w2, m_eastFinal, m_westFinal, m_champ, m_third;
+
+            if (isHistoricalCompleted) {
                 const completedSeries = Object.values(seriesMap).map(s => ({
                     ...s,
-                    winner: s.winsA > s.winsB ? s.teamA : (s.winsB > s.winsA ? s.teamB : (s.ptsA >= s.ptsB ? s.teamA : s.teamB))
+                    winner: s.winsA > s.winsB ? s.teamA : s.teamB
                 }));
 
                 const configSeason = seasonConfigs[currentSeason] || seasonConfigs['6'];
@@ -747,42 +784,61 @@
                     }
                 });
 
-                const champT1 = trophy?.first || m_champ?.winner || 'Champion';
-                const champT2 = trophy?.second || (m_champ ? (m_champ.winner === m_champ.teamA ? m_champ.teamB : m_champ.teamA) : 'Runner-Up');
-                const thirdT1 = trophy?.third || m_third?.winner || '3rd Place';
+                const champT1 = trophy?.first || 'Champion';
+                const champT2 = trophy?.second || 'Runner-Up';
+                const thirdT1 = trophy?.third || '3rd Place';
                 const thirdT2 = m_third ? (m_third.winner === m_third.teamA ? m_third.teamB : m_third.teamA) : '4th Place';
 
-                m_e1 = createMatchModel('East Semifinal 1', eastSemis[0] || { teamA: e1.name, teamB: e4.name, winner: e1.name, winsA: 2, winsB: 0 }, 1, 4, 2);
-                m_e2 = createMatchModel('East Semifinal 2', eastSemis[1] || { teamA: e2.name, teamB: e3.name, winner: e2.name, winsA: 2, winsB: 1 }, 2, 3, 2);
-                m_w1 = createMatchModel('West Semifinal 1', westSemis[0] || { teamA: w1.name, teamB: w4.name, winner: w1.name, winsA: 2, winsB: 0 }, 1, 4, 2);
-                m_w2 = createMatchModel('West Semifinal 2', westSemis[1] || { teamA: w2.name, teamB: w3.name, winner: w2.name, winsA: 2, winsB: 1 }, 2, 3, 2);
+                m_e1 = createHistoricalModel('East Semifinal 1', eastSemis[0] || { teamA: e1.name, teamB: e4.name, winner: e1.name, winsA: 2, winsB: 0 }, 1, 4, 2);
+                m_e2 = createHistoricalModel('East Semifinal 2', eastSemis[1] || { teamA: e2.name, teamB: e3.name, winner: e2.name, winsA: 2, winsB: 1 }, 2, 3, 2);
+                m_w1 = createHistoricalModel('West Semifinal 1', westSemis[0] || { teamA: w1.name, teamB: w4.name, winner: w1.name, winsA: 2, winsB: 0 }, 1, 4, 2);
+                m_w2 = createHistoricalModel('West Semifinal 2', westSemis[1] || { teamA: w2.name, teamB: w3.name, winner: w2.name, winsA: 2, winsB: 1 }, 2, 3, 2);
 
-                m_eastFinal = createMatchModel('East Finals', m_eastFinal || { teamA: m_e1.winner, teamB: m_e2.winner, winner: champT1, winsA: 3, winsB: 1 }, null, null, 3);
-                m_westFinal = createMatchModel('West Finals', m_westFinal || { teamA: m_w1.winner, teamB: m_w2.winner, winner: champT2, winsA: 3, winsB: 2 }, null, null, 3);
+                m_eastFinal = createHistoricalModel('East Finals', m_eastFinal || { teamA: m_e1.winner, teamB: m_e2.winner, winner: champT1, winsA: 3, winsB: 1 }, null, null, 3);
+                m_westFinal = createHistoricalModel('West Finals', m_westFinal || { teamA: m_w1.winner, teamB: m_w2.winner, winner: champT2, winsA: 3, winsB: 2 }, null, null, 3);
 
-                m_champ = createMatchModel('Championship Finals', m_champ || { teamA: champT1, teamB: champT2, winner: champT1, winsA: 4, winsB: 2 }, null, null, 4, true);
-                m_third = createMatchModel('Third-Place Match', m_third || { teamA: thirdT1, teamB: thirdT2, winner: thirdT1, winsA: 4, winsB: 1 }, null, null, 4);
+                m_champ = createHistoricalModel('Championship Finals', m_champ || { teamA: champT1, teamB: champT2, winner: champT1, winsA: 4, winsB: 2 }, null, null, 4, true);
+                m_third = createHistoricalModel('Third-Place Match', m_third || { teamA: thirdT1, teamB: thirdT2, winner: thirdT1, winsA: 4, winsB: 1 }, null, null, 4);
             } else {
-                m_e1 = createProjectedModel('East Semifinal 1', e1.name, 1, e4.name, 4, 'Bo3');
-                m_e2 = createProjectedModel('East Semifinal 2', e2.name, 2, e3.name, 3, 'Bo3');
-                m_w1 = createProjectedModel('West Semifinal 1', w1.name, 1, w4.name, 4, 'Bo3');
-                m_w2 = createProjectedModel('West Semifinal 2', w2.name, 2, w3.name, 3, 'Bo3');
+                // Round 1: Semifinals (Best of 3 - Target: 2 wins)
+                m_e1 = resolveMatch('East Semifinal 1', e1.name, 1, e4.name, 4, 2);
+                m_e2 = resolveMatch('East Semifinal 2', e2.name, 2, e3.name, 3, 2);
+                m_w1 = resolveMatch('West Semifinal 1', w1.name, 1, w4.name, 4, 2);
+                m_w2 = resolveMatch('West Semifinal 2', w2.name, 2, w3.name, 3, 2);
 
-                m_eastFinal = createProjectedModel('East Finals', 'Winner Semis (1v4)', null, 'Winner Semis (2v3)', null, 'Bo5');
-                m_westFinal = createProjectedModel('West Finals', 'Winner Semis (1v4)', null, 'Winner Semis (2v3)', null, 'Bo5');
+                // Round 2: Conference Finals (Best of 5 - Target: 3 wins)
+                const eastFinalTeamA = m_e1.isComplete ? m_e1.winner : 'Winner Semi 1';
+                const eastFinalSeedA = m_e1.isComplete ? (m_e1.winner === m_e1.teamA ? m_e1.seedA : m_e1.seedB) : null;
+                const eastFinalTeamB = m_e2.isComplete ? m_e2.winner : 'Winner Semi 2';
+                const eastFinalSeedB = m_e2.isComplete ? (m_e2.winner === m_e2.teamA ? m_e2.seedA : m_e2.seedB) : null;
+                m_eastFinal = resolveMatch('East Finals', eastFinalTeamA, eastFinalSeedA, eastFinalTeamB, eastFinalSeedB, 3);
 
-                m_champ = createProjectedModel('Championship Finals', 'East Champion', null, 'West Champion', null, 'Bo7', true);
-                m_third = createProjectedModel('Third-Place Match', 'East Runner-Up', null, 'West Runner-Up', null, 'Bo7');
+                const westFinalTeamA = m_w1.isComplete ? m_w1.winner : 'Winner Semi 1';
+                const westFinalSeedA = m_w1.isComplete ? (m_w1.winner === m_w1.teamA ? m_w1.seedA : m_w1.seedB) : null;
+                const westFinalTeamB = m_w2.isComplete ? m_w2.winner : 'Winner Semi 2';
+                const westFinalSeedB = m_w2.isComplete ? (m_w2.winner === m_w2.teamA ? m_w2.seedA : m_w2.seedB) : null;
+                m_westFinal = resolveMatch('West Finals', westFinalTeamA, westFinalSeedA, westFinalTeamB, westFinalSeedB, 3);
+
+                // Round 3: Finals (Best of 7 - Target: 4 wins)
+                const champTeamA = m_eastFinal.isComplete ? m_eastFinal.winner : 'East Champion';
+                const champTeamB = m_westFinal.isComplete ? m_westFinal.winner : 'West Champion';
+                m_champ = resolveMatch('Championship Finals', champTeamA, null, champTeamB, null, 4, true);
+
+                const thirdTeamA = m_eastFinal.isComplete ? m_eastFinal.loser : 'East Runner-Up';
+                const thirdTeamB = m_westFinal.isComplete ? m_westFinal.loser : 'West Runner-Up';
+                m_third = resolveMatch('Third-Place Match', thirdTeamA, null, thirdTeamB, null, 4);
             }
+
+            const isTournamentFinished = isHistoricalCompleted || (m_champ && m_champ.isComplete);
 
             return `
                 <div class="bracket-tree-outer">
                     <div class="bracket-banner">
                         <div>
                             <div class="bracket-banner-title">
-                                <span>${isCompletedSeason ? '🏆 Official Tournament Bracket' : `⚡ Season ${currentSeason} Playoff Picture`}</span>
-                                <span class="bracket-badge ${isCompletedSeason ? 'badge-final-bracket' : 'badge-live-picture'}">
-                                    ${isCompletedSeason ? 'Completed' : 'Live Projection'}
+                                <span>${isTournamentFinished ? '🏆 Official Tournament Bracket' : `🏆 Season ${currentSeason} Playoff Bracket`}</span>
+                                <span class="bracket-badge ${isTournamentFinished ? 'badge-final-bracket' : 'badge-live-picture'}">
+                                    ${isTournamentFinished ? 'Completed' : 'In Progress'}
                                 </span>
                             </div>
                             <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
@@ -863,7 +919,7 @@
             `;
         }
 
-        function createMatchModel(label, series, seedA, seedB, targetWins, isChamp = false) {
+        function createHistoricalModel(label, series, seedA, seedB, targetWins, isChamp = false) {
             const isWinA = series.winner === series.teamA;
             const isWinB = series.winner === series.teamB;
             const scoreA = series.winsA || (isWinA ? targetWins : 0);
@@ -878,20 +934,12 @@
             };
         }
 
-        function createProjectedModel(label, teamA, seedA, teamB, seedB, format, isChamp = false) {
-            return {
-                label,
-                teamA, seedA, scoreA: '--', isWinA: false,
-                teamB, seedB, scoreB: '--', isWinB: false,
-                winner: null,
-                status: format,
-                isChamp
-            };
-        }
-
         function renderNodeCard(m, isFinals = false, isThird = false) {
             if (!m) return '';
             const champClass = isFinals ? 'championship-node' : '';
+            const isPlaceholderA = m.teamA.startsWith('Winner') || m.teamA.includes('Champion') || m.teamA.includes('Runner-Up') || m.teamA === 'TBD';
+            const isPlaceholderB = m.teamB.startsWith('Winner') || m.teamB.includes('Champion') || m.teamB.includes('Runner-Up') || m.teamB === 'TBD';
+
             return `
                 <div class="bracket-match-node ${champClass}">
                     <div class="match-node-header">
@@ -902,7 +950,7 @@
                         <div class="match-team-left">
                             ${m.seedA ? `<span class="match-seed-badge">#${m.seedA}</span>` : ''}
                             <img src="${getTeamLogoPath(m.teamA)}" class="match-team-logo" onerror="this.style.display='none'">
-                            <span class="match-team-name">${m.teamA}</span>
+                            <span class="match-team-name ${isPlaceholderA ? 'placeholder' : ''}">${m.teamA}</span>
                             ${m.isWinA && isFinals ? '<span class="trophy-badge">👑 Champ</span>' : ''}
                         </div>
                         <span class="match-team-score">${m.scoreA}</span>
@@ -911,7 +959,7 @@
                         <div class="match-team-left">
                             ${m.seedB ? `<span class="match-seed-badge">#${m.seedB}</span>` : ''}
                             <img src="${getTeamLogoPath(m.teamB)}" class="match-team-logo" onerror="this.style.display='none'">
-                            <span class="match-team-name">${m.teamB}</span>
+                            <span class="match-team-name ${isPlaceholderB ? 'placeholder' : ''}">${m.teamB}</span>
                             ${m.isWinB && isFinals ? '<span class="trophy-badge">👑 Champ</span>' : ''}
                         </div>
                         <span class="match-team-score">${m.scoreB}</span>

@@ -420,7 +420,7 @@
     </div>
 
     <script type="module">
-        import { initNav } from './js/app.js?v=7';
+        import { initNav, getSeasonData } from './js/app.js?v=7';
         import { auth } from './js/firebase-config.js';
         import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
 
@@ -456,13 +456,23 @@
         const output = document.getElementById('output');
         const terminalStatus = document.getElementById('terminal-status');
         const dateSelect = document.getElementById('dateSelect');
-        const seasonSelect = seasonSelectEl();
+        const seasonSelect = document.getElementById('seasonSelect');
         const gameTypeSelect = document.getElementById('gameType');
         const playoffSeriesGroup = document.getElementById('playoffSeriesGroup');
 
-        function seasonSelectEl() { return document.getElementById('seasonSelect'); }
-
         window.manualOverrides = [];
+
+        function isPlayerBench(p) {
+            if (!p) return false;
+            const val = p.isBench ?? p.isbench ?? p.bench ?? p['is bench'] ?? p['is_bench'];
+            if (typeof val === 'boolean') return val;
+            if (typeof val === 'number') return val === 1;
+            if (typeof val === 'string') {
+                const clean = val.trim().toLowerCase();
+                return clean === 'true' || clean === 'yes' || clean === '1' || clean === 'bench';
+            }
+            return false;
+        }
 
         const overrideModal = document.getElementById('override-modal');
         const btnOverrideOpen = document.getElementById('btn-override-open');
@@ -661,9 +671,19 @@
                 }
 
                 const uniqueDates = new Set();
+                window.scheduleDateTypes = {};
+
                 rows.slice(1).forEach(r => {
                     const d = r[dIdx]?.trim();
-                    if (d) uniqueDates.add(d);
+                    if (d) {
+                        uniqueDates.add(d);
+                        const rowStr = r.map(c => String(c || '').toLowerCase()).join(' ');
+                        if (rowStr.includes('playoff') || rowStr.includes('postseason') || rowStr.includes('wild card') || rowStr.includes('finals')) {
+                            window.scheduleDateTypes[d] = 'playoff';
+                        } else {
+                            if (!window.scheduleDateTypes[d]) window.scheduleDateTypes[d] = 'regular';
+                        }
+                    }
                 });
 
                 const parseSortableDate = (dateStr) => {
@@ -687,15 +707,31 @@
                 sortedDates.forEach(d => {
                     const opt = document.createElement('option');
                     opt.value = d;
-                    opt.textContent = d;
+                    opt.textContent = d + (window.scheduleDateTypes[d] === 'playoff' ? ' (Playoffs)' : '');
                     dateSelect.appendChild(opt);
                 });
 
-                if (sortedDates.length === 0) dateSelect.innerHTML = '<option value="">No dates found in schedule</option>';
+                if (sortedDates.length === 0) {
+                    dateSelect.innerHTML = '<option value="">No dates found in schedule</option>';
+                } else {
+                    const firstDate = sortedDates[0];
+                    if (window.scheduleDateTypes[firstDate]) {
+                        gameTypeSelect.value = window.scheduleDateTypes[firstDate];
+                        gameTypeSelect.dispatchEvent(new Event('change'));
+                    }
+                }
             } catch (e) {
                 dateSelect.innerHTML = '<option value="">Error loading schedule</option>';
             }
         };
+
+        dateSelect.addEventListener('change', () => {
+            const d = dateSelect.value;
+            if (window.scheduleDateTypes && window.scheduleDateTypes[d]) {
+                gameTypeSelect.value = window.scheduleDateTypes[d];
+                gameTypeSelect.dispatchEvent(new Event('change'));
+            }
+        });
         
         window.loadScheduleDates();
 
@@ -729,13 +765,17 @@
                 const scheduleRows = parseCSVLocal(scheduleCsvText);
                 const schedHeaders = scheduleRows[0].map(h => h.trim().toLowerCase());
                 const dIdx = schedHeaders.findIndex(h => h.includes('date'));
-                const t1Idx = schedHeaders.findIndex(h => h.includes('team1') || h.includes('team 1'));
-                const t2Idx = schedHeaders.findIndex(h => h.includes('team2') || h.includes('team 2'));
+                const t1Idx = schedHeaders.findIndex(h => h.includes('team1') || h.includes('team 1') || h.includes('away'));
+                const t2Idx = schedHeaders.findIndex(h => h.includes('team2') || h.includes('team 2') || h.includes('home'));
 
                 const todayGames = [];
                 scheduleRows.slice(1).forEach(r => {
                     if (isSameDate(r[dIdx], selectedDate)) {
-                        todayGames.push({ team1: r[t1Idx]?.trim(), team2: r[t2Idx]?.trim() });
+                        const t1 = r[t1Idx]?.trim();
+                        const t2 = r[t2Idx]?.trim();
+                        if (t1 && t2 && t1 !== 'TBD' && t2 !== 'TBD') {
+                            todayGames.push({ team1: t1, team2: t2 });
+                        }
                     }
                 });
 
@@ -886,12 +926,18 @@
                     for (const s in p.lineupsBySport) {
                         const l = p.lineupsBySport[s];
                         if (!Array.isArray(l) || !l.length) continue;
-                        const h = `${s}:${l.map(x => {
+                        
+                        // Exact pick order match
+                        const athleteNames = l.map(x => {
                             const lp = x.player || x;
-                            return (lp.displayName || x.displayName || lp.name || x.name || '').trim();
-                        }).join(',')}`;
+                            return (lp.displayName || x.displayName || lp.name || x.name || '').trim().toLowerCase();
+                        }).filter(Boolean);
+
+                        if (!athleteNames.length) continue;
+
+                        const h = `${s.toUpperCase()}:${athleteNames.join('->')}`;
                         if (!hashes.has(h)) hashes.set(h, []);
-                        hashes.get(h).push({ player: p, sport: s, score: p.scoresBySport[s] || 0 });
+                        hashes.get(h).push({ player: p, sport: s.toUpperCase(), score: p.scoresBySport[s] || 0 });
                     }
                 });
 
@@ -943,7 +989,6 @@
                     }
                 }
 
-                // Apply explicit custom point overrides if configured
                 Object.values(allPlayerDataForDay).forEach(p => {
                     for (const s in p.scoresBySport) {
                         const override = isUserOverridden(p.username, p.userId, s);
@@ -968,7 +1013,8 @@
                                 team: player.team, 
                                 score: score, 
                                 sport: sport,
-                                isBench: !player.isPlaying
+                                isBench: !player.isPlaying,
+                                isPlayoff: isPlayoff
                             });
                         }
                     }
@@ -1004,7 +1050,8 @@
                         team2score: parseFloat(t2Score.toFixed(2)), 
                         winner: winner, 
                         team1SeriesWins: t1SeriesWins, 
-                        team2SeriesWins: t2SeriesWins 
+                        team2SeriesWins: t2SeriesWins,
+                        isPlayoff: isPlayoff
                     });
                 });
 
@@ -1115,81 +1162,56 @@
 
             let gamesToReport = [];
             let playersToReport = [];
+            let isPlayoffDate = gameTypeSelect.value === 'playoff';
 
             if (window.lastLoggedGames && window.lastLoggedGames.length > 0 && window.lastLoggedDate === selectedDate) {
                 gamesToReport = window.lastLoggedGames;
-                playersToReport = window.lastPlayerStats.filter(p => !p.isBench);
+                playersToReport = window.lastPlayerStats.filter(p => !isPlayerBench(p));
             } else {
                 try {
-                    const dbLinks = {
-                        '4': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=912328044&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=561111419&single=true&output=csv' },
-                        '5': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=556843426&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=292583226&single=true&output=csv' },
-                        '6': { g: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=755000020&single=true&output=csv', p: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=386743668&single=true&output=csv' }
-                    };
-
-                    const links = dbLinks[season];
-                    if (!links) throw new Error("No database links configured for Season " + season);
-
-                    const [gamesRes, playersRes] = await Promise.all([
-                        fetch(workerProxy + '?url=' + encodeURIComponent(links.g)),
-                        fetch(workerProxy + '?url=' + encodeURIComponent(links.p))
+                    // Query both regular season and playoff datasets via app.js
+                    const [regGames, playoffGames, regPlayers, playoffPlayers] = await Promise.all([
+                        getSeasonData('games').catch(() => []),
+                        getSeasonData('playoff-games').catch(() => []),
+                        getSeasonData('players').catch(() => []),
+                        getSeasonData('playoff-players').catch(() => [])
                     ]);
 
-                    const gamesText = await gamesRes.text();
-                    const playersText = await playersRes.text();
+                    const checkGameMatch = (g, isPlayoff) => {
+                        if (isSameDate(g.date, selectedDate)) {
+                            if (isPlayoff) isPlayoffDate = true;
+                            const s1 = parseFloat(g.team1score ?? g['team 1 score'] ?? 0) || 0;
+                            const s2 = parseFloat(g.team2score ?? g['team 2 score'] ?? 0) || 0;
+                            const ser1 = parseInt(g.team1SeriesWins ?? g.team1series ?? g['team 1 series'] ?? 0, 10) || 0;
+                            const ser2 = parseInt(g.team2SeriesWins ?? g.team2series ?? g['team 2 series'] ?? 0, 10) || 0;
+                            gamesToReport.push({
+                                team1: (g.team1 || g['team 1'] || '').trim(),
+                                team2: (g.team2 || g['team 2'] || '').trim(),
+                                team1score: s1,
+                                team2score: s2,
+                                team1SeriesWins: ser1,
+                                team2SeriesWins: ser2,
+                                winner: (g.winner || '').trim()
+                            });
+                        }
+                    };
 
-                    const gamesRows = parseCSVLocal(gamesText);
-                    const playersRows = parseCSVLocal(playersText);
+                    (regGames || []).forEach(g => checkGameMatch(g, false));
+                    (playoffGames || []).forEach(g => checkGameMatch(g, true));
 
-                    if (gamesRows.length > 1) {
-                        const gHeaders = gamesRows[0].map(h => h.trim().toLowerCase());
-                        const dIdx = gHeaders.indexOf('date');
-                        const t1Idx = gHeaders.indexOf('team1');
-                        const t2Idx = gHeaders.indexOf('team2');
-                        const t1ScoreIdx = gHeaders.findIndex(h => h === 'team1score' || h === 'team 1 score');
-                        const t2ScoreIdx = gHeaders.findIndex(h => h === 'team2score' || h === 'team 2 score');
-                        const t1SeriesIdx = gHeaders.findIndex(h => h.includes('team1series') || h.includes('team 1 series'));
-                        const t2SeriesIdx = gHeaders.findIndex(h => h.includes('team2series') || h.includes('team 2 series'));
-                        const winIdx = gHeaders.indexOf('winner');
+                    const checkPlayerMatch = (p) => {
+                        if (isSameDate(p.date, selectedDate) && !isPlayerBench(p)) {
+                            playersToReport.push({
+                                username: (p.username || p.Username || '').trim(),
+                                score: parseFloat(p.score ?? p.Score ?? p.totalscore ?? 0) || 0,
+                                team: (p.team || p.Team || 'Unknown').trim(),
+                                sport: (p.sport || p.Sport || 'Unknown').trim()
+                            });
+                        }
+                    };
 
-                        gamesRows.slice(1).forEach(r => {
-                            if (isSameDate(r[dIdx], selectedDate)) {
-                                gamesToReport.push({
-                                    team1: r[t1Idx],
-                                    team2: r[t2Idx],
-                                    team1score: parseFloat(r[t1ScoreIdx]) || 0,
-                                    team2score: parseFloat(r[t2ScoreIdx]) || 0,
-                                    team1SeriesWins: parseInt(r[t1SeriesIdx]) || 0,
-                                    team2SeriesWins: parseInt(r[t2SeriesIdx]) || 0,
-                                    winner: r[winIdx]
-                                });
-                            }
-                        });
-                    }
-
-                    if (playersRows.length > 1) {
-                        const pHeaders = playersRows[0].map(h => h.trim().toLowerCase());
-                        const dIdx = pHeaders.indexOf('date');
-                        const uIdx = pHeaders.indexOf('username');
-                        const sIdx = pHeaders.indexOf('score');
-                        const bIdx = pHeaders.findIndex(h => h.includes('isbench') || h.includes('bench'));
-                        const tIdx = pHeaders.indexOf('team');
-                        const spIdx = pHeaders.indexOf('sport');
-
-                        playersRows.slice(1).forEach(r => {
-                            if (isSameDate(r[dIdx], selectedDate)) {
-                                const isBench = r[bIdx] && (r[bIdx].toLowerCase() === 'true' || r[bIdx].toLowerCase() === 'yes' || r[bIdx] === '1');
-                                if (!isBench) {
-                                    playersToReport.push({
-                                        username: r[uIdx],
-                                        score: parseFloat(r[sIdx]) || 0,
-                                        team: tIdx > -1 ? r[tIdx] : 'Unknown',
-                                        sport: spIdx > -1 ? r[spIdx] : 'Unknown'
-                                    });
-                                }
-                            }
-                        });
-                    }
+                    (regPlayers || []).forEach(checkPlayerMatch);
+                    (playoffPlayers || []).forEach(checkPlayerMatch);
 
                 } catch (e) {
                     output.textContent = "Error fetching saved games: " + e.message;
@@ -1200,13 +1222,13 @@
             }
 
             if (gamesToReport.length === 0) {
-                output.textContent = `Error: No saved games found for ${selectedDate}. Note: If the auto-fetcher just ran, Google Sheets can take 5 minutes to update its public CSV cache.`;
+                output.textContent = `Error: No saved games found for ${selectedDate}. Note: If the auto-fetcher just ran, Google Sheets can take up to 5 minutes to update its public CSV cache.`;
                 terminalStatus.textContent = 'Idle';
                 terminalStatus.style.color = 'var(--gold-light)';
                 return;
             }
 
-            let report = `🏆 **RDA DAILY RECAP - ${selectedDate}** 🏆\n\n`;
+            let report = `🏆 **RDA ${isPlayoffDate ? 'PLAYOFF' : 'DAILY'} RECAP - ${selectedDate}** 🏆\n\n`;
             
             gamesToReport.forEach(g => {
                 let wScore = Math.max(g.team1score, g.team2score);
@@ -1219,18 +1241,18 @@
                 
                 report += `**${g.winner}** def. ${loser} | ${scoreText}\n`;
 
-                const t1 = g.team1;
-                const t2 = g.team2;
-                const gamePlayers = playersToReport.filter(p => p.team === t1 || p.team === t2);
-                const sports = [...new Set(gamePlayers.map(p => p.sport).filter(s => s))].sort();
+                const t1 = (g.team1 || '').toLowerCase();
+                const t2 = (g.team2 || '').toLowerCase();
+                const gamePlayers = playersToReport.filter(p => p.team && (p.team.toLowerCase() === t1 || p.team.toLowerCase() === t2));
+                const sports = [...new Set(gamePlayers.map(p => p.sport).filter(s => s && s !== 'Unknown'))].sort();
 
                 if (sports.length > 0) {
                     sports.forEach(sport => {
-                        const t1SportScore = gamePlayers.filter(p => p.team === t1 && p.sport === sport).reduce((sum, p) => sum + p.score, 0);
-                        const t2SportScore = gamePlayers.filter(p => p.team === t2 && p.sport === sport).reduce((sum, p) => sum + p.score, 0);
+                        const t1SportScore = gamePlayers.filter(p => p.team.toLowerCase() === t1 && p.sport.toUpperCase() === sport.toUpperCase()).reduce((sum, p) => sum + p.score, 0);
+                        const t2SportScore = gamePlayers.filter(p => p.team.toLowerCase() === t2 && p.sport.toUpperCase() === sport.toUpperCase()).reduce((sum, p) => sum + p.score, 0);
                         
                         if (t1SportScore > 0 || t2SportScore > 0) {
-                            let sportWinner = t1SportScore > t2SportScore ? t1 : (t2SportScore > t1SportScore ? t2 : 'TIE');
+                            let sportWinner = t1SportScore > t2SportScore ? g.team1 : (t2SportScore > t1SportScore ? g.team2 : 'TIE');
                             let sportWinnerScore = Math.max(t1SportScore, t2SportScore);
                             let sportLoserScore = Math.min(t1SportScore, t2SportScore);
                             
