@@ -59,12 +59,54 @@
             cursor: pointer;
         }
 
+        /* Playoff Round Group Sections */
+        .round-group-section {
+            margin-bottom: 2.25rem;
+        }
+
+        .round-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1.75rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-gold);
+            font-family: 'Didot', serif;
+        }
+
+        .round-group-header:first-of-type {
+            margin-top: 0.5rem;
+        }
+
+        .round-group-title {
+            font-size: 1.35rem;
+            color: #fff;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .round-group-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold-mid);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            text-transform: uppercase;
+            letter-spacing: 0.75px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
         /* Slate Cards */
         .slate-card {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--border-subtle);
             border-radius: 10px;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
@@ -81,6 +123,15 @@
             padding: 0.75rem 1rem;
             background: rgba(0, 0, 0, 0.35);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .slate-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .slate-title {
@@ -91,6 +142,27 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        /* Sports Chips at Top of Daily Section */
+        .slate-sports-banner {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .slate-sport-pill {
+            background: rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: var(--gold-light);
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            line-height: 1.1;
         }
 
         .slate-badge {
@@ -110,6 +182,7 @@
             font-size: 0.72rem;
             color: var(--text-muted);
             font-weight: 600;
+            white-space: nowrap;
         }
 
         /* Matchup Grid & Game Item */
@@ -164,6 +237,11 @@
             font-weight: 900;
         }
 
+        .brief-team-name.placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
         .brief-score-display {
             font-size: 0.95rem;
             font-weight: 900;
@@ -193,7 +271,7 @@
             flex-shrink: 0;
         }
 
-        /* --- Sport Breakdown Collapsible Cards --- */
+        /* Sport Breakdown Collapsible Cards */
         .sport-card {
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border-subtle);
@@ -310,7 +388,7 @@
             font-weight: 800;
         }
 
-        /* Modal Breakdown Override */
+        /* Modal Breakdown */
         .game-detail-modal-bg {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none;
             justify-content: center; align-items: center; z-index: 9999;
@@ -332,6 +410,8 @@
             .controls-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; }
             .filter-select { width: 100%; }
             .matchup-grid { gap: 0.4rem !important; padding: 0.4rem !important; }
+            .slate-header { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+            .slate-meta { align-self: flex-start; }
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -413,6 +493,71 @@
             return new Intl.DateTimeFormat('en-US', options).format(now);
         }
 
+        const KNOWN_SPORTS = new Set(['MLB', 'NBA', 'NFL', 'CFB', 'CBB', 'NHL', 'FC', 'SOCCER', 'WNBA', 'GOLF']);
+
+        function extractSportsFromRow(r) {
+            const sports = new Set();
+            if (!r) return [];
+            for (const [k, v] of Object.entries(r)) {
+                if (!v || typeof v !== 'string') continue;
+                v.split(/[,/]/).forEach(item => {
+                    const clean = item.trim().toUpperCase();
+                    if (KNOWN_SPORTS.has(clean)) {
+                        sports.add(clean === 'SOCCER' ? 'FC' : clean);
+                    }
+                });
+            }
+            return Array.from(sports);
+        }
+
+        function getRowPlayoffRound(r) {
+            if (!r) return null;
+            for (const [k, v] of Object.entries(r)) {
+                if (!v || typeof v !== 'string') continue;
+                const lowerK = k.toLowerCase().trim();
+                const lowerV = v.toLowerCase().trim();
+
+                if (lowerK.includes('round')) {
+                    if (lowerV.includes('wild')) return 'Wild Card';
+                    if (lowerV.includes('conf')) return 'Conference Finals';
+                    if (lowerV.includes('final')) return 'Finals';
+                    if (lowerV) return v.trim();
+                }
+
+                if (lowerV === 'wild card' || lowerV === 'wildcard') return 'Wild Card';
+                if (lowerV === 'conference finals' || lowerV === 'conf finals') return 'Conference Finals';
+                if (lowerV === 'finals' || lowerV === 'championship') return 'Finals';
+            }
+            return null;
+        }
+
+        function checkPlayoffRow(r) {
+            if (!r) return false;
+            if (getRowPlayoffRound(r)) return true;
+            for (const [k, v] of Object.entries(r)) {
+                if (typeof v === 'string') {
+                    const lower = v.trim().toLowerCase();
+                    if (lower === 'playoffs' || lower === 'playoff' || lower === 'postseason' || lower.includes('playoff')) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkPreseasonRow(r) {
+            if (!r) return false;
+            for (const [k, v] of Object.entries(r)) {
+                if (typeof v === 'string') {
+                    const lower = v.trim().toLowerCase();
+                    if (lower === 'preseason' || lower === 'pre-season' || lower.includes('preseason')) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         let allSlates = [];
         let allPlayersRoster = [];
         let liveSnapshotData = null;
@@ -449,8 +594,8 @@
 
             const completedGamesMap = {};
             const registerGame = (g, isPlayoff) => {
-                const t1 = (g.team1 || g['team 1'] || '').trim();
-                const t2 = (g.team2 || g['team 2'] || '').trim();
+                const t1 = (g.team1 || g['team 1'] || '').trim().toLowerCase();
+                const t2 = (g.team2 || g['team 2'] || '').trim().toLowerCase();
                 const d = (g.date || '').trim();
                 if (!t1 || !t2 || !d) return;
                 completedGamesMap[`${d}_${t1}_${t2}`] = { ...g, isPlayoff };
@@ -464,29 +609,76 @@
             const dateGroups = {};
 
             rawSchedule.forEach(r => {
-                const t1 = (r.team1 || r['team 1'] || '').trim();
-                const t2 = (r.team2 || r['team 2'] || '').trim();
-                const date = (r.date || '').trim();
-                if (!t1 || !t2 || !date) return;
+                let t1 = (r.team1 || r['team 1'] || r.away || r['away team'] || '').trim();
+                let t2 = (r.team2 || r['team 2'] || r.home || r['home team'] || '').trim();
+                const date = (r.date || r.Date || '').trim();
+                if (!date) return;
 
-                teamSet.add(t1);
-                teamSet.add(t2);
-
-                const isPlayoff = String(r.type || '').toLowerCase().includes('playoff') ||
-                                  String(r.type || '').toLowerCase().includes('final') ||
-                                  String(r.type || '').toLowerCase().includes('semi');
+                const isPlayoff = checkPlayoffRow(r);
+                const isPreseason = checkPreseasonRow(r);
+                const playoffRound = getRowPlayoffRound(r);
 
                 if (!dateGroups[date]) {
                     dateGroups[date] = {
                         date,
                         sortDate: parseGameDate(date),
-                        isPlayoff,
+                        isPlayoff: false,
+                        isPreseason: false,
+                        playoffRound: null,
+                        sports: new Set(),
                         games: []
                     };
                 }
-                if (isPlayoff) dateGroups[date].isPlayoff = true;
 
-                const completed = completedGamesMap[`${date}_${t1}_${t2}`];
+                if (isPlayoff) dateGroups[date].isPlayoff = true;
+                if (isPreseason) dateGroups[date].isPreseason = true;
+                if (playoffRound && !dateGroups[date].playoffRound) {
+                    dateGroups[date].playoffRound = playoffRound;
+                }
+
+                const gameIdxInDate = dateGroups[date].games.length;
+
+                // Handle blank games with East and West placeholders
+                let isPlaceholder = false;
+                if (!t1 && !t2) {
+                    isPlaceholder = true;
+                    const roundName = playoffRound || dateGroups[date].playoffRound || '';
+                    if (roundName === 'Finals') {
+                        t1 = 'East Champion';
+                        t2 = 'West Champion';
+                    } else if (roundName === 'Conference Finals') {
+                        if (gameIdxInDate % 2 === 0) {
+                            t1 = 'East Finalist 1';
+                            t2 = 'East Finalist 2';
+                        } else {
+                            t1 = 'West Finalist 1';
+                            t2 = 'West Finalist 2';
+                        }
+                    } else {
+                        // Wild Card / Generic Playoff placeholders
+                        if (gameIdxInDate < 2) {
+                            t1 = `East Placeholder ${gameIdxInDate * 2 + 1}`;
+                            t2 = `East Placeholder ${gameIdxInDate * 2 + 2}`;
+                        } else {
+                            t1 = `West Placeholder ${(gameIdxInDate - 2) * 2 + 1}`;
+                            t2 = `West Placeholder ${(gameIdxInDate - 2) * 2 + 2}`;
+                        }
+                    }
+                } else if (!t1) {
+                    t1 = 'TBD';
+                } else if (!t2) {
+                    t2 = 'TBD';
+                }
+
+                if (!isPlaceholder) {
+                    if (t1 !== 'TBD') teamSet.add(t1);
+                    if (t2 !== 'TBD') teamSet.add(t2);
+                }
+
+                const rowSports = extractSportsFromRow(r);
+                rowSports.forEach(s => dateGroups[date].sports.add(s));
+
+                const completed = completedGamesMap[`${date}_${t1.toLowerCase()}_${t2.toLowerCase()}`];
 
                 let s1Series = 0, s2Series = 0;
                 let t1Pts = 0, t2Pts = 0;
@@ -502,8 +694,22 @@
                 const t2PAll = allPlayersRoster.filter(p => p.team && p.team.toLowerCase() === t2.toLowerCase() && p.date === date);
 
                 const sportMap1 = {}, sportMap2 = {};
-                t1PAll.forEach(p => { if (p.sport) { sportMap1[p.sport] = (sportMap1[p.sport] || 0) + (!(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true') ? parseFloat(p.score || 0) : 0); } });
-                t2PAll.forEach(p => { if (p.sport) { sportMap2[p.sport] = (sportMap2[p.sport] || 0) + (!(p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true') ? parseFloat(p.score || 0) : 0); } });
+                t1PAll.forEach(p => { 
+                    if (p.sport) { 
+                        const sp = p.sport.toUpperCase();
+                        dateGroups[date].sports.add(sp);
+                        const isB = p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true';
+                        sportMap1[sp] = (sportMap1[sp] || 0) + (!isB ? parseFloat(p.score || 0) : 0); 
+                    } 
+                });
+                t2PAll.forEach(p => { 
+                    if (p.sport) { 
+                        const sp = p.sport.toUpperCase();
+                        dateGroups[date].sports.add(sp);
+                        const isB = p.isBench || p.isbench || p.bench === true || String(p.bench).toLowerCase() === 'true';
+                        sportMap2[sp] = (sportMap2[sp] || 0) + (!isB ? parseFloat(p.score || 0) : 0); 
+                    } 
+                });
 
                 const allSportKeys = new Set([...Object.keys(sportMap1), ...Object.keys(sportMap2)]);
                 if (allSportKeys.size > 0) {
@@ -528,17 +734,21 @@
                     team1: t1,
                     team2: t2,
                     date,
-                    type: r.type || (isPlayoff ? 'Playoff' : 'Regular'),
+                    type: isPlayoff ? 'Playoffs' : (isPreseason ? 'Preseason' : 'Regular'),
+                    playoffRound: playoffRound || dateGroups[date].playoffRound,
+                    isPlaceholder,
                     s1Series,
                     s2Series,
                     t1Pts,
                     t2Pts,
                     winner: gameWinner,
                     isCompleted: !!completed,
-                    activeSports: (r.sports || r['active sports'] || '').split(/[,/]/).map(s => s.trim()).filter(Boolean)
+                    activeSports: rowSports
                 };
 
                 gameObj.sportsBreakdown = extractSportBreakdown(gameObj, completed, isSwapped, liveSnapshotData);
+                (gameObj.sportsBreakdown || []).forEach(sb => { if (sb.sport) dateGroups[date].sports.add(sb.sport); });
+
                 dateGroups[date].games.push(gameObj);
             });
 
@@ -553,7 +763,7 @@
             const sortedDates = Object.values(dateGroups).sort((a, b) => a.sortDate - b.sortDate);
             let preSlateIndex = 1;
             let regSlateIndex = 1;
-            let postSlateIndex = 1;
+            const roundGameIndexMap = { 'Wild Card': 1, 'Conference Finals': 1, 'Finals': 1 };
             const hasPreseasonTag = sortedDates.some(s => s.isPreseason);
 
             allSlates = sortedDates.map(slate => {
@@ -561,7 +771,9 @@
                 const isPre = slate.isPreseason || (!hasPreseasonTag && !slate.isPlayoff && preSlateIndex <= 4);
 
                 if (slate.isPlayoff) {
-                    slateLabel = `Postseason • Round ${postSlateIndex++}`;
+                    const rName = slate.playoffRound || 'Wild Card';
+                    if (!roundGameIndexMap[rName]) roundGameIndexMap[rName] = 1;
+                    slateLabel = `${rName} • Game ${roundGameIndexMap[rName]++}`;
                 } else if (isPre) {
                     slate.isPreseason = true;
                     slateLabel = `Preseason • Game ${preSlateIndex++} of 4`;
@@ -569,7 +781,11 @@
                     slateLabel = `Game ${regSlateIndex++} of 21`;
                 }
 
-                return { ...slate, label: slateLabel };
+                return { 
+                    ...slate, 
+                    label: slateLabel,
+                    sportsList: Array.from(slate.sports || []).sort()
+                };
             });
 
             renderSchedule();
@@ -696,7 +912,6 @@
             const sportsSet = new Set(g.activeSports || []);
 
             if (completed) {
-                const KNOWN_SPORTS = ['MLB', 'NBA', 'NFL', 'CFB', 'CBB', 'NHL', 'FC', 'SOCCER', 'WNBA', 'GOLF'];
                 Object.keys(completed).forEach(k => {
                     const upper = k.toUpperCase().replace(/[^A-Z]/g, '');
                     KNOWN_SPORTS.forEach(ks => {
@@ -805,8 +1020,7 @@
                             return `
                                 <div class="sport-breakdown-card">
                                     <div class="sport-breakdown-top">
-                                        <span class="sport-breakdown-name">${sb.sport}</span>
-                                        ${badgeHtml}
+                                        <span class="sport-breakdown-name">${sb.sport}</span>${badgeHtml}
                                     </div>
                                     ${hasScores ? `
                                         <div class="sport-breakdown-scores">
@@ -829,7 +1043,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-subtle); padding-bottom:0.75rem;">
                     <div>
                         <div style="font-size:1.1rem; font-weight:800; color:#fff;">${g.team1} vs ${g.team2}</div>
-                        <div style="font-size:0.72rem; color:var(--text-muted);">${g.date} &bull; ${g.type}</div>
+                        <div style="font-size:0.72rem; color:var(--text-muted);">${g.date} &bull; ${g.playoffRound || g.type}</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:1.1rem; font-weight:900; color:var(--gold-mid);">${g.s1Series} - ${g.s2Series}</div>
@@ -856,6 +1070,111 @@
             if (e.target === modal) closeGameModal();
         });
 
+        function renderSlateCardHtml(slate, todayStr) {
+            const isToday = slate.date === todayStr;
+            const completedCount = slate.games.filter(g => g.isCompleted).length;
+            const totalCount = slate.games.length;
+
+            let badgeText = slate.isPlayoff ? (slate.playoffRound || 'Playoffs') : (slate.isPreseason ? 'Preseason' : 'Regular');
+            let badgeClass = slate.isPlayoff ? 'badge-playoffs' : (slate.isPreseason ? 'badge-pre' : 'badge-reg');
+            let statusBadge = `<span class="slate-badge ${badgeClass}">${badgeText}</span>`;
+            if (isToday) {
+                statusBadge = `<span class="slate-badge badge-today">Today</span>`;
+            }
+
+            const sportsBadgesHtml = (slate.sportsList || []).length > 0 ? `
+                <div class="slate-sports-banner">
+                    ${slate.sportsList.map(s => `<span class="slate-sport-pill">${s}</span>`).join('')}
+                </div>
+            ` : '';
+
+            return `
+                <div class="slate-card ${isToday ? 'current-slate' : ''}">
+                    <div class="slate-header">
+                        <div class="slate-header-left">
+                            <div class="slate-title">
+                                <span>${slate.label}</span>
+                                ${statusBadge}
+                            </div>
+                            ${sportsBadgesHtml}
+                        </div>
+                        <div class="slate-meta">
+                            ${slate.date} &bull; ${completedCount}/${totalCount} Final
+                        </div>
+                    </div>
+                    <div class="matchup-grid">
+                        ${slate.games.map(g => {
+                            const isFinal = g.isCompleted;
+                            const t1Wins = g.s1Series !== null ? g.s1Series : 0;
+                            const t2Wins = g.s2Series !== null ? g.s2Series : 0;
+
+                            let t1IsWinner = false;
+                            let t2IsWinner = false;
+                            let wonByTiebreaker = false;
+
+                            if (isFinal) {
+                                if (t1Wins > t2Wins) {
+                                    t1IsWinner = true;
+                                } else if (t2Wins > t1Wins) {
+                                    t2IsWinner = true;
+                                } else {
+                                    wonByTiebreaker = true;
+                                    if (g.t1Pts !== null && g.t2Pts !== null && g.t1Pts > g.t2Pts) {
+                                        t1IsWinner = true;
+                                    } else if (g.t1Pts !== null && g.t2Pts !== null && g.t2Pts > g.t1Pts) {
+                                        t2IsWinner = true;
+                                    }
+                                }
+                            }
+
+                            const t1SeriesDisplay = isFinal ? t1Wins : '--';
+                            const t2SeriesDisplay = isFinal ? t2Wins : '--';
+
+                            let statusLabel = 'Scheduled';
+                            if (isFinal) {
+                                if (wonByTiebreaker && (t1IsWinner || t2IsWinner)) {
+                                    const tbTeam = t1IsWinner ? g.team1 : g.team2;
+                                    statusLabel = `Final &bull; ${tbTeam} won (TB)`;
+                                } else if (t1IsWinner || t2IsWinner) {
+                                    const wTeam = t1IsWinner ? g.team1 : g.team2;
+                                    statusLabel = `Final &bull; ${wTeam} won`;
+                                } else {
+                                    statusLabel = 'Final (Tie)';
+                                }
+                            } else if (isToday) {
+                                statusLabel = 'Live Today';
+                            }
+
+                            const gameJson = encodeURIComponent(JSON.stringify(g));
+
+                            return `
+                                <div class="game-brief-card" onclick="openGameModal('${gameJson}')">
+                                    <div class="brief-team-row">
+                                        <div class="brief-team-info">
+                                            <img src="${getTeamLogoPath(g.team1)}" class="team-logo" onerror="this.style.display='none'">
+                                            <span class="brief-team-name ${t1IsWinner ? 'winner' : ''} ${g.isPlaceholder ? 'placeholder' : ''}">${g.team1}</span>
+                                        </div>
+                                        <span class="brief-score-display ${t1IsWinner ? 'winning-score' : ''}">${t1SeriesDisplay}</span>
+                                    </div>
+                                    <div class="brief-team-row">
+                                        <div class="brief-team-info">
+                                            <img src="${getTeamLogoPath(g.team2)}" class="team-logo" onerror="this.style.display='none'">
+                                            <span class="brief-team-name ${t2IsWinner ? 'winner' : ''} ${g.isPlaceholder ? 'placeholder' : ''}">${g.team2}</span>
+                                        </div>
+                                        <span class="brief-score-display ${t2IsWinner ? 'winning-score' : ''}">${t2SeriesDisplay}</span>
+                                    </div>
+                                    <div class="brief-game-footer">
+                                        <span>${statusLabel}</span>
+                                        <span style="color:var(--gold-light); font-weight:700;">View Box Score &rarr;</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         function renderSchedule() {
             const container = document.getElementById('schedule-container');
             const todayStr = getTodayDateEST();
@@ -881,101 +1200,55 @@
                 return;
             }
 
-            container.innerHTML = filteredSlates.map(slate => {
-                const isToday = slate.date === todayStr;
-                const completedCount = slate.games.filter(g => g.isCompleted).length;
-                const totalCount = slate.games.length;
+            // If viewing Playoffs or All Games with playoff slates, group by Round series
+            if (currentTypeFilter === 'playoffs') {
+                const roundOrder = ['Wild Card', 'Conference Finals', 'Finals'];
+                const roundGroups = {};
 
-                let badgeText = slate.isPlayoff ? 'Playoffs' : (slate.isPreseason ? 'Preseason' : 'Regular');
-                let badgeClass = slate.isPlayoff ? 'badge-playoffs' : (slate.isPreseason ? 'badge-pre' : 'badge-reg');
-                let statusBadge = `<span class="slate-badge ${badgeClass}">${badgeText}</span>`;
-                if (isToday) {
-                    statusBadge = `<span class="slate-badge badge-today">Today</span>`;
-                }
+                filteredSlates.forEach(s => {
+                    const r = s.playoffRound || 'Wild Card';
+                    if (!roundGroups[r]) roundGroups[r] = [];
+                    roundGroups[r].push(s);
+                });
 
-                return `
-                    <div class="slate-card ${isToday ? 'current-slate' : ''}">
-                        <div class="slate-header">
-                            <div class="slate-title">
-                                <span>${slate.label}</span>
-                                ${statusBadge}
+                let html = '';
+                roundOrder.forEach(rName => {
+                    const slatesInRound = roundGroups[rName];
+                    if (slatesInRound && slatesInRound.length > 0) {
+                        html += `
+                            <div class="round-group-section">
+                                <div class="round-group-header">
+                                    <div class="round-group-title">${rName}</div>
+                                    <span class="round-group-badge">${slatesInRound.length} Gameday Slates</span>
+                                </div>
+                                ${slatesInRound.map(slate => renderSlateCardHtml(slate, todayStr)).join('')}
                             </div>
-                            <div class="slate-meta">
-                                ${slate.date} &bull; ${completedCount}/${totalCount} Final
+                        `;
+                    }
+                });
+
+                // Fallback for any rounds with custom names
+                Object.keys(roundGroups).forEach(rName => {
+                    if (!roundOrder.includes(rName)) {
+                        const slatesInRound = roundGroups[rName];
+                        html += `
+                            <div class="round-group-section">
+                                <div class="round-group-header">
+                                    <div class="round-group-title">${rName}</div>
+                                    <span class="round-group-badge">${slatesInRound.length} Gameday Slates</span>
+                                </div>
+                                ${slatesInRound.map(slate => renderSlateCardHtml(slate, todayStr)).join('')}
                             </div>
-                        </div>
-                        <div class="matchup-grid">
-                            ${slate.games.map(g => {
-                                const isFinal = g.isCompleted;
-                                const t1Wins = g.s1Series !== null ? g.s1Series : 0;
-                                const t2Wins = g.s2Series !== null ? g.s2Series : 0;
+                        `;
+                    }
+                });
 
-                                let t1IsWinner = false;
-                                let t2IsWinner = false;
-                                let wonByTiebreaker = false;
+                container.innerHTML = html;
+                return;
+            }
 
-                                if (isFinal) {
-                                    if (t1Wins > t2Wins) {
-                                        t1IsWinner = true;
-                                    } else if (t2Wins > t1Wins) {
-                                        t2IsWinner = true;
-                                    } else {
-                                        wonByTiebreaker = true;
-                                        if (g.t1Pts !== null && g.t2Pts !== null && g.t1Pts > g.t2Pts) {
-                                            t1IsWinner = true;
-                                        } else if (g.t1Pts !== null && g.t2Pts !== null && g.t2Pts > g.t1Pts) {
-                                            t2IsWinner = true;
-                                        }
-                                    }
-                                }
-
-                                const t1SeriesDisplay = isFinal ? t1Wins : '--';
-                                const t2SeriesDisplay = isFinal ? t2Wins : '--';
-
-                                let statusLabel = 'Scheduled';
-                                if (isFinal) {
-                                    if (wonByTiebreaker && (t1IsWinner || t2IsWinner)) {
-                                        const tbTeam = t1IsWinner ? g.team1 : g.team2;
-                                        statusLabel = `Final &bull; ${tbTeam} won (TB)`;
-                                    } else if (t1IsWinner || t2IsWinner) {
-                                        const wTeam = t1IsWinner ? g.team1 : g.team2;
-                                        statusLabel = `Final &bull; ${wTeam} won`;
-                                    } else {
-                                        statusLabel = 'Final (Tie)';
-                                    }
-                                } else if (isToday) {
-                                    statusLabel = 'Live Today';
-                                }
-
-                                const gameJson = encodeURIComponent(JSON.stringify(g));
-
-                                return `
-                                    <div class="game-brief-card" onclick="openGameModal('${gameJson}')">
-                                        <div class="brief-team-row">
-                                            <div class="brief-team-info">
-                                                <img src="${getTeamLogoPath(g.team1)}" class="team-logo" onerror="this.style.display='none'">
-                                                <span class="brief-team-name ${t1IsWinner ? 'winner' : ''}">${g.team1}</span>
-                                            </div>
-                                            <span class="brief-score-display ${t1IsWinner ? 'winning-score' : ''}">${t1SeriesDisplay}</span>
-                                        </div>
-                                        <div class="brief-team-row">
-                                            <div class="brief-team-info">
-                                                <img src="${getTeamLogoPath(g.team2)}" class="team-logo" onerror="this.style.display='none'">
-                                                <span class="brief-team-name ${t2IsWinner ? 'winner' : ''}">${g.team2}</span>
-                                            </div>
-                                            <span class="brief-score-display ${t2IsWinner ? 'winning-score' : ''}">${t2SeriesDisplay}</span>
-                                        </div>
-                                        <div class="brief-game-footer">
-                                            <span>${statusLabel}</span>
-                                            <span style="color:var(--gold-light); font-weight:700;">View Box Score &rarr;</span>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            // Standard layout for Regular Season or All Games
+            container.innerHTML = filteredSlates.map(slate => renderSlateCardHtml(slate, todayStr)).join('');
         }
 
         init();

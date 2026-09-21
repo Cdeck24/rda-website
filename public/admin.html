@@ -206,6 +206,9 @@
         .btn-purple { background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #a78bfa; }
         .btn-purple:hover { background: #8b5cf6; color: #fff; }
 
+        .btn-blue { background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; }
+        .btn-blue:hover { background: #0284c7; color: #fff; }
+
         .terminal-header {
             display: flex;
             justify-content: space-between;
@@ -238,6 +241,30 @@
             text-align: left;
         }
 
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(6px);
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .modal-card {
+            background: #0f172a;
+            border: 1px solid var(--border-gold);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            box-sizing: border-box;
+            animation: fadeIn 0.25s ease-out;
+        }
+
         .hidden { display: none !important; }
 
         @media (max-width: 650px) {
@@ -266,6 +293,9 @@
                 <input type="password" id="login-password" placeholder="Password">
                 <button id="btn-login" class="btn btn-primary-action" style="width: 100%;">Sign In</button>
                 <div id="login-error" style="color: var(--danger); margin-top: 0.6rem; font-size: 0.82rem; font-weight: bold;"></div>
+                <div style="margin-top: 1.25rem; text-align: center;">
+                    <a href="index.html" style="color: var(--text-muted); text-decoration: none; font-size: 0.8rem; font-weight: 700;">&larr; Back to Live Center</a>
+                </div>
             </div>
 
             <!-- Authenticated Controls -->
@@ -322,6 +352,7 @@
                         <button id="btn-rewrite" class="btn btn-orange">Undo & Rewrite</button>
                         <button id="btn-undo" class="btn btn-red">Undo Writes for Date</button>
                     </div>
+                    <button id="btn-override-open" type="button" class="btn btn-blue" style="width: 100%;">🛠️ Override User Draft / Duplicate</button>
                 </div>
 
                 <div class="terminal-header">
@@ -329,6 +360,61 @@
                     <span id="terminal-status" style="color: var(--gold-light);">Idle</span>
                 </div>
                 <pre id="output">Waiting for command...</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Draft Override Modal -->
+    <div id="override-modal" class="modal-bg">
+        <div class="modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-subtle); padding-bottom:0.6rem;">
+                <h3 style="margin:0; color:var(--gold-mid); font-size:1.1rem; text-transform:uppercase; font-family:'Didot', serif;">Override Draft / Duplicate</h3>
+                <button id="btn-close-override" style="background:none; border:none; color:#888; font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            
+            <div class="form-group" style="margin-bottom:0.75rem;">
+                <label for="override-username">Target Username or User ID</label>
+                <input type="text" id="override-username" placeholder="e.g. thathuey5 or wJ2RVYmJ">
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.75rem;">
+                <label for="override-sport">Sport</label>
+                <select id="override-sport">
+                    <option value="ALL">All Sports</option>
+                    <option value="MLB">MLB</option>
+                    <option value="NBA">NBA</option>
+                    <option value="NFL">NFL</option>
+                    <option value="CFB">CFB</option>
+                    <option value="CBB">CBB</option>
+                    <option value="NHL">NHL</option>
+                    <option value="FC">FC / Soccer</option>
+                    <option value="WNBA">WNBA</option>
+                    <option value="GOLF">GOLF</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.75rem;">
+                <label for="override-mode">Action Mode</label>
+                <select id="override-mode">
+                    <option value="restore">Un-void (Restore RealApp API Score)</option>
+                    <option value="custom">Set Custom Score</option>
+                </select>
+            </div>
+
+            <div class="form-group hidden" id="custom-score-group" style="margin-bottom:0.75rem;">
+                <label for="override-custom-val">Custom Point Value</label>
+                <input type="number" id="override-custom-val" step="0.01" placeholder="e.g. 14.50">
+            </div>
+
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.4;">
+                This will bypass duplicate rules for this user on the selected date, restore their score, recalculate matchup series & totals, and rewrite the Google Sheet.
+            </div>
+
+            <div id="active-overrides-list" style="margin-bottom:1rem; font-size:0.75rem; color:#cbd5e1;"></div>
+
+            <div style="display:flex; gap:0.5rem;">
+                <button id="btn-apply-override" class="btn btn-primary-action" style="flex:1;">Apply & Rewrite Sheet</button>
+                <button id="btn-clear-overrides" class="btn btn-red" style="padding:0.5rem 0.75rem;">Clear Overrides</button>
             </div>
         </div>
     </div>
@@ -345,6 +431,7 @@
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
         const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f'; 
         const REAL_VERSION = '27';
+        const ADMIN_EMAILS = ["coledecker04@gmail.com"];
 
         const seasonConfigs = {
             '4': {
@@ -369,15 +456,101 @@
         const output = document.getElementById('output');
         const terminalStatus = document.getElementById('terminal-status');
         const dateSelect = document.getElementById('dateSelect');
-        const seasonSelect = document.getElementById('seasonSelect');
+        const seasonSelect = seasonSelectEl();
         const gameTypeSelect = document.getElementById('gameType');
         const playoffSeriesGroup = document.getElementById('playoffSeriesGroup');
 
-        onAuthStateChanged(auth, (user) => {
+        function seasonSelectEl() { return document.getElementById('seasonSelect'); }
+
+        window.manualOverrides = [];
+
+        const overrideModal = document.getElementById('override-modal');
+        const btnOverrideOpen = document.getElementById('btn-override-open');
+        const btnCloseOverride = document.getElementById('btn-close-override');
+        const overrideModeSelect = document.getElementById('override-mode');
+        const customScoreGroup = document.getElementById('custom-score-group');
+        const btnApplyOverride = document.getElementById('btn-apply-override');
+        const btnClearOverrides = document.getElementById('btn-clear-overrides');
+        const activeOverridesList = document.getElementById('active-overrides-list');
+
+        btnOverrideOpen.addEventListener('click', () => {
+            overrideModal.style.display = 'flex';
+            renderActiveOverridesUI();
+        });
+
+        btnCloseOverride.addEventListener('click', () => {
+            overrideModal.style.display = 'none';
+        });
+
+        overrideModeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                customScoreGroup.classList.remove('hidden');
+            } else {
+                customScoreGroup.classList.add('hidden');
+            }
+        });
+
+        function renderActiveOverridesUI() {
+            if (!window.manualOverrides.length) {
+                activeOverridesList.innerHTML = '<span style="color:var(--text-muted); font-style:italic;">No active overrides queued.</span>';
+                return;
+            }
+            activeOverridesList.innerHTML = '<strong style="color:var(--gold-mid);">Queued Overrides:</strong><br>' + 
+                window.manualOverrides.map(o => `&bull; <strong>${o.username}</strong> (${o.sport}) &rarr; ${o.customScore !== null ? o.customScore + ' pts' : 'Restore RealApp Score'}`).join('<br>');
+        }
+
+        btnClearOverrides.addEventListener('click', () => {
+            window.manualOverrides = [];
+            renderActiveOverridesUI();
+        });
+
+        btnApplyOverride.addEventListener('click', async () => {
+            const rawUser = document.getElementById('override-username').value.trim();
+            const sport = document.getElementById('override-sport').value;
+            const mode = overrideModeSelect.value;
+            const customVal = parseFloat(document.getElementById('override-custom-val').value);
+
+            if (!rawUser) {
+                alert('Please enter a username or user ID.');
+                return;
+            }
+
+            const cleanUser = rawUser.replace(/^@/, '').toLowerCase();
+            const overrideEntry = {
+                username: cleanUser,
+                sport: sport,
+                customScore: mode === 'custom' && !isNaN(customVal) ? customVal : null
+            };
+
+            window.manualOverrides = window.manualOverrides.filter(o => !(o.username === cleanUser && o.sport === sport));
+            window.manualOverrides.push(overrideEntry);
+
+            overrideModal.style.display = 'none';
+
+            output.textContent = `\n[Override Queued] ${rawUser} (${sport}) &rarr; ${overrideEntry.customScore !== null ? overrideEntry.customScore + ' pts' : 'Bypass Dup & Restore'}\n`;
+            output.textContent += "Starting Undo & Rewrite with override applied...\n-----------------------\n";
+
+            const success = await performUndo(true);
+            if (success) {
+                await performFetchAndWrite();
+            }
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            const err = document.getElementById('login-error');
             if (user) {
+                const email = (user.email || '').toLowerCase().trim();
+                if (!ADMIN_EMAILS.includes(email)) {
+                    await signOut(auth);
+                    if (err) err.textContent = 'Access Denied: Administrator privileges required.';
+                    loginContainer.classList.remove('hidden');
+                    adminControls.classList.add('hidden');
+                    return;
+                }
                 userDisplay.textContent = user.email;
                 loginContainer.classList.add('hidden');
                 adminControls.classList.remove('hidden');
+                if (err) err.textContent = '';
             } else {
                 loginContainer.classList.remove('hidden');
                 adminControls.classList.add('hidden');
@@ -385,12 +558,23 @@
         });
 
         btnLogin.addEventListener('click', async () => {
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
             const pass = document.getElementById('login-password').value;
             const err = document.getElementById('login-error');
             err.textContent = '';
+
+            if (!ADMIN_EMAILS.includes(email)) {
+                err.textContent = 'Access Denied: Administrator privileges required.';
+                return;
+            }
+
             try {
-                await signInWithEmailAndPassword(auth, email, pass);
+                const cred = await signInWithEmailAndPassword(auth, email, pass);
+                const authedEmail = (cred.user.email || '').toLowerCase().trim();
+                if (!ADMIN_EMAILS.includes(authedEmail)) {
+                    await signOut(auth);
+                    err.textContent = 'Access Denied: Administrator privileges required.';
+                }
             } catch (error) {
                 err.textContent = error.message;
             }
@@ -607,7 +791,7 @@
                             allPlayerDataForDay[userId] = { 
                                 userId, username, team: originalTeam, 
                                 isPlaying: isPlaying, 
-                                scoresBySport: {}, lineupsBySport: {}, totalScore: 0 
+                                scoresBySport: {}, rawScoresBySport: {}, lineupsBySport: {}, totalScore: 0 
                             };
                         }
 
@@ -656,6 +840,8 @@
                         
                         const finalScore = parseFloat(String(scoreDisplay).replace(/,/g, '')) || 0;
                         pData.scoresBySport[req.sport] = finalScore;
+                        if (!pData.rawScoresBySport) pData.rawScoresBySport = {};
+                        pData.rawScoresBySport[req.sport] = finalScore;
 
                         let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
                         if (!Array.isArray(extractedLineup)) {
@@ -684,6 +870,16 @@
                 output.textContent += "\nApplying duplicate rules...\n";
                 const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn']);
                 const hashes = new Map();
+
+                const isUserOverridden = (uName, uId, s) => {
+                    const cleanU = (uName || '').replace(/^@/, '').toLowerCase().trim();
+                    const cleanId = (uId || '').toLowerCase().trim();
+                    const cleanS = (s || '').toUpperCase().trim();
+                    return window.manualOverrides.find(o => 
+                        (o.username === cleanU || o.username === cleanId) &&
+                        (o.sport === 'ALL' || o.sport === cleanS)
+                    );
+                };
 
                 Object.values(allPlayerDataForDay).forEach(p => {
                     if (!p.isPlaying) return;
@@ -714,9 +910,14 @@
                         if (teamEntries.length > 1) {
                             teamEntries.sort((a, b) => b.score - a.score);
                             for (let j = 1; j < teamEntries.length; j++) {
-                                if (teamEntries[j].player.scoresBySport[teamEntries[j].sport] > 0) {
-                                    teamEntries[j].player.scoresBySport[teamEntries[j].sport] = 0;
-                                    output.textContent += `Voided: ${teamEntries[j].player.username} (${teamEntries[j].sport}) - Same Team Dup\n`;
+                                const targetEntry = teamEntries[j];
+                                if (isUserOverridden(targetEntry.player.username, targetEntry.player.userId, targetEntry.sport)) {
+                                    output.textContent += `[Override Active] Preserved: ${targetEntry.player.username} (${targetEntry.sport}) - Skipped Same Team Dup\n`;
+                                    continue;
+                                }
+                                if (targetEntry.player.scoresBySport[targetEntry.sport] > 0) {
+                                    targetEntry.player.scoresBySport[targetEntry.sport] = 0;
+                                    output.textContent += `Voided: ${targetEntry.player.username} (${targetEntry.sport}) - Same Team Dup\n`;
                                 }
                             }
                         }
@@ -725,6 +926,10 @@
                     if (draftAccounts.length > 0) {
                         entries.forEach(e => {
                             if (!draftUserIds.has(e.player.userId)) {
+                                if (isUserOverridden(e.player.username, e.player.userId, e.sport)) {
+                                    output.textContent += `[Override Active] Preserved: ${e.player.username} (${e.sport}) - Skipped Draft Account Dup\n`;
+                                    return;
+                                }
                                 let voided = false;
                                 draftAccounts.forEach(da => {
                                     if (da.player.userId !== 'WJqLyqAn' || e.sport === 'NHL') voided = true;
@@ -737,6 +942,17 @@
                         });
                     }
                 }
+
+                // Apply explicit custom point overrides if configured
+                Object.values(allPlayerDataForDay).forEach(p => {
+                    for (const s in p.scoresBySport) {
+                        const override = isUserOverridden(p.username, p.userId, s);
+                        if (override && override.customScore !== null) {
+                            p.scoresBySport[s] = override.customScore;
+                            output.textContent += `[Custom Score Set] ${p.username} (${s}) = ${override.customScore} pts\n`;
+                        }
+                    }
+                });
 
                 output.textContent += `\nPreparing to write to Google Sheets...\n`;
                 const gamesToLog = [];

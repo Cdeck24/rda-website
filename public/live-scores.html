@@ -429,6 +429,46 @@
         .dup-badge { background: var(--danger); color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 3px; font-weight: 800; cursor: pointer; }
         .duplicate-cell { background: rgba(244, 67, 54, 0.08) !important; border-left: 2px solid var(--danger); }
 
+        /* Bench Visual Styles in Matchups & Leaderboard */
+        .bench-badge {
+            font-size: 0.52rem;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            margin-left: 4px;
+            letter-spacing: 0.5px;
+        }
+        .bench-player-cell {
+            background: rgba(255, 255, 255, 0.015);
+            opacity: 0.85;
+        }
+        .bench-player-cell:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .bench-score-text {
+            color: var(--text-muted) !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+        }
+        .h2h-bench-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid rgba(212, 175, 55, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .bench-header-title {
+            font-size: 0.65rem !important;
+            color: var(--gold-mid) !important;
+            letter-spacing: 1px !important;
+            padding: 0.35rem 0.85rem !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+        }
+
         /* Universal Cache Status Bar */
         .cache-status-bar {
             display: flex;
@@ -532,6 +572,26 @@
         .rank-1 { color: #FFD700; }
         .rank-2 { color: #C0C0C0; }
         .rank-3 { color: #CD7F32; }
+
+        /* Empty Lineup Drawer Badge */
+        .no-lineup-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            padding: 0.4rem 0.65rem;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            user-select: none;
+        }
+        .drawer.right .no-lineup-badge {
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
 
         @media (max-width: 650px) {
             .dropdown-header { padding: 0.75rem; }
@@ -1358,10 +1418,14 @@
             const sortFn = (a, b) => (typeof b.scoresBySport?.[sport] === 'number' ? b.scoresBySport[sport] : -999) - (typeof a.scoresBySport?.[sport] === 'number' ? a.scoresBySport[sport] : -999);
             const starters1 = t1p.filter(p => !p.isBench && p.scoresBySport?.[sport] !== undefined).sort(sortFn);
             const starters2 = t2p.filter(p => !p.isBench && p.scoresBySport?.[sport] !== undefined).sort(sortFn);
-            const max = Math.max(starters1.length, starters2.length);
+            const maxStarters = Math.max(starters1.length, starters2.length);
+
+            const bench1 = t1p.filter(p => p.isBench && p.scoresBySport?.[sport] !== undefined).sort(sortFn);
+            const bench2 = t2p.filter(p => p.isBench && p.scoresBySport?.[sport] !== undefined).sort(sortFn);
+            const maxBench = Math.max(bench1.length, bench2.length);
 
             let html = '';
-            for (let i = 0; i < max; i++) {
+            for (let i = 0; i < maxStarters; i++) {
                 const p1 = starters1[i], p2 = starters2[i];
                 html += `
                     <div class="h2h-row-group">
@@ -1377,6 +1441,31 @@
                         </div>
                     </div>`;
             }
+
+            if (maxBench > 0) {
+                html += `
+                    <div class="h2h-bench-header">
+                        <div class="h2h-team left-team bench-header-title">Bench</div>
+                        <div class="h2h-team right-team bench-header-title">Bench</div>
+                    </div>`;
+                for (let i = 0; i < maxBench; i++) {
+                    const p1 = bench1[i], p2 = bench2[i];
+                    html += `
+                        <div class="h2h-row-group bench-row-group">
+                            <div class="h2h-row">
+                                ${renderH2HCell(p1, 'left', sport)}
+                                <div class="h2h-divider"></div>
+                                ${renderH2HCell(p2, 'right', sport)}
+                            </div>
+                            <div class="h2h-drawers">
+                                ${renderLineupDrawer(p1, 'left', sport)}
+                                <div class="drawer-divider"></div>
+                                ${renderLineupDrawer(p2, 'right', sport)}
+                            </div>
+                        </div>`;
+                }
+            }
+
             return html || '<div style="padding:1rem;text-align:center;color:#666;">No active lineups.</div>';
         }
 
@@ -1413,9 +1502,14 @@
         function renderH2HTotalRows(t1p, t2p) {
             const starters1 = t1p.filter(p => !p.isBench).sort((a,b) => b.totalScore - a.totalScore);
             const starters2 = t2p.filter(p => !p.isBench).sort((a,b) => b.totalScore - a.totalScore);
-            const max = Math.max(starters1.length, starters2.length);
+            const maxStarters = Math.max(starters1.length, starters2.length);
+
+            const bench1 = t1p.filter(p => p.isBench).sort((a,b) => b.totalScore - a.totalScore);
+            const bench2 = t2p.filter(p => p.isBench).sort((a,b) => b.totalScore - a.totalScore);
+            const maxBench = Math.max(bench1.length, bench2.length);
+
             let html = '';
-            for (let i = 0; i < max; i++) {
+            for (let i = 0; i < maxStarters; i++) {
                 const p1 = starters1[i], p2 = starters2[i];
                 html += `
                     <div class="h2h-row-group">
@@ -1431,6 +1525,31 @@
                         </div>
                     </div>`;
             }
+
+            if (maxBench > 0) {
+                html += `
+                    <div class="h2h-bench-header">
+                        <div class="h2h-team left-team bench-header-title">Bench</div>
+                        <div class="h2h-team right-team bench-header-title">Bench</div>
+                    </div>`;
+                for (let i = 0; i < maxBench; i++) {
+                    const p1 = bench1[i], p2 = bench2[i];
+                    html += `
+                        <div class="h2h-row-group bench-row-group">
+                            <div class="h2h-row">
+                                ${renderH2HCell(p1, 'left', null)}
+                                <div class="h2h-divider"></div>
+                                ${renderH2HCell(p2, 'right', null)}
+                            </div>
+                            <div class="h2h-drawers">
+                                ${renderTotalDrawer(p1, 'left')}
+                                <div class="drawer-divider"></div>
+                                ${renderTotalDrawer(p2, 'right')}
+                            </div>
+                        </div>`;
+                }
+            }
+
             return html;
         }
 
@@ -1439,22 +1558,37 @@
             const sc = sport ? p.scoresBySport?.[sport] : p.totalScore;
             const scoreStr = typeof sc === 'number' ? sc.toFixed(2) : '0.00';
             const isDup = sport && p.isDuplicate?.[sport];
+            const benchClass = p.isBench ? 'bench-player-cell' : '';
+            const benchBadge = p.isBench ? '<span class="bench-badge">B</span>' : '';
             return `
-                <div class="h2h-player-cell ${side} ${isDup ? 'duplicate-cell' : ''}" onclick="toggleH2HDrawer(this, '${side}')">
+                <div class="h2h-player-cell ${side} ${benchClass} ${isDup ? 'duplicate-cell' : ''}" onclick="toggleH2HDrawer(this, '${side}')">
                     <div class="h2h-name-wrap">
                         <div class="h2h-name-col">
-                            <div class="h2h-name"><span>${p.username}</span>${p.isRookie ? '<span class="rookie-badge">R</span>' : ''}${isDup ? `<span class="dup-badge" onclick="showDuplicateInfo('${sport}', ${JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g, '&quot;')}); event.stopPropagation();">DUP</span>` : ''}</div>
+                            <div class="h2h-name">
+                                <span>${p.username}</span>
+                                ${p.isRookie ? '<span class="rookie-badge">R</span>' : ''}
+                                ${benchBadge}
+                                ${isDup ? `<span class="dup-badge" onclick="showDuplicateInfo('${sport}', ${JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g, '&quot;')}); event.stopPropagation();">DUP</span>` : ''}
+                            </div>
                             <div class="h2h-rank">${sport ? (p.ranksBySport?.[sport] || '') : ''}</div>
                         </div>
                     </div>
-                    <div class="h2h-score">${scoreStr}</div>
+                    <div class="h2h-score ${p.isBench ? 'bench-score-text' : ''}">${p.isBench ? `(${scoreStr})` : scoreStr}</div>
                 </div>`;
         }
 
         function renderLineupDrawer(p, side, sport) {
             if (!p) return `<div class="drawer ${side} empty"></div>`;
             const lineup = Array.isArray(p.lineupsBySport?.[sport]) ? p.lineupsBySport[sport] : [];
-            if (!lineup.length) return `<div class="drawer ${side}"><div class="pl-lineup">No lineup logged.</div></div>`;
+            if (!lineup.length) {
+                return `
+                    <div class="drawer ${side}">
+                        <div class="no-lineup-badge">
+                            <span style="opacity: 0.6;">📋</span>
+                            <span>No lineup logged</span>
+                        </div>
+                    </div>`;
+            }
             return `
                 <div class="drawer ${side}">
                     <div class="pl-lineup">
@@ -1619,7 +1753,7 @@
             const filterSelect = document.getElementById('leaderboard-sport-filter');
             const scoreHeader = document.getElementById('leaderboard-score-header');
             let allPlayers = [];
-            Object.values(window.teamsDataCache).forEach(tp => allPlayers = allPlayers.concat(tp.filter(p => !p.isBench)));
+            Object.values(window.teamsDataCache).forEach(tp => allPlayers = allPlayers.concat(tp));
 
             const discoveredSports = new Set();
             allPlayers.forEach(p => {
@@ -1680,7 +1814,11 @@
                     <tr>
                         <td class="rank-cell ${rankClass}">${rankDisplay}</td>
                         <td>
-                            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${p.username}${p.isRookie ? ' <span class="rookie-badge">R</span>' : ''}</div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">
+                                ${p.username}
+                                ${p.isRookie ? ' <span class="rookie-badge">R</span>' : ''}
+                                ${p.isBench ? ' <span class="bench-badge">BENCH</span>' : ''}
+                            </div>
                             <div style="font-size: 0.75rem; color: var(--text-muted);">${p.team}</div>
                             ${sportScoresHtml}
                         </td>
