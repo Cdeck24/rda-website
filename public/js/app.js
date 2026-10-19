@@ -1,9 +1,9 @@
 import { db } from './firebase-config.js';
 import { collection, getDocs, query } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
 
-// Get Current Season Context (Defaults to 6)
+// Get Current Season Context (Defaults to 7)
 const urlParams = new URLSearchParams(window.location.search);
-export const currentSeason = urlParams.get('season') || '6'; 
+export const currentSeason = urlParams.get('season') || '7'; 
 
 const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
 
@@ -49,6 +49,12 @@ export const HISTORICAL_CSVS = {
         'players': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=386743668&single=true&output=csv',
         'playoff-games': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=1485333067&single=true&output=csv',
         'playoff-players': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=442728290&single=true&output=csv'
+    },
+    '7': {
+        'games': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=1351803397&single=true&output=csv',
+        'players': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=1803315923&single=true&output=csv',
+        'playoff-games': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=2051819530&single=true&output=csv',
+        'playoff-players': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=1983514513&single=true&output=csv'
     }
 };
 
@@ -392,6 +398,7 @@ export function initNav() {
         </div>
         <div class="nav-right">
             <select class="nav-season-select" id="global-season-select" title="Select Season">
+                <option value="7" ${currentSeason === '7' ? 'selected' : ''}>S7</option>
                 <option value="6" ${currentSeason === '6' ? 'selected' : ''}>S6</option>
                 <option value="5" ${currentSeason === '5' ? 'selected' : ''}>S5</option>
                 <option value="4" ${currentSeason === '4' ? 'selected' : ''}>S4</option>
@@ -565,7 +572,7 @@ export async function getSeasonData(collectionType) {
     const csvUrl = HISTORICAL_CSVS[currentSeason]?.[collectionType];
 
     if (csvUrl) {
-        const shouldCache = ['1', '2', '3'].includes(currentSeason);
+        const shouldCache = ['1', '2', '3', '4', '5', '6'].includes(currentSeason);
         if (shouldCache) {
             const cached = localStorage.getItem(cacheKey);
             if (cached) return JSON.parse(cached);

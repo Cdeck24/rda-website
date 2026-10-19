@@ -448,6 +448,8 @@
             }
         };
 
+        const KNOWN_SPORTS = new Set(['MLB', 'NBA', 'NFL', 'CFB', 'CBB', 'NHL', 'FC', 'SOCCER', 'WNBA', 'GOLF']);
+
         const userDisplay = document.getElementById('user-display');
         const loginContainer = document.getElementById('login-container');
         const adminControls = document.getElementById('admin-controls');
@@ -769,12 +771,32 @@
                 const t2Idx = schedHeaders.findIndex(h => h.includes('team2') || h.includes('team 2') || h.includes('home'));
 
                 const todayGames = [];
+                const daySports = new Set();
+
                 scheduleRows.slice(1).forEach(r => {
                     if (isSameDate(r[dIdx], selectedDate)) {
                         const t1 = r[t1Idx]?.trim();
                         const t2 = r[t2Idx]?.trim();
+                        
+                        const rowSports = new Set();
+                        r.forEach(cell => {
+                            if (!cell) return;
+                            String(cell).split(/[,/]/).forEach(item => {
+                                const clean = item.trim().toUpperCase();
+                                if (KNOWN_SPORTS.has(clean)) {
+                                    const norm = clean === 'SOCCER' ? 'FC' : clean;
+                                    rowSports.add(norm);
+                                    daySports.add(norm);
+                                }
+                            });
+                        });
+
                         if (t1 && t2 && t1 !== 'TBD' && t2 !== 'TBD') {
-                            todayGames.push({ team1: t1, team2: t2 });
+                            todayGames.push({ 
+                                team1: t1, 
+                                team2: t2,
+                                scheduledSports: Array.from(rowSports)
+                            });
                         }
                     }
                 });
@@ -803,7 +825,10 @@
                 const sportIdIndices = {};
                 pHeaders.forEach((h, i) => {
                     const m = h.match(/^([a-z]+) id$/);
-                    if (m && h !== 'user id' && h !== 'draft id') sportIdIndices[m[1].toUpperCase()] = i;
+                    if (m && h !== 'user id' && h !== 'draft id') {
+                        const sportCode = m[1].toUpperCase() === 'SOCCER' ? 'FC' : m[1].toUpperCase();
+                        sportIdIndices[sportCode] = i;
+                    }
                 });
 
                 const allPlayerDataForDay = {};
@@ -836,6 +861,10 @@
                         }
 
                         for (const sport in sportIdIndices) {
+                            if (daySports.size > 0 && !daySports.has(sport)) {
+                                continue;
+                            }
+
                             const draftId = row[sportIdIndices[sport]]?.trim();
                             if (draftId) {
                                 fetchUrls.push({
@@ -927,7 +956,6 @@
                         const l = p.lineupsBySport[s];
                         if (!Array.isArray(l) || !l.length) continue;
                         
-                        // Exact pick order match
                         const athleteNames = l.map(x => {
                             const lp = x.player || x;
                             return (lp.displayName || x.displayName || lp.name || x.name || '').trim().toLowerCase();
@@ -1005,6 +1033,9 @@
 
                 Object.values(allPlayerDataForDay).forEach(player => {
                     for (const sport in player.scoresBySport) {
+                        const normSport = sport.toUpperCase() === 'SOCCER' ? 'FC' : sport.toUpperCase();
+                        if (daySports.size > 0 && !daySports.has(normSport)) continue;
+
                         const score = player.scoresBySport[sport];
                         if (typeof score === 'number') {
                             playerStatsToLog.push({
@@ -1012,7 +1043,7 @@
                                 userId: player.userId, 
                                 team: player.team, 
                                 score: score, 
-                                sport: sport,
+                                sport: normSport,
                                 isBench: !player.isPlaying,
                                 isPlayoff: isPlayoff
                             });
@@ -1028,12 +1059,24 @@
                     const p1 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t1.toLowerCase());
                     const p2 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t2.toLowerCase());
 
-                    const allSports = new Set();
-                    [...p1, ...p2].forEach(p => Object.keys(p.scoresBySport).forEach(s => allSports.add(s)));
+                    const sportsToEvaluate = (game.scheduledSports && game.scheduledSports.length > 0)
+                        ? game.scheduledSports
+                        : (daySports.size > 0 
+                            ? Array.from(daySports) 
+                            : Array.from(new Set([...p1, ...p2].flatMap(p => Object.keys(p.scoresBySport)))));
 
-                    [...allSports].forEach(sport => {
-                        const s1 = p1.filter(p => p.isPlaying).reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
-                        const s2 = p2.filter(p => p.isPlaying).reduce((sum, p) => sum + (typeof p.scoresBySport[sport] === 'number' ? p.scoresBySport[sport] : 0), 0);
+                    sportsToEvaluate.forEach(sport => {
+                        const normSport = sport.toUpperCase() === 'SOCCER' ? 'FC' : sport.toUpperCase();
+
+                        const s1 = p1.filter(p => p.isPlaying).reduce((sum, p) => {
+                            const sc = p.scoresBySport[normSport] ?? p.scoresBySport[sport];
+                            return sum + (typeof sc === 'number' ? sc : 0);
+                        }, 0);
+
+                        const s2 = p2.filter(p => p.isPlaying).reduce((sum, p) => {
+                            const sc = p.scoresBySport[normSport] ?? p.scoresBySport[sport];
+                            return sum + (typeof sc === 'number' ? sc : 0);
+                        }, 0);
                         
                         if (s1 > s2) t1SeriesWins++;
                         else if (s2 > s1) t2SeriesWins++;
@@ -1169,7 +1212,6 @@
                 playersToReport = window.lastPlayerStats.filter(p => !isPlayerBench(p));
             } else {
                 try {
-                    // Query both regular season and playoff datasets via app.js
                     const [regGames, playoffGames, regPlayers, playoffPlayers] = await Promise.all([
                         getSeasonData('games').catch(() => []),
                         getSeasonData('playoff-games').catch(() => []),
@@ -1231,15 +1273,40 @@
             let report = `🏆 **RDA ${isPlayoffDate ? 'PLAYOFF' : 'DAILY'} RECAP - ${selectedDate}** 🏆\n\n`;
             
             gamesToReport.forEach(g => {
-                let wScore = Math.max(g.team1score, g.team2score);
-                let lScore = Math.min(g.team1score, g.team2score);
-                let wSeries = Math.max(g.team1SeriesWins, g.team2SeriesWins);
-                let lSeries = Math.min(g.team1SeriesWins, g.team2SeriesWins);
-                
-                let scoreText = (wSeries > 0 || lSeries > 0) ? `${wSeries}-${lSeries} (${wScore.toFixed(2)} - ${lScore.toFixed(2)})` : `${wScore.toFixed(2)} - ${lScore.toFixed(2)}`;
-                let loser = g.winner === g.team1 ? g.team2 : g.team1;
-                
-                report += `**${g.winner}** def. ${loser} | ${scoreText}\n`;
+                const isT1Winner = (g.winner || '').toLowerCase() === (g.team1 || '').toLowerCase();
+                const isT2Winner = (g.winner || '').toLowerCase() === (g.team2 || '').toLowerCase();
+
+                let winnerName, loserName, winScore, loseScore, winSeries, loseSeries;
+
+                if (isT1Winner) {
+                    winnerName = g.team1;
+                    loserName = g.team2;
+                    winScore = g.team1score;
+                    loseScore = g.team2score;
+                    winSeries = g.team1SeriesWins;
+                    loseSeries = g.team2SeriesWins;
+                } else if (isT2Winner) {
+                    winnerName = g.team2;
+                    loserName = g.team1;
+                    winScore = g.team2score;
+                    loseScore = g.team1score;
+                    winSeries = g.team2SeriesWins;
+                    loseSeries = g.team1SeriesWins;
+                } else {
+                    winnerName = null;
+                }
+
+                if (winnerName) {
+                    const isPointsTiebreaker = (winSeries === loseSeries && winSeries > 0);
+                    const tbText = isPointsTiebreaker ? ' (TB)' : '';
+                    const scoreText = (winSeries > 0 || loseSeries > 0)
+                        ? `${winSeries}-${loseSeries}${tbText} (${winScore.toFixed(2)} - ${loseScore.toFixed(2)})`
+                        : `${winScore.toFixed(2)} - ${loseScore.toFixed(2)}`;
+
+                    report += `**${winnerName}** def. ${loserName} | ${scoreText}\n`;
+                } else {
+                    report += `**${g.team1}** tied with **${g.team2}** | ${g.team1SeriesWins}-${g.team2SeriesWins} (${g.team1score.toFixed(2)} - ${g.team2score.toFixed(2)})\n`;
+                }
 
                 const t1 = (g.team1 || '').toLowerCase();
                 const t2 = (g.team2 || '').toLowerCase();
@@ -1253,8 +1320,8 @@
                         
                         if (t1SportScore > 0 || t2SportScore > 0) {
                             let sportWinner = t1SportScore > t2SportScore ? g.team1 : (t2SportScore > t1SportScore ? g.team2 : 'TIE');
-                            let sportWinnerScore = Math.max(t1SportScore, t2SportScore);
-                            let sportLoserScore = Math.min(t1SportScore, t2SportScore);
+                            let sportWinnerScore = t1SportScore > t2SportScore ? t1SportScore : t2SportScore;
+                            let sportLoserScore = t1SportScore > t2SportScore ? t2SportScore : t1SportScore;
                             
                             if (sportWinner === 'TIE') {
                                  report += `> ${sport}: TIE (${t1SportScore.toFixed(2)} - ${t2SportScore.toFixed(2)})\n`;

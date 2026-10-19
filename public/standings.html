@@ -482,6 +482,20 @@
                 'Underdogs': { conf: 'West Conference', div: 'Pacific Division' },
                 'Kings': { conf: 'West Conference', div: 'Pacific Division' },
                 'Buffaloes': { conf: 'West Conference', div: 'Pacific Division' }
+            },
+            '7': {
+                'Reapers': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Knights': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Voyagers': { conf: 'East Conference', div: 'Atlantic Division' },
+                'Bajas': { conf: 'East Conference', div: 'Metro Division' },
+                'Manatees': { conf: 'East Conference', div: 'Metro Division' },
+                'Saucers': { conf: 'East Conference', div: 'Metro Division' },
+                'Dragons': { conf: 'West Conference', div: 'Central Division' },
+                'Tigers': { conf: 'West Conference', div: 'Central Division' },
+                'Zombies': { conf: 'West Conference', div: 'Central Division' },
+                'Underdogs': { conf: 'West Conference', div: 'Pacific Division' },
+                'Kings': { conf: 'West Conference', div: 'Pacific Division' },
+                'Buffaloes': { conf: 'West Conference', div: 'Pacific Division' }
             }
         };
 
@@ -491,7 +505,8 @@
             '3': { first: 'Kings', second: 'Bajas', third: 'Dragons' },
             '4': { first: 'Reapers', second: 'Underdogs', third: 'Kings' },
             '5': { first: 'Dragons', second: 'Reapers', third: 'Bajas' },
-            '6': { first: 'TBD', second: 'TBD', third: 'TBD' }
+            '6': { first: 'Reapers', second: 'Kings', third: 'Manatees' },
+            '7': { first: 'TBD', second: 'TBD', third: 'TBD' }
         };
 
         let globalTeams = [];
@@ -520,7 +535,7 @@
             ]);
 
             playoffGames = pGamesRaw || [];
-            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+            const config = seasonConfigs[currentSeason] || seasonConfigs['7'];
 
             let calculatedTeams = teamsRaw;
             if (!calculatedTeams || !calculatedTeams.length) {
@@ -591,7 +606,7 @@
 
         function render() {
             const container = document.getElementById('standings-container');
-            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+            const config = seasonConfigs[currentSeason] || seasonConfigs['7'];
 
             const structure = {};
             globalTeams.forEach(t => {
@@ -673,7 +688,7 @@
             const eastTeams = getSeededConferenceTeams('East Conference', structure);
             const westTeams = getSeededConferenceTeams('West Conference', structure);
             const trophy = historicalTrophies[currentSeason];
-            const isHistoricalCompleted = (currentSeason !== '6' && trophy && trophy.first !== 'TBD');
+            const isHistoricalCompleted = (currentSeason !== '7' && trophy && trophy.first !== 'TBD');
 
             const e1 = eastTeams[0] || { name: 'TBD' }, e4 = eastTeams[3] || { name: 'TBD' };
             const e2 = eastTeams[1] || { name: 'TBD' }, e3 = eastTeams[2] || { name: 'TBD' };
@@ -760,7 +775,7 @@
                     winner: s.winsA > s.winsB ? s.teamA : s.teamB
                 }));
 
-                const configSeason = seasonConfigs[currentSeason] || seasonConfigs['6'];
+                const configSeason = seasonConfigs[currentSeason] || seasonConfigs['7'];
                 const getConf = (name) => configSeason[name]?.conf || '';
 
                 const eastSemis = [], westSemis = [];

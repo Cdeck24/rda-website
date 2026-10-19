@@ -735,6 +735,8 @@
             'Gv1YrA6v': { username: 'greektime', sports: ['ALL'] }
         };
 
+        const draftUserIds = new Set(Object.keys(DUPLICATE_TARGETS));
+
         function normalizeSportName(sport) {
             if (!sport) return '';
             const s = String(sport).trim().toUpperCase();
@@ -767,7 +769,7 @@
             Object.values(window.playersToFetch).forEach(p => {
                 p.isDuplicate = {};
                 p.duplicateWith = {};
-                if (p.isBench) return;
+                if (p.isBench && !p.isDraftAccount) return;
                 for (const s in p.lineupsBySport) {
                     const upperS = s.toUpperCase();
                     if (upperS === 'DRAFT' || upperS === 'SPORT' || upperS === 'USER') continue;
@@ -970,7 +972,6 @@
                 let urlSport = sportLower;
                 let cohort = 0;
                 
-                // CFB and CBB must use cohort 777777777 to retrieve all games instead of Top 25 only
                 if (sportLower === 'fc' || sportLower === 'soccer') { urlSport = 'soccer'; cohort = 0; }
                 else if (sportLower === 'cfb' || sportLower === 'ncaaf') { urlSport = 'ncaaf'; cohort = 777777777; }
                 else if (sportLower === 'cbb' || sportLower === 'ncaab') { urlSport = 'cbb'; cohort = 777777777; }
@@ -1021,8 +1022,6 @@
                         }
 
                         const isToday = isSameDate(gDay, todayDateString) || (dateInET && dateInET === todayDateString);
-
-                        // Avoid ingesting past archived slates
                         if (!isToday && !isLive) return;
 
                         const homeTeam = g.homeTeam || {}, awayTeam = g.awayTeam || {};
@@ -1033,7 +1032,6 @@
                         const homeName = homeTeam.displayName || homeTeam.name || 'Home';
                         const awayName = awayTeam.displayName || awayTeam.name || 'Away';
 
-                        // Pre-game season records (e.g. "78-76") should not be parsed as in-game scores
                         const homeScore = isScheduled ? 0 : (typeof g.homeTeamScore === 'number' ? g.homeTeamScore : (parseFloat(g.display?.homeScoreDisplay) || 0));
                         const awayScore = isScheduled ? 0 : (typeof g.awayTeamScore === 'number' ? g.awayTeamScore : (parseFloat(g.display?.awayScoreDisplay) || 0));
 
@@ -1805,7 +1803,6 @@
                 processAthletes(t1p, 't1');
                 processAthletes(t2p, 't2');
 
-                // Sort games chronologically by start time (earliest to latest), keeping "Other / Unscheduled" at the end
                 const sortedBuckets = Object.values(gameBuckets);
                 sortedBuckets.sort((a, b) => {
                     if (!a.gameObj && !b.gameObj) return 0;
@@ -1847,7 +1844,6 @@
                             statusBadge = `<span style="color:#ef4444; font-weight:800;">🔴 ${gameObj.status}</span>`;
                         }
 
-                        // Prevent pre-game W-L records from rendering as score totals
                         if (gameObj.isScheduled) {
                             gameTitle = `${gameObj.awayTeam.name} @ ${gameObj.homeTeam.name} &bull; ${statusBadge}`;
                         } else {
@@ -1916,7 +1912,6 @@
                         </div>`;
                 });
 
-                // Start CLOSED by removing the "open" class by default
                 html += `
                     <div class="sport-card sport-roster-card" style="margin-bottom: 0.85rem; overflow: hidden;">
                         <div class="sport-roster-header" onclick="this.parentElement.classList.toggle('open');">
@@ -2077,15 +2072,15 @@
             try {
                 const seasonConfigs = {
                     '4': {
-                        players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
+                        players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                         schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv'
                     },
                     '5': {
-                        players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
+                        players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                         schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv'
                     },
                     '6': {
-                        players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
+                        players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                         schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv'
                     }
                 };
@@ -2114,7 +2109,14 @@
                         team2: r[t2Idx] ? String(r[t2Idx]).trim() : '', 
                         activeSports: activeSportsIdx !== -1 ? String(r[activeSportsIdx] || '').trim() : '',
                         id: `matchup-${i}` 
-                    })).filter(m => m.team1 && m.team2);
+                    })).filter(m => m.team1 && m.team2 && m.team1.toUpperCase() !== 'TBD' && m.team2.toUpperCase() !== 'TBD');
+
+                // Identify which teams are actively competing on today's schedule
+                const activeTeamsSet = new Set();
+                window.dailyMatchups.forEach(m => {
+                    if (m.team1) activeTeamsSet.add(m.team1.toLowerCase().trim());
+                    if (m.team2) activeTeamsSet.add(m.team2.toLowerCase().trim());
+                });
 
                 let uIdx = -1, uidIdx = -1, teamIdx = -1, playIdx = -1, rookieIdx = -1, specificDateIdx = -1;
                 let playerStartRow = 1;
@@ -2147,6 +2149,16 @@
                     const userId = cleanId(row[uidIdx]);
                     if (!userId) return;
 
+                    const team = row[teamIdx]?.trim() || 'Free Agent';
+                    const teamLower = team.toLowerCase().trim();
+                    const isTeamActive = activeTeamsSet.has(teamLower);
+                    const isDraftAccount = draftUserIds.has(userId);
+
+                    // Skip non-competing teams while retaining active rosters and target anti-cheat accounts
+                    if (!isTeamActive && !isDraftAccount) {
+                        return;
+                    }
+
                     let isPlaying = true;
                     if (specificDateIdx > -1 && row[specificDateIdx] !== undefined && row[specificDateIdx].trim() !== '') {
                         const val = row[specificDateIdx].trim().toLowerCase();
@@ -2158,17 +2170,19 @@
 
                     const isBench = !isPlaying;
                     const isRookie = rookieIdx > -1 ? row[rookieIdx]?.trim().toLowerCase() === 'yes' : false;
-                    const team = row[teamIdx]?.trim() || 'Free Agent';
 
                     if (!window.playersToFetch[userId]) {
-                        if (!window.teamsDataCache[team]) window.teamsDataCache[team] = [];
                         const pData = {
                             username: row[uIdx]?.trim() || `User_${userId.substr(0,4)}`,
-                            userId, team, isRookie, isBench,
+                            userId, team, isRookie, isBench, isDraftAccount,
                             scoresBySport: {}, ranksBySport: {}, lineupsBySport: {},
                             isDuplicate: {}, duplicateWith: {}, totalScore: 0
                         };
-                        window.teamsDataCache[team].push(pData);
+
+                        if (isTeamActive) {
+                            if (!window.teamsDataCache[team]) window.teamsDataCache[team] = [];
+                            window.teamsDataCache[team].push(pData);
+                        }
                         window.playersToFetch[userId] = pData;
                     }
 
@@ -2323,7 +2337,6 @@
                 document.getElementById('cache-time-text').textContent = new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ET';
                 renderTeamMatchupUI(false);
 
-                // Fetch real schedules in the background so scores, quarters, and innings stay live
                 const sports = new Set();
                 Object.values(window.playersToFetch).forEach(p => {
                     Object.keys(p.scoresBySport || {}).forEach(s => sports.add(s));
