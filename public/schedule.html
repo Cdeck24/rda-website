@@ -457,10 +457,14 @@
             '6': {
                 players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
                 scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv'
+            },
+            '7': {
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv',
+                scheduleUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=2117362389&single=true&output=csv'
             }
         };
 
-        const activeConfig = seasonConfig[currentSeason] || seasonConfig['6'];
+        const activeConfig = seasonConfig[currentSeason] || seasonConfig['7'];
 
         async function fetchViaWorker(url) {
             if (!url) return null;
@@ -519,12 +523,14 @@
 
                 if (lowerK.includes('round')) {
                     if (lowerV.includes('wild')) return 'Wild Card';
+                    if (lowerV.includes('semi')) return 'Semi-Finals';
                     if (lowerV.includes('conf')) return 'Conference Finals';
                     if (lowerV.includes('final')) return 'Finals';
                     if (lowerV) return v.trim();
                 }
 
                 if (lowerV === 'wild card' || lowerV === 'wildcard') return 'Wild Card';
+                if (lowerV === 'semifinals' || lowerV === 'semi-finals' || lowerV === 'semis') return 'Semi-Finals';
                 if (lowerV === 'conference finals' || lowerV === 'conf finals') return 'Conference Finals';
                 if (lowerV === 'finals' || lowerV === 'championship') return 'Finals';
             }
@@ -655,7 +661,6 @@
                             t2 = 'West Finalist 2';
                         }
                     } else {
-                        // Wild Card / Generic Playoff placeholders
                         if (gameIdxInDate < 2) {
                             t1 = `East Placeholder ${gameIdxInDate * 2 + 1}`;
                             t2 = `East Placeholder ${gameIdxInDate * 2 + 2}`;
@@ -763,7 +768,7 @@
             const sortedDates = Object.values(dateGroups).sort((a, b) => a.sortDate - b.sortDate);
             let preSlateIndex = 1;
             let regSlateIndex = 1;
-            const roundGameIndexMap = { 'Wild Card': 1, 'Conference Finals': 1, 'Finals': 1 };
+            const roundGameIndexMap = { 'Wild Card': 1, 'Semi-Finals': 1, 'Conference Semis': 1, 'Conference Finals': 1, 'Finals': 1, 'Championship': 1 };
             const hasPreseasonTag = sortedDates.some(s => s.isPreseason);
 
             allSlates = sortedDates.map(slate => {
@@ -1200,9 +1205,8 @@
                 return;
             }
 
-            // If viewing Playoffs or All Games with playoff slates, group by Round series
             if (currentTypeFilter === 'playoffs') {
-                const roundOrder = ['Wild Card', 'Conference Finals', 'Finals'];
+                const roundOrder = ['Wild Card', 'Semi-Finals', 'Conference Semis', 'Conference Finals', 'Finals', 'Championship'];
                 const roundGroups = {};
 
                 filteredSlates.forEach(s => {
@@ -1227,7 +1231,6 @@
                     }
                 });
 
-                // Fallback for any rounds with custom names
                 Object.keys(roundGroups).forEach(rName => {
                     if (!roundOrder.includes(rName)) {
                         const slatesInRound = roundGroups[rName];
@@ -1247,7 +1250,6 @@
                 return;
             }
 
-            // Standard layout for Regular Season or All Games
             container.innerHTML = filteredSlates.map(slate => renderSlateCardHtml(slate, todayStr)).join('');
         }
 

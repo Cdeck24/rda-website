@@ -312,7 +312,8 @@
                     <div class="form-group">
                         <label for="seasonSelect">Season</label>
                         <select id="seasonSelect" onchange="loadScheduleDates()">
-                            <option value="6" selected>Season 6</option>
+                            <option value="7" selected>Season 7</option>
+                            <option value="6">Season 6</option>
                             <option value="5">Season 5</option>
                             <option value="4">Season 4</option>
                         </select>
@@ -336,6 +337,7 @@
                         <select id="playoffSeries">
                             <option value="Wild-Card">Wild Card Round</option>
                             <option value="Semi-Finals">Semi-Finals Round</option>
+                            <option value="Conference-Finals">Conference Finals</option>
                             <option value="Championship">Championship</option>
                             <option value="Third-Place">3rd Place Match</option>
                         </select>
@@ -420,7 +422,7 @@
     </div>
 
     <script type="module">
-        import { initNav, getSeasonData } from './js/app.js?v=7';
+        import { initNav, HISTORICAL_CSVS, parseCsvToObject } from './js/app.js?v=7';
         import { auth } from './js/firebase-config.js';
         import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
 
@@ -445,6 +447,10 @@
             '6': {
                 players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                 schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv'
+            },
+            '7': {
+                players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
+                schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=2117362389&single=true&output=csv'
             }
         };
 
@@ -655,7 +661,7 @@
 
         window.loadScheduleDates = async function() {
             const season = seasonSelect.value;
-            const config = seasonConfigs[season];
+            const config = seasonConfigs[season] || seasonConfigs['7'];
             
             try {
                 dateSelect.innerHTML = '<option value="">Loading dates...</option>';
@@ -680,7 +686,7 @@
                     if (d) {
                         uniqueDates.add(d);
                         const rowStr = r.map(c => String(c || '').toLowerCase()).join(' ');
-                        if (rowStr.includes('playoff') || rowStr.includes('postseason') || rowStr.includes('wild card') || rowStr.includes('finals')) {
+                        if (rowStr.includes('playoff') || rowStr.includes('postseason') || rowStr.includes('wild card') || rowStr.includes('semi') || rowStr.includes('finals')) {
                             window.scheduleDateTypes[d] = 'playoff';
                         } else {
                             if (!window.scheduleDateTypes[d]) window.scheduleDateTypes[d] = 'regular';
@@ -746,7 +752,7 @@
         async function performFetchAndWrite() {
             const selectedDate = dateSelect.value.trim();
             const season = seasonSelect.value;
-            const config = seasonConfigs[season];
+            const config = seasonConfigs[season] || seasonConfigs['7'];
             const isPlayoff = gameTypeSelect.value === 'playoff';
 
             if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
@@ -1107,6 +1113,7 @@
                     date: selectedDate,
                     season: season,
                     isPlayoff: isPlayoff,
+                    round: isPlayoff ? (document.getElementById('playoffSeries').value || 'Playoffs') : '',
                     games: gamesToLog,
                     playerStats: playerStatsToLog
                 };
@@ -1212,11 +1219,24 @@
                 playersToReport = window.lastPlayerStats.filter(p => !isPlayerBench(p));
             } else {
                 try {
+                    const sLinks = HISTORICAL_CSVS[season] || HISTORICAL_CSVS['7'];
+                    const fetchCSV = async (url) => {
+                        if (!url) return [];
+                        try {
+                            const res = await fetch(workerProxy + '?url=' + encodeURIComponent(url));
+                            if (!res.ok) return [];
+                            const text = await res.text();
+                            return parseCsvToObject(text);
+                        } catch(e) {
+                            return [];
+                        }
+                    };
+
                     const [regGames, playoffGames, regPlayers, playoffPlayers] = await Promise.all([
-                        getSeasonData('games').catch(() => []),
-                        getSeasonData('playoff-games').catch(() => []),
-                        getSeasonData('players').catch(() => []),
-                        getSeasonData('playoff-players').catch(() => [])
+                        fetchCSV(sLinks['games']),
+                        fetchCSV(sLinks['playoff-games']),
+                        fetchCSV(sLinks['players']),
+                        fetchCSV(sLinks['playoff-players'])
                     ]);
 
                     const checkGameMatch = (g, isPlayoff) => {

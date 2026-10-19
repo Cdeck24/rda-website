@@ -1438,7 +1438,7 @@
                     const statusDot = sa.status === 'Live' ? '🔴' : (sa.status === 'Final' ? '🏁' : '⏰');
                     swingNote = `
                         <div class="impact-athlete-callout">
-                            ⚡ <strong>Key Impact:</strong> ${sa.name} (${sa.sport}) &bull; ${statusDot} <strong>+${sa.netMultDiff}x</strong> (+${sa.actualPointSwing} pts edge for ${sa.advantagedTeam})
+                            ⚡ <strong>Key Impact:</strong> ${sa.name} (${sa.sport}) &bull; ${statusDot} <strong>+${sa.netMultDiff}x</strong> (+${sa.actualPointSwing} pts edge for${sa.advantagedTeam})
                         </div>`;
                 }
 
@@ -1447,13 +1447,13 @@
                     bannerEl.innerHTML = `
                         <div>
                             <div class="wp-header-row">
-                                <span>${team1.toUpperCase()} ${wpData.wp1}%</span>
-                                <span class="wp-label">Win Probability (Proj: ${wpData.projScore1} - ${wpData.projScore2})</span>
-                                <span>${wpData.wp2}% ${team2.toUpperCase()}</span>
+                                <span>${team1.toUpperCase()}${wpData.wp1}%</span>
+                                <span class="wp-label">Win Probability (Proj: ${wpData.projScore1} -${wpData.projScore2})</span>
+                                <span>${wpData.wp2}\%${team2.toUpperCase()}</span>
                             </div>
                             <div class="wp-bar-wrapper">
-                                <div class="wp-bar-segment left" style="width: ${wpData.wp1}%;">${wpData.wp1 > 10 ? wpData.wp1 + '%' : ''}</div>
-                                <div class="wp-bar-segment right" style="width: ${wpData.wp2}%;">${wpData.wp2 > 10 ? wpData.wp2 + '%' : ''}</div>
+                                <div class="wp-bar-segment left" style="width: ${wpData.wp1}\%;">${wpData.wp1 > 10 ? wpData.wp1 + '%' : ''}</div>
+                                <div class="wp-bar-segment right" style="width: ${wpData.wp2}\%;">${wpData.wp2 > 10 ? wpData.wp2 + '%' : ''}</div>
                             </div>
                         </div>
                         ${swingNote}
@@ -1503,8 +1503,7 @@
                                 </div>
                                 <div class="sport-players-container">
                                     <div class="h2h-container">
-                                        <div class="h2h-header"><div class="h2h-team left-team">${team1}</div><div class="h2h-team right-team">${team2}</div></div>
-                                        ${renderH2HSportRows(team1Players, team2Players, sport)}
+                                        <div class="h2h-header"><div class="h2h-team left-team">${team1}</div><div class="h2h-team right-team">${team2}</div></div>${renderH2HSportRows(team1Players, team2Players, sport)}
                                     </div>
                                 </div>
                             </div>`;
@@ -1703,7 +1702,7 @@
                                 <span>${p.username}</span>
                                 ${p.isRookie ? '<span class="rookie-badge">R</span>' : ''}
                                 ${benchBadge}
-                                ${isDup ? `<span class="dup-badge" onclick="showDuplicateInfo('${sport}', ${JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g, '&quot;')}); event.stopPropagation();">DUP</span>` : ''}
+                                ${isDup ? `<span class="dup-badge" onclick="showDuplicateInfo('${sport}',${JSON.stringify(p.duplicateWith[sport] || []).replace(/"/g, '&quot;')}); event.stopPropagation();">DUP</span>` : ''}
                             </div>
                             <div class="h2h-rank">${sport ? (p.ranksBySport?.[sport] || '') : ''}</div>
                         </div>
@@ -2082,9 +2081,13 @@
                     '6': {
                         players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
                         schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv'
+                    },
+                    '7': {
+                        players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
+                        schedule: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=2117362389&single=true&output=csv'
                     }
                 };
-                const cfg = seasonConfigs[currentSeason] || seasonConfigs['6'];
+                const cfg = seasonConfigs[currentSeason] || seasonConfigs['7'];
                 const [playersCsv, scheduleCsv] = await Promise.all([fetchCSV(cfg.players), fetchCSV(cfg.schedule)]);
                 const todayDateString = getCurrentDateStringEST();
 
