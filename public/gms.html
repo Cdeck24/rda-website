@@ -5,7 +5,7 @@
     <title>RDA GM Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles/global-v2.css">
-    <!-- Required for Hashids Token Generation (Free Agency API) -->
+    <!-- Required for Hashids Token Generation -->
     <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
     <style>
         .dashboard-container {
@@ -273,13 +273,13 @@
         .save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .save-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; border: 1px solid #475569; transform: none; box-shadow: none; }
 
-        /* Free Agency Grid */
-        .fa-grid {
+        /* Free Agency & Draft Grid */
+        .fa-grid, .draft-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1rem;
         }
-        .fa-card {
+        .fa-card, .draft-player-card {
             background: rgba(15, 23, 42, 0.65);
             border: 1px solid var(--border-subtle);
             border-radius: 10px;
@@ -289,7 +289,13 @@
             flex-direction: column;
             box-shadow: 0 4px 15px rgba(0,0,0,0.25);
             box-sizing: border-box;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
+        .fa-card:hover, .draft-player-card:hover {
+            border-color: var(--border-gold);
+            transform: translateY(-2px);
+        }
+
         .fa-header {
             display: flex;
             justify-content: space-between;
@@ -300,6 +306,20 @@
         }
         .fa-name { font-size: 1.05rem; font-weight: 800; color: #fff; }
         .fa-id { font-size: 0.68rem; color: var(--text-muted); font-family: monospace; opacity: 0.6; }
+
+        .rda-stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            padding: 0.45rem 0.65rem;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            font-size: 0.72rem;
+            color: var(--gold-light);
+            font-weight: 700;
+        }
 
         .sport-dropdown {
             width: 100%;
@@ -326,7 +346,7 @@
         .stat-label { display: block; font-size: 0.58rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; font-weight: 700; }
         .stat-value { display: block; font-size: 0.82rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
 
-        .claim-btn {
+        .claim-btn, .draft-btn {
             width: 100%;
             margin-top: auto;
             padding: 0.65rem;
@@ -341,25 +361,227 @@
             font-size: 0.78rem;
             transition: all 0.2s ease;
         }
-        .claim-btn:hover { background: var(--gold-mid); color: #000; }
+        .claim-btn:hover, .draft-btn:hover { background: var(--gold-mid); color: #000; }
+        .draft-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; border-color: #475569; }
 
-        /* Trade Analyzer */
-        .trade-analyzer-container { display: flex; flex-wrap: wrap; gap: 1rem; }
-        .team-side {
-            flex: 1;
-            min-width: 290px;
-            background: rgba(15, 23, 42, 0.6);
-            padding: 1rem;
-            border-radius: 10px;
-            border: 1px solid var(--border-subtle);
-            box-sizing: border-box;
-            overflow-x: auto;
+        /* Trade Portal Styling */
+        .trade-portal-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
         }
-        .data-table { width: 100%; text-align: left; border-collapse: collapse; margin-top: 0.5rem; white-space: nowrap; }
-        .data-table th, .data-table td { padding: 0.65rem 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.82rem; }
-        .data-table th { color: var(--gold-mid); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800; }
 
-        /* Claim Modal */
+        .trade-machine-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .trade-asset-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1.25rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .trade-asset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 0.6rem;
+            margin-bottom: 1rem;
+        }
+        .trade-asset-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--gold-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .asset-group-title {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0.75rem 0 0.4rem 0;
+        }
+
+        .asset-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 6px;
+            padding: 0.55rem 0.75rem;
+            margin-bottom: 0.35rem;
+            font-size: 0.82rem;
+        }
+        .asset-item-row.untradeable {
+            opacity: 0.5;
+            background: rgba(239, 68, 68, 0.05);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .untradeable-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            font-size: 0.55rem;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-toggle-untradeable {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-toggle-untradeable.active {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #f87171;
+        }
+
+        .trade-summary-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid var(--border-gold);
+            border-radius: 10px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .trade-offers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .trade-offer-item {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        /* Draft Room Styling */
+        .draft-status-banner {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid var(--border-gold);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .draft-status-banner h2 { margin: 0; color: var(--gold-light); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; font-family: 'Didot', serif; }
+        .draft-timer { font-size: 3rem; font-weight: 900; color: #fff; font-family: monospace; letter-spacing: 2px; }
+        .draft-timer.warning { color: #facc15; }
+        .draft-timer.danger { color: #f87171; }
+        .on-the-clock { font-size: 1.1rem; font-weight: bold; color: var(--text-muted); }
+        .on-the-clock span { color: var(--gold-mid); font-weight: 900; }
+
+        .autopick-toggle-container {
+            margin-top: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            background: rgba(0,0,0,0.35);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .autopick-toggle-container label { font-size: 0.8rem; color: var(--gold-light); font-weight: 700; cursor: pointer; }
+
+        .admin-draft-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            background: rgba(239, 68, 68, 0.08);
+            padding: 0.85rem;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .admin-draft-controls button {
+            padding: 0.45rem 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        .btn-start { background: #4ade80; color: #000; }
+        .btn-pause { background: #facc15; color: #000; }
+        .btn-reset { background: #ef4444; color: #fff; }
+
+        .recent-picks-container {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding-bottom: 0.6rem;
+            margin-bottom: 1.5rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        .recent-pick-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-subtle);
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            min-width: 140px;
+            text-align: left;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        .recent-pick-card .pick-num { font-size: 0.62rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; }
+        .recent-pick-card .pick-team { font-size: 0.8rem; color: var(--gold-mid); font-weight: 800; margin: 2px 0; }
+        .recent-pick-card .pick-player { font-size: 0.88rem; color: #fff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .search-bar {
+            width: 100%;
+            max-width: 420px;
+            padding: 0.6rem 0.85rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-gold);
+            background: rgba(0,0,0,0.45);
+            color: #fff;
+            margin: 0 auto 1.5rem auto;
+            display: block;
+            outline: none;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -414,10 +636,19 @@
             outline: none;
         }
 
-        @media (max-width: 650px) {
+        @media (max-width: 768px) {
             .dashboard-container { padding: 0.5rem 0.5rem 3rem 0.5rem; }
             .dashboard-title-block h2 { font-size: 1.4rem; }
-            .team-side { min-width: 100%; }
+            .trade-machine-grid { grid-template-columns: 1fr; }
+            .fa-grid, .draft-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.5rem; }
+            .fa-card, .draft-player-card { padding: 0.6rem; }
+            .fa-id { display: none; }
+            .fa-name { font-size: 0.88rem; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .stats-grid-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 4px; }
+            .stat-box { padding: 4px 2px; }
+            .stat-label { font-size: 0.52rem; }
+            .stat-value { font-size: 0.72rem; }
+            .claim-btn, .draft-btn { padding: 0.45rem; font-size: 0.72rem; }
         }
     </style>
 </head>
@@ -440,7 +671,7 @@
         <div class="dashboard-header">
             <div class="dashboard-title-block">
                 <h2>GM Dashboard</h2>
-                <p>Lineup submissions, waiver claims, and front-office tools</p>
+                <p>Lineup submissions, waiver claims, trades, and draft room</p>
             </div>
             <button onclick="handleLogout()" class="logout-btn">Sign Out</button>
         </div>
@@ -448,7 +679,8 @@
         <div class="sub-nav-container">
             <button class="sub-nav-btn active" onclick="switchTab('lineups', this)">Lineups</button>
             <button class="sub-nav-btn" onclick="switchTab('transactions', this)">Free Agency</button>
-            <button class="sub-nav-btn" onclick="switchTab('trades', this)">Trade Analyzer</button>
+            <button class="sub-nav-btn" onclick="switchTab('trade-portal', this)">Trade Portal</button>
+            <button class="sub-nav-btn" onclick="switchTab('draft', this)">Live Draft Room</button>
         </div>
 
         <!-- LINEUPS SECTION -->
@@ -503,33 +735,111 @@
             </div>
         </div>
 
-        <!-- TRADE ANALYZER SECTION -->
-        <div id="trades-section" class="dashboard-section" style="display: none;">
-            <div style="text-align: center; margin-bottom: 1.25rem;">
-                <select id="trade-stats-toggle" class="team-select" style="max-width: 260px; display: inline-block; margin: 0; padding: 0.45rem 0.8rem;" onchange="toggleTradeStatsMode()">
-                    <option value="current">Current Season Stats</option>
-                    <option value="career">Career Stats (All Seasons)</option>
-                </select>
+        <!-- TRADE PORTAL SECTION -->
+        <div id="trade-portal-section" class="dashboard-section" style="display: none;">
+            <div class="trade-portal-container">
+                
+                <!-- Trade Machine Block -->
+                <div class="trade-machine-grid">
+                    <!-- Left: My Team Asset Box -->
+                    <div class="trade-asset-card">
+                        <div class="trade-asset-header">
+                            <span class="trade-asset-title" id="trade-my-team-title">My Franchise</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Offering</span>
+                        </div>
+                        
+                        <div class="asset-group-title">Roster Players</div>
+                        <div id="trade-my-roster-list"><div style="color:#888; font-size:0.8rem; font-style:italic;">Loading roster...</div></div>
+
+                        <div class="asset-group-title" style="margin-top:1rem;">Season 8 Draft Picks (Next Season Only)</div>
+                        <div id="trade-my-picks-list"><div style="color:#888; font-size:0.8rem; font-style:italic;">Loading S8 picks...</div></div>
+                    </div>
+
+                    <!-- Right: Partner Team Asset Box -->
+                    <div class="trade-asset-card">
+                        <div class="trade-asset-header">
+                            <select id="trade-partner-select" class="team-select" style="margin: 0; max-width: 220px;" onchange="loadTradePartnerAssets()">
+                                <option value="">Select Trade Partner...</option>
+                            </select>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Receiving</span>
+                        </div>
+                        
+                        <div class="asset-group-title">Partner Players</div>
+                        <div id="trade-partner-roster-list"><div style="color:#888; font-size:0.8rem; font-style:italic;">Select a partner team above.</div></div>
+
+                        <div class="asset-group-title" style="margin-top:1rem;">Season 8 Draft Picks</div>
+                        <div id="trade-partner-picks-list"><div style="color:#888; font-size:0.8rem; font-style:italic;">Select a partner team above.</div></div>
+                    </div>
+                </div>
+
+                <!-- Trade Action & Summary Card -->
+                <div class="trade-summary-card">
+                    <div style="font-size: 0.85rem; font-weight: 800; color: var(--gold-light); text-transform: uppercase; margin-bottom: 0.5rem;">Trade Terms Summary</div>
+                    <div id="trade-terms-preview" style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 1rem; min-height: 24px;">Select assets above to build proposal.</div>
+                    <button class="save-btn" id="btn-send-trade" style="margin: 0 auto; max-width: 280px;" onclick="submitTradeProposal()" disabled>Send Trade Proposal</button>
+                </div>
+
+                <!-- Active Trade Ledger & Offers -->
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-gold); padding: 1.25rem; border-radius: 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
+                        <h3 style="color: var(--gold-mid); margin: 0; text-transform: uppercase; font-size: 0.95rem; letter-spacing: 0.75px;">Active Trade Proposals</h3>
+                        <button onclick="loadActiveTrades()" style="background:none; border:1px solid var(--border-subtle); color:var(--gold-light); padding:2px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer; font-weight:700;">🔄 Refresh</button>
+                    </div>
+                    <div id="active-trades-container" class="trade-offers-list">
+                        <div style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Loading proposals...</div>
+                    </div>
+                </div>
             </div>
-            <div class="trade-analyzer-container">
-                <div class="team-side">
-                    <select id="trade-team-1" class="team-select" style="margin-bottom: 0.75rem;" onchange="loadTradeSide(1)">
-                        <option value="">Select Team 1...</option>
-                    </select>
-                    <table class="data-table">
-                        <thead><tr><th>Player</th><th style="text-align:center;">GP</th><th style="text-align:right;">Start Pts</th><th style="text-align:right;">Bench</th><th style="text-align:right;">PPG</th></tr></thead>
-                        <tbody id="trade-roster-1"></tbody>
-                    </table>
+        </div>
+
+        <!-- LIVE DRAFT ROOM SECTION -->
+        <div id="draft-section" class="dashboard-section" style="display: none;">
+            <div id="admin-controls" class="admin-draft-controls" style="display: none;">
+                <div style="width: 100%; text-align: center; color: var(--danger); font-weight: 800; margin-bottom: 0.4rem; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px;">Admin Draft Commands</div>
+                <button class="btn-start" onclick="adminUpdateDraft(true)">Start / Resume</button>
+                <button class="btn-pause" onclick="adminUpdateDraft(false)">Pause</button>
+                <button class="btn-reset" onclick="adminResetDraft()">Reset Draft</button>
+            </div>
+
+            <div class="draft-status-banner">
+                <h2 id="draft-round-display">Pre-Draft</h2>
+                <div class="on-the-clock" id="on-the-clock-display">Waiting for commissioner to open room...</div>
+                
+                <div id="my-next-pick-display" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem; display: none;">
+                    Your Next Pick: <span style="color: var(--gold-mid); font-weight: 800;" id="my-next-pick-val"></span>
                 </div>
-                <div class="team-side">
-                    <select id="trade-team-2" class="team-select" style="margin-bottom: 0.75rem;" onchange="loadTradeSide(2)">
-                        <option value="">Select Team 2...</option>
-                    </select>
-                    <table class="data-table">
-                        <thead><tr><th>Player</th><th style="text-align:center;">GP</th><th style="text-align:right;">Start Pts</th><th style="text-align:right;">Bench</th><th style="text-align:right;">PPG</th></tr></thead>
-                        <tbody id="trade-roster-2"></tbody>
-                    </table>
+
+                <div class="draft-timer" id="draft-timer">02:00</div>
+                
+                <div class="autopick-toggle-container" id="autopick-container" style="display: none;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="gm-autopick-toggle" onchange="toggleGMAutopick()">
+                        <span class="slider"></span>
+                    </label>
+                    <label for="gm-autopick-toggle">Enable Auto-Pick for My Team</label>
                 </div>
+            </div>
+
+            <h3 style="color: #fff; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Recent Picks</h3>
+            <div class="recent-picks-container" id="recent-picks"></div>
+
+            <h3 style="color: #fff; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Upcoming Picks</h3>
+            <div class="recent-picks-container" id="upcoming-picks" style="margin-bottom: 2rem;"></div>
+
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.85rem; margin-bottom: 1.5rem;">
+                <h3 id="available-players-header" style="color: #fff; margin: 0; text-transform: uppercase; font-size: 1rem; letter-spacing: 0.75px;">Available Players</h3>
+                <input type="text" id="draft-search" class="search-bar" placeholder="Search available players..." oninput="filterDraftGrid()">
+            </div>
+            
+            <div id="draft-queue-section" style="display: none; margin-bottom: 2rem; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border-gold); padding: 1.25rem; border-radius: 10px;">
+                <h3 style="color: var(--gold-mid); margin-top: 0; margin-bottom: 0.85rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.5px;">
+                    My Draft Queue <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal; text-transform: none; margin-left: 0.5rem;">(Prioritized for Auto-Pick)</span>
+                </h3>
+                <div id="draft-queue-grid" class="draft-grid"></div>
+            </div>
+
+            <div id="draft-board-grid" class="draft-grid">
+                <div style="color: var(--text-muted); padding: 2rem; grid-column: 1/-1; text-align: center;">Loading Draft Board...</div>
             </div>
         </div>
     </div>
@@ -549,32 +859,40 @@
         </div>
     </div>
 
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal">
+        <div class="modal-content" style="border-color: var(--danger);">
+            <h3 style="margin-top:0; color: var(--danger); text-transform: uppercase; font-size: 1.1rem;">Action Notice</h3>
+            <p id="error-modal-msg" style="color: #cbd5e1; margin-bottom: 1.25rem; line-height: 1.4; font-size: 0.85rem;"></p>
+            <button onclick="document.getElementById('error-modal').style.display='none'" style="width: 100%; padding: 0.65rem; background: #334155; color:white; border:none; border-radius:6px; cursor:pointer; font-weight: 800; text-transform: uppercase; font-size: 0.78rem;">Close</button>
+        </div>
+    </div>
+
     <div id="toast" class="toast">Success!</div>
 
     <script type="module">
         import { auth, db } from './js/firebase-config.js';
         import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
-        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
-        import { initNav, currentSeason, HISTORICAL_CSVS, PLAYER_MAPPINGS_CSV } from './js/app.js?v=7';
+        import { doc, updateDoc, arrayUnion, onSnapshot, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+        import { initNav, currentSeason, HISTORICAL_CSVS, PLAYER_MAPPINGS_CSV, parseCsvToObject } from './js/app.js?v=7';
 
         initNav();
 
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCThTL5b8sgFBlEuebH0yPt4w6ESR4fh16v22obah9toHXPTtLmYOG1iuoE_AD9s5qiQ/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTZ9eH79tt8SS8iu5kup-mAD_nMBtQjZ0DZVj80jTKgRO7Wbdc9JfdZ2B3A9WiA7N2PQ/exec';
 
         const GM_MAP = {
             "dragons@rda.com": "Dragons", "bajas@rda.com": "Bajas", "buffaloes@rda.com": "Buffaloes",
             "kings@rda.com": "Kings", "underdogs@rda.com": "Underdogs", "knights@rda.com": "Knights",
-            "reapers@rda.com": "Reapers", "stars@rda.com": "Stars", "zombies@rda.com": "Zombies",
-            "manatees@rda.com": "Manatees", "tigers@rda.com": "Tigers", "voyagers@rda.com": "Voyagers", "saucers@rda.com": "Saucers"
+            "reapers@rda.com": "Reapers", "stars@rda.com": "Saucers", "saucers@rda.com": "Saucers",
+            "zombies@rda.com": "Zombies", "manatees@rda.com": "Manatees", "tigers@rda.com": "Tigers", 
+            "voyagers@rda.com": "Voyagers"
         };
         const ADMIN_EMAILS = ["coledecker04@gmail.com"];
 
         let allPlayersData = [];
         let allFaData = [];
         let playerStatsCache = {}; 
-        let careerStatsCache = {};
-        let isCareerMode = false;
-        let careerStatsLoaded = false;
+        let faRealStatsCache = {};
         let myTeam = null;
         let selectedFA = null;
         const globalDiscoveredSports = new Set(); 
@@ -584,13 +902,41 @@
         window.gamedayLocks = {};
         window.currentDateIndex = 0;
 
+        // Draft Architecture
+        let DRAFT_ORDER = [];
+        let myQueue = [];
+        let draftState = {
+            isActive: false,
+            currentPickIdx: 0,
+            timerEndsAt: 0,
+            picks: [],
+            autopickGMs: []
+        };
+        let timerInterval = null;
+        let isProcessingPick = false;
+
+        // Trade System State
+        let allS8DraftPicks = [];
+        let untradeableSet = new Set();
+        let mySelectedTradeAssets = { players: new Set(), picks: new Set() };
+        let partnerSelectedTradeAssets = { players: new Set(), picks: new Set() };
+
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
         const playersCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv';
         const faCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=334253637&single=true&output=csv';
         const waiverOrderCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=160021912&single=true&output=csv';
         
+        const draftOrderUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=1179989426&single=true&output=csv';
+        const QUEUE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=811898684&single=true&output=csv';
+        const S8_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1306361585&single=true&output=csv';
+
         const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
         const REAL_VERSION = '27';
+
+        function showError(msg) {
+            document.getElementById('error-modal-msg').innerText = msg;
+            document.getElementById('error-modal').style.display = 'flex';
+        }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -610,6 +956,9 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
 
+                if (myTeam === 'ADMIN') document.getElementById('admin-controls').style.display = 'flex';
+                if (myTeam !== 'ADMIN') document.getElementById('autopick-container').style.display = 'inline-flex';
+
                 await initDashboard();
             } else {
                 document.getElementById('login-screen').style.display = 'block';
@@ -628,7 +977,7 @@
 
         window.handleLogout = async () => {
             await signOut(auth);
-            myTeam = null; allPlayersData = []; allFaData = []; playerStatsCache = {};
+            myTeam = null; allPlayersData = []; allFaData = []; playerStatsCache = {}; faRealStatsCache = {};
             document.getElementById('email').value = ""; document.getElementById('password').value = "";
         };
 
@@ -660,19 +1009,42 @@
             });
         }
 
+        async function fetchCSVRobust(url, retries = 3) {
+            const directUrl = url.includes('docs.google.com') ? url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now() : workerProxy + '?url=' + encodeURIComponent(url);
+            try {
+                const res = await fetch(directUrl);
+                if (!res.ok) {
+                    if (retries > 0) {
+                        await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+                        return fetchCSVRobust(url, retries - 1);
+                    }
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return await res.text();
+            } catch (e) {
+                if (retries > 0) {
+                    await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
+                    return fetchCSVRobust(url, retries - 1);
+                }
+                return "";
+            }
+        }
+
         async function initDashboard() {
             try {
-                const scheduleUrl = HISTORICAL_CSVS[currentSeason]?.schedule || HISTORICAL_CSVS['6']?.schedule || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv';
+                const scheduleUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=2117362389&single=true&output=csv';
 
-                const [res, faRes, schedRes] = await Promise.all([
+                const [res, faRes, schedRes, s8DraftText] = await Promise.all([
                     fetch(workerProxy + '?url=' + encodeURIComponent(playersCsvUrl)),
                     fetch(workerProxy + '?url=' + encodeURIComponent(faCsvUrl)),
-                    fetch(workerProxy + '?url=' + encodeURIComponent(scheduleUrl))
+                    fetch(workerProxy + '?url=' + encodeURIComponent(scheduleUrl)),
+                    fetch(workerProxy + '?url=' + encodeURIComponent(S8_DRAFT_URL))
                 ]);
                 
                 allPlayersData = parseCsvLocal(await res.text());
                 allFaData = parseCsvLocal(await faRes.text());
                 const schedData = parseCsvLocal(await schedRes.text());
+                allS8DraftPicks = parseCsvToObject(await s8DraftText.text());
 
                 if (schedData.length > 0) {
                     const uniqueDates = new Set();
@@ -730,41 +1102,71 @@
                     window.updateDateDisplay();
                 }
 
-                await loadPlayerStatsForTrades();
+                await loadDraftOrder();
+                syncUntradeableStatusesFromRosters();
 
                 const teamsSet = new Set(allPlayersData.map(p => p.team).filter(t => t && t.toLowerCase() !== 'free agents' && t.toLowerCase() !== 'free agent' && t.toLowerCase() !== 'fa'));
                 const sortedTeams = [...teamsSet].sort();
                 
                 const teamSelect = document.getElementById('team-select');
-                const tradeT1 = document.getElementById('trade-team-1');
-                const tradeT2 = document.getElementById('trade-team-2');
+                const partnerSelect = document.getElementById('trade-partner-select');
                 
                 teamSelect.innerHTML = '<option value="">Select Team...</option>';
-                tradeT1.innerHTML = '<option value="">Select Team 1...</option>';
-                tradeT2.innerHTML = '<option value="">Select Team 2...</option>';
+                partnerSelect.innerHTML = '<option value="">Select Trade Partner...</option>';
 
                 sortedTeams.forEach(t => {
-                    tradeT1.innerHTML += `<option value="${t}">${t}</option>`;
-                    tradeT2.innerHTML += `<option value="${t}">${t}</option>`;
                     if (myTeam === 'ADMIN' || myTeam === t) {
                         teamSelect.innerHTML += `<option value="${t}">${t}</option>`;
+                    }
+                    if (t !== myTeam) {
+                        partnerSelect.innerHTML += `<option value="${t}">${t}</option>`;
                     }
                 });
 
                 if (myTeam !== 'ADMIN') {
                     teamSelect.value = myTeam; teamSelect.disabled = true;
-                    tradeT1.value = myTeam; tradeT1.disabled = true;
                     teamSelect.dispatchEvent(new Event('change'));
-                    tradeT1.dispatchEvent(new Event('change'));
+                    myQueue = await fetchTeamQueue(myTeam);
+                    initTradePortal();
                 }
 
                 loadFreeAgentsLive();
                 window.loadMyClaims();
+                listenToDraft();
                 
             } catch (e) { 
                 alert("Dashboard initialization failed. Please check network.");
                 console.error(e); 
             }
+        }
+
+        async function loadDraftOrder() {
+            try {
+                const text = await fetchCSVRobust(draftOrderUrl);
+                const rows = parseCsvLocal(text);
+                
+                if (rows.length > 0) {
+                    const validRows = rows.map(r => {
+                        const keys = Object.keys(r);
+                        const pickKey = keys.find(k => k.includes('pick'));
+                        const teamKey = keys.find(k => k.includes('team'));
+                        
+                        let pickNum = 999;
+                        if (pickKey && r[pickKey]) {
+                            const parsed = parseInt(r[pickKey].replace(/\D/g, ''), 10);
+                            if (!isNaN(parsed)) pickNum = parsed;
+                        }
+
+                        return {
+                            pick: pickNum,
+                            team: teamKey && r[teamKey] ? r[teamKey].trim() : ''
+                        };
+                    }).filter(r => r.team !== ''); 
+
+                    validRows.sort((a, b) => a.pick - b.pick);
+                    DRAFT_ORDER = validRows.map(r => r.team.charAt(0).toUpperCase() + r.team.slice(1).toLowerCase());
+                }
+            } catch(e) { console.warn("Failed to load Draft Order CSV", e); }
         }
 
         function isLineupLocked(dateStr) {
@@ -1010,259 +1412,6 @@
             window.updateCounter(); 
         };
 
-        const getNum = (val) => {
-            if (val === undefined || val === null || String(val).trim() === '') return 0;
-            return parseFloat(String(val).replace(/,/g, '')) || 0;
-        };
-
-        async function loadPlayerStatsForTrades() {
-            try {
-                let playersData = [];
-                const csvUrl = HISTORICAL_CSVS[currentSeason]?.['players'];
-                
-                if (csvUrl) {
-                    const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
-                    if (res.ok) playersData = parseCsvLocal(await res.text());
-                } else {
-                    const targetCollection = `s${currentSeason}-players`;
-                    const snaps = await getDocs(collection(db, targetCollection));
-                    snaps.forEach(doc => playersData.push(doc.data()));
-                }
-
-                const tempDates = {}; 
-
-                playersData.forEach(d => {
-                    const rawName = d.username || d.user || d.name || d.player || d['player name'] || '';
-                    if (!rawName) return;
-                    
-                    const uidRaw = d.userId || d.userid || d['user id'] || d.id;
-                    const cleanUid = uidRaw ? String(uidRaw).trim() : null;
-                    const cleanNameKey = cleanName(rawName);
-                    
-                    const key = cleanUid || cleanNameKey;
-
-                    if (!playerStatsCache[key]) {
-                        playerStatsCache[key] = { total: 0, benchTotal: 0, games: 0 };
-                        tempDates[key] = new Set();
-                    }
-                    
-                    const scoreVal = getNum(d.score) || getNum(d['overall raw average']) || getNum(d['overall adjusted average']) || getNum(d['adjusted average']) || getNum(d['raw average']) || getNum(d['points']) || getNum(d['total points']) || getNum(d['total score']) || getNum(d.total) || getNum(d.pts) || getNum(d.avg) || 0;
-                    
-                    const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
-                                    String(d.isBench || '').toLowerCase() === 'true' || 
-                                    String(d.isbench || '').toLowerCase() === 'true' || 
-                                    String(d.bench || '').toLowerCase() === 'true';
-
-                    if (isBench) {
-                        playerStatsCache[key].benchTotal += scoreVal;
-                    } else {
-                        playerStatsCache[key].total += scoreVal;
-                        if (d.date) {
-                            tempDates[key].add(d.date);
-                        } else {
-                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || parseInt(d.matches) || 1;
-                            playerStatsCache[key].games += gp;
-                        }
-                    }
-                });
-
-                Object.keys(playerStatsCache).forEach(key => {
-                    const datesCount = tempDates[key] ? tempDates[key].size : 0;
-                    playerStatsCache[key].games += datesCount;
-                });
-            } catch (e) {
-                console.error("Failed to load player stats for trades:", e);
-            }
-        }
-
-        async function loadCareerStats() {
-            careerStatsCache = {};
-            const tempDates = {};
-
-            let playerAliasMap = {};
-            let userIdToCanonical = {};
-
-            try {
-                const pMapRes = await fetch(workerProxy + '?url=' + encodeURIComponent(PLAYER_MAPPINGS_CSV));
-                if (pMapRes.ok) {
-                    const pMapData = parseCsvLocal(await pMapRes.text());
-                    pMapData.forEach(row => {
-                        const currentUname = row['current username'] || row['username'] || row['current name'] || row['display name'] || row['player'];
-                        const uid = row['user id'] || row['userid'] || row['id'];
-                        const pastUsernamesStr = row['past usernames'] || row['previous usernames'] || row['past names'] || '';
-
-                        if (currentUname) {
-                            const canonicalKey = uid ? uid.trim() : currentUname.replace(/@/g, '').trim().toLowerCase();
-
-                            if (uid) userIdToCanonical[uid.trim()] = canonicalKey;
-                            const cleanCurrent = currentUname.replace(/@/g, '').trim().toLowerCase();
-                            playerAliasMap[cleanCurrent] = canonicalKey;
-
-                            if (pastUsernamesStr) {
-                                pastUsernamesStr.split(',').forEach(pName => {
-                                    const cleanPast = pName.replace(/@/g, '').trim().toLowerCase();
-                                    if (cleanPast) playerAliasMap[cleanPast] = canonicalKey;
-                                });
-                            }
-                        }
-                    });
-                }
-            } catch (e) {}
-
-            const processDataList = (playersData, seasonPrefix) => {
-                playersData.forEach(d => {
-                    const rawName = d.username || d.user || d.name || d.player || d['player name'] || d.discord;
-                    if (!rawName) return;
-                    
-                    const uidRaw = d['user id'] || d.userid || d.userId || d.id || d.firestore_id;
-                    const cleanUid = uidRaw ? String(uidRaw).trim() : null;
-                    const cleanNameKey = cleanName(rawName);
-                    
-                    let key = null;
-                    if (cleanUid && userIdToCanonical[cleanUid]) key = userIdToCanonical[cleanUid];
-                    else if (playerAliasMap[cleanNameKey]) key = playerAliasMap[cleanNameKey];
-                    else if (cleanUid) key = cleanUid;
-                    else key = cleanNameKey;
-
-                    if (!careerStatsCache[key]) {
-                        careerStatsCache[key] = { total: 0, benchTotal: 0, games: 0 };
-                        tempDates[key] = new Set();
-                    }
-                    
-                    const scoreVal = getNum(d.score) || getNum(d['overall raw average']) || getNum(d['overall adjusted average']) || getNum(d['adjusted average']) || getNum(d['raw average']) || getNum(d['points']) || getNum(d['total points']) || getNum(d['total score']) || getNum(d.total) || getNum(d.pts) || getNum(d.avg) || 0;
-                    
-                    const isBench = d.isBench === true || d.isbench === true || d.bench === true || 
-                                    String(d.isBench || '').toLowerCase() === 'true' || 
-                                    String(d.isbench || '').toLowerCase() === 'true' || 
-                                    String(d.bench || '').toLowerCase() === 'true';
-
-                    if (isBench) {
-                        careerStatsCache[key].benchTotal += scoreVal;
-                    } else {
-                        careerStatsCache[key].total += scoreVal;
-                        if (d.date) {
-                            tempDates[key].add(`${seasonPrefix}-${d.date}`);
-                        } else {
-                            const gp = parseInt(d['games played']) || parseInt(d.gp) || parseInt(d.games) || 1;
-                            careerStatsCache[key].games += gp;
-                        }
-                    }
-                });
-            };
-
-            const seasonsToFetch = Object.keys(HISTORICAL_CSVS);
-            
-            for (const s of seasonsToFetch) {
-                try {
-                    let playersData = [];
-                    const csvUrl = HISTORICAL_CSVS[s]?.['players'];
-                    if (csvUrl) {
-                        const res = await fetch(workerProxy + '?url=' + encodeURIComponent(csvUrl));
-                        if (res.ok) playersData = parseCsvLocal(await res.text());
-                    } else {
-                        const snaps = await getDocs(collection(db, `s${s}-players`));
-                        snaps.forEach(doc => playersData.push(doc.data()));
-                    }
-                    processDataList(playersData, `s${s}`);
-                } catch (e) {}
-
-                try {
-                    let playoffData = [];
-                    const playoffCsvUrl = HISTORICAL_CSVS[s]?.['playoff-players'];
-                    if (playoffCsvUrl) {
-                        const res = await fetch(workerProxy + '?url=' + encodeURIComponent(playoffCsvUrl));
-                        if (res.ok) playoffData = parseCsvLocal(await res.text());
-                    } else {
-                        const snaps = await getDocs(collection(db, `s${s}-playoff-players`));
-                        snaps.forEach(doc => playoffData.push(doc.data()));
-                    }
-                    processDataList(playoffData, `s${s}-playoffs`);
-                } catch (e) {}
-            }
-            
-            Object.keys(careerStatsCache).forEach(key => {
-                const datesCount = tempDates[key] ? tempDates[key].size : 0;
-                careerStatsCache[key].games += datesCount;
-            });
-            careerStatsLoaded = true;
-        }
-
-        window.toggleTradeStatsMode = async () => {
-            const mode = document.getElementById('trade-stats-toggle').value;
-            isCareerMode = (mode === 'career');
-            
-            if (isCareerMode && !careerStatsLoaded) {
-                const t1 = document.getElementById('trade-roster-1');
-                const t2 = document.getElementById('trade-roster-2');
-                if (t1) t1.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
-                if (t2) t2.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 1rem;">Loading lifetime career stats...</td></tr>';
-                await loadCareerStats();
-            }
-            
-            window.loadTradeSide(1);
-            window.loadTradeSide(2);
-        };
-
-        window.loadTradeSide = (sideNum) => {
-            const team = document.getElementById(`trade-team-${sideNum}`).value;
-            const tbody = document.getElementById(`trade-roster-${sideNum}`);
-            
-            if (!team) { tbody.innerHTML = ''; return; }
-
-            const roster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === team.trim().toLowerCase());
-            let html = '';
-            let teamTotalPts = 0; 
-            let teamTotalBench = 0; 
-            let teamTotalGames = 0;
-
-            const cacheToUse = isCareerMode ? careerStatsCache : playerStatsCache;
-
-            roster.forEach(p => {
-                const keyName = cleanName(p.username);
-                const uidRaw = p['user id'] || p.userid || p.userId || p.id;
-                const cleanUid = uidRaw ? String(uidRaw).trim() : null;
-                
-                let total = 0;
-                let benchTotal = 0;
-                let games = 0;
-
-                if (cleanUid && cacheToUse[cleanUid]) {
-                    total = cacheToUse[cleanUid].total || 0;
-                    benchTotal = cacheToUse[cleanUid].benchTotal || 0;
-                    games = cacheToUse[cleanUid].games || 0;
-                } else if (cacheToUse[keyName]) {
-                    total = cacheToUse[keyName].total || 0;
-                    benchTotal = cacheToUse[keyName].benchTotal || 0;
-                    games = cacheToUse[keyName].games || 0;
-                }
-
-                const ppg = games > 0 ? (total / games).toFixed(2) : '0.00';
-                
-                teamTotalPts += total; 
-                teamTotalBench += benchTotal;
-                teamTotalGames += games;
-                
-                html += `<tr>
-                    <td style="color: #fff; font-weight:700;">${p.username}</td>
-                    <td style="color: var(--text-muted); text-align:center;">${games}</td>
-                    <td style="color: #4ade80; text-align:right; font-weight:700;">${total.toFixed(2)}</td>
-                    <td style="color: #94a3b8; text-align:right;">${benchTotal > 0 ? benchTotal.toFixed(2) : '-'}</td>
-                    <td style="color: var(--gold-mid); font-weight: 800; text-align:right;">${ppg}</td>
-                </tr>`;
-            });
-
-            const teamPPG = teamTotalGames > 0 ? (teamTotalPts / teamTotalGames).toFixed(2) : '0.00';
-            html += `<tr style="background: rgba(212,175,55,0.08); border-top: 1px solid var(--border-gold);">
-                <td style="color: var(--gold-light); font-weight:800;">TOTALS</td>
-                <td style="color: var(--gold-light); text-align:center; font-weight:800;">${teamTotalGames}</td>
-                <td style="color: #4ade80; font-weight:800; text-align:right;">${teamTotalPts.toFixed(2)}</td>
-                <td style="color: #94a3b8; text-align:right;">${teamTotalBench > 0 ? teamTotalBench.toFixed(2) : '-'}</td>
-                <td style="color: var(--gold-mid); font-weight:900; text-align:right;">${teamPPG}</td>
-            </tr>`;
-
-            tbody.innerHTML = html;
-        };
-
         window.loadMyClaims = async () => {
             if (!myTeam) return;
             const listEl = document.getElementById('my-claims-list');
@@ -1497,7 +1646,8 @@
                     });
                     
                     const aggregatedStats = aggregateStatsBySport(normalizedStats);
-                    updateCard(cardId, name, uid, aggregatedStats);
+                    faRealStatsCache[name] = aggregatedStats;
+                    updateCard(cardId, name, uid, aggregatedStats, 'fa');
                     
                     const updatedCard = document.getElementById(cardId);
                     if (updatedCard) {
@@ -1514,10 +1664,11 @@
                 }
             }
             updateFilterDropdown(); window.filterAndSortGrid();
+            if (document.getElementById('draft-section').style.display === 'block') window.renderDraftPool();
         }
 
         window.switchSport = function(selectElement) {
-            const selectedSport = selectElement.value; const card = selectElement.closest('.fa-card'); if (!card) return;
+            const selectedSport = selectElement.value; const card = selectElement.closest('.fa-card, .draft-player-card'); if (!card) return;
             const views = card.querySelectorAll('.sport-stats-view');
             views.forEach(view => { if (view.dataset.sport === selectedSport) view.classList.add('active'); else view.classList.remove('active'); });
         };
@@ -1559,11 +1710,46 @@
             dropdown.innerHTML = html; dropdown.value = currentVal; 
         }
 
-        function createCardHTML(uid, name, statsObj) {
+        function createPlayerCardHTML(uid, name, statsObj, mode = 'fa', inQueue = false) {
             let keys = Object.keys(statsObj).sort();
             const safeName = name.replace(/'/g, "\\'");
-            
-            if (keys.length === 0) return `<div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><div style="text-align:center; font-style:italic; padding:1rem; color:var(--text-muted); flex-grow: 1; font-size:0.85rem;">No active stats found</div><button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
+
+            const cKey = cleanName(name);
+            const cStats = playerStatsCache[cKey] || { total: 0, games: 0 };
+            const rdaHtml = cStats.games > 0 ? `
+                <div class="rda-stats-row">
+                    <span>RDA CAREER:</span>
+                    <span>${cStats.games} GP</span>
+                    <span>${cStats.total.toFixed(1)} PTS</span>
+                    <span style="color:#fff;">${(cStats.total/cStats.games).toFixed(1)} PPG</span>
+                </div>` : '';
+
+            let actionHtml = '';
+            if (mode === 'draft') {
+                if (myTeam !== 'ADMIN') {
+                    if (inQueue) {
+                        actionHtml += `
+                        <div style="display: flex; gap: 0.4rem; margin-top: 0.75rem; margin-bottom: 0.4rem;">
+                            <button onclick="moveInQueue('${safeName}', 'up')" class="draft-btn" style="flex: 1; padding: 0.45rem; margin-top: 0; background: #334155; color: white;">⬆️</button>
+                            <button onclick="moveInQueue('${safeName}', 'down')" class="draft-btn" style="flex: 1; padding: 0.45rem; margin-top: 0; background: #334155; color: white;">⬇️</button>
+                            <button onclick="removeFromQueue('${safeName}')" class="draft-btn" style="flex: 1; padding: 0.45rem; margin-top: 0; background: #ef4444; color: white;">❌</button>
+                        </div>`;
+                    } else {
+                        actionHtml += `<button onclick="addToQueue('${safeName}')" class="draft-btn" style="margin-top: 0.75rem; margin-bottom: 0.4rem; background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; color: #60a5fa;">➕ Add to Queue</button>`;
+                    }
+                }
+                actionHtml += `<button onclick="draftPlayer('${safeName}')" class="draft-btn" id="draft-btn-${uid}" style="margin-top: 0;">Draft Player</button>`;
+            } else {
+                actionHtml = `<button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
+            }
+
+            if (keys.length === 0) {
+                return `
+                    <div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div>
+                    ${rdaHtml}
+                    <div style="text-align:center; font-style:italic; padding:1rem; color:var(--text-muted); flex-grow: 1; font-size:0.85rem;">No active stats found</div>
+                    ${actionHtml}`;
+            }
 
             const allIndex = keys.indexOf("ALL_SPORTS");
             if (allIndex > -1) { keys.splice(allIndex, 1); keys.unshift("ALL_SPORTS"); }
@@ -1586,20 +1772,770 @@
                 viewsHtml += `<div class="sport-stats-view ${activeClass}" data-sport="${key}"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; color:var(--gold-mid); font-size:0.8rem; font-weight:800; text-transform:uppercase;"><span>Highest Score</span><span>${headerScore}</span></div><div class="stats-grid-row">${gridHtml}</div></div>`;
             });
 
-            return `<div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div><select class="sport-dropdown" onchange="switchSport(this)">${optionsHtml}</select><div class="stats-container" style="flex-grow: 1;">${viewsHtml}</div><button onclick="openClaimModal('${safeName}')" class="claim-btn">Claim Player</button>`;
+            return `
+                <div class="fa-header"><span class="fa-name">${name}</span><span class="fa-id">${uid}</span></div>
+                ${rdaHtml}
+                <select class="sport-dropdown" onchange="switchSport(this)">${optionsHtml}</select>
+                <div class="stats-container" style="flex-grow: 1;">${viewsHtml}</div>
+                ${actionHtml}`;
         }
 
-        function updateCard(cardId, name, uid, statsObj) {
+        function updateCard(cardId, name, uid, statsObj, mode = 'fa') {
             const card = document.getElementById(cardId);
-            if (!card) return; card.innerHTML = createCardHTML(uid, name, statsObj);
+            if (!card) return; card.innerHTML = createPlayerCardHTML(uid, name, statsObj, mode);
+        }
+
+        // ====================================================================
+        // SPREADSHEET-BACKED TRADE PORTAL & UNTRADEABLE ENGINE
+        // ====================================================================
+        function getTeamS8Picks(teamName) {
+            if (!allS8DraftPicks || !allS8DraftPicks.length || !teamName) return [];
+            const cleanT = teamName.toLowerCase().trim();
+            const picks = [];
+
+            const firstRow = allS8DraftPicks[0] || {};
+            const hasVerticalRoundCol = Object.keys(firstRow).some(k => {
+                const ck = String(k).trim().toLowerCase();
+                return ck === 'round' || ck === 'rd';
+            });
+
+            if (hasVerticalRoundCol) {
+                allS8DraftPicks.forEach(r => {
+                    const owner = String(r.team || r.owner || r['team name'] || Object.values(r)[0] || '').trim().toLowerCase();
+                    if (owner === cleanT) {
+                        const roundNum = String(r.round || r.rd || r['round #'] || '').trim();
+                        if (roundNum) {
+                            const rawNote = String(r.notes || r.note || r.comment || '').trim();
+                            const noteStr = rawNote && !['own', 'none', '-'].includes(rawNote.toLowerCase()) ? ` (${rawNote.replace(/^\(+|\)+$/g, '')})` : '';
+                            picks.push(`Season 8 Round ${roundNum}${noteStr}`);
+                        }
+                    }
+                });
+            } else {
+                allS8DraftPicks.forEach(r => {
+                    const owner = String(r.team || r.owner || r['team name'] || Object.values(r)[0] || '').trim().toLowerCase();
+                    if (owner === cleanT) {
+                        Object.entries(r).forEach(([k, val]) => {
+                            const kl = String(k).toLowerCase().trim();
+                            if (kl.includes('round') || kl.includes('rd') || kl.startsWith('r')) {
+                                if (val && String(val).trim()) {
+                                    picks.push(`Season 8 ${String(k).toUpperCase()} (${String(val).trim()})`);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+            return picks;
+        }
+
+        function syncUntradeableStatusesFromRosters() {
+            untradeableSet.clear();
+            allPlayersData.forEach(p => {
+                const rawVal = p.untradeable || p['untradeable'] || p['trade locked'] || '';
+                const clean = String(rawVal).trim().toLowerCase();
+                if (clean === 'yes' || clean === 'true' || clean === '1') {
+                    untradeableSet.add(p.username);
+                }
+            });
+        }
+
+        window.togglePlayerUntradeable = async (playerName) => {
+            const clean = playerName.trim();
+            const willBeUntradeable = !untradeableSet.has(clean);
+
+            if (willBeUntradeable) {
+                untradeableSet.add(clean);
+            } else {
+                untradeableSet.delete(clean);
+            }
+
+            const pObj = allPlayersData.find(p => p.username === clean);
+            if (pObj) pObj.untradeable = willBeUntradeable ? 'Yes' : '';
+
+            try {
+                const res = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'toggle_untradeable',
+                        player: clean,
+                        untradeable: willBeUntradeable
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'error') throw new Error(data.message);
+                showToast(`${clean} is now ${willBeUntradeable ? 'marked Untradeable' : 'Tradeable'}`);
+            } catch(e) {
+                console.error("Sheet untradeable sync error:", e);
+                alert("Failed to update untradeable status in spreadsheet: " + e.message);
+            }
+
+            initTradePortal();
+            window.loadTradePartnerAssets();
+        };
+
+        function initTradePortal() {
+            if (!myTeam || myTeam === 'ADMIN') return;
+            document.getElementById('trade-my-team-title').innerText = `${myTeam} (My Assets)`;
+
+            const roster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === myTeam.trim().toLowerCase());
+            const myRosterEl = document.getElementById('trade-my-roster-list');
+            const myPicksEl = document.getElementById('trade-my-picks-list');
+
+            mySelectedTradeAssets.players.clear();
+            mySelectedTradeAssets.picks.clear();
+
+            if (!roster.length) {
+                myRosterEl.innerHTML = '<div style="color:#888; font-size:0.8rem; font-style:italic;">No players on roster.</div>';
+            } else {
+                myRosterEl.innerHTML = roster.map(p => {
+                    const isUntradeable = untradeableSet.has(p.username);
+                    const safe = p.username.replace(/'/g, "\\'");
+                    return `
+                        <div class="asset-item-row ${isUntradeable ? 'untradeable' : ''}">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:${isUntradeable ? 'not-allowed' : 'pointer'};">
+                                <input type="checkbox" onchange="toggleAsset('my', 'players', '${safe}', this.checked)" ${isUntradeable ? 'disabled' : ''}>
+                                <span style="color:#fff; font-weight:700;">${p.username}</span>
+                                ${isUntradeable ? '<span class="untradeable-badge">Untradeable</span>' : ''}
+                            </label>
+                            <button type="button" class="btn-toggle-untradeable ${isUntradeable ? 'active' : ''}" onclick="togglePlayerUntradeable('${safe}')" title="Designate player untradeable">
+                                ${isUntradeable ? '🔒 Locked' : '🔓 Lock'}
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const myS8Picks = getTeamS8Picks(myTeam);
+            if (!myS8Picks.length) {
+                myPicksEl.innerHTML = '<div style="color:#888; font-size:0.8rem; font-style:italic;">No Season 8 picks held.</div>';
+            } else {
+                myPicksEl.innerHTML = myS8Picks.map(pick => {
+                    const safe = pick.replace(/'/g, "\\'");
+                    return `
+                        <div class="asset-item-row">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" onchange="toggleAsset('my', 'picks', '${safe}', this.checked)">
+                                <span style="color:var(--gold-light); font-weight:700;">${pick}</span>
+                            </label>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            updateTradeTermsPreview();
+            window.loadActiveTrades();
+        }
+
+        window.loadTradePartnerAssets = () => {
+            const partner = document.getElementById('trade-partner-select').value;
+            const rosterEl = document.getElementById('trade-partner-roster-list');
+            const picksEl = document.getElementById('trade-partner-picks-list');
+
+            partnerSelectedTradeAssets.players.clear();
+            partnerSelectedTradeAssets.picks.clear();
+
+            if (!partner) {
+                rosterEl.innerHTML = '<div style="color:#888; font-size:0.8rem; font-style:italic;">Select a partner team above.</div>';
+                picksEl.innerHTML = '<div style="color:#888; font-size:0.8rem; font-style:italic;">Select a partner team above.</div>';
+                updateTradeTermsPreview();
+                return;
+            }
+
+            const roster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === partner.trim().toLowerCase());
+            if (!roster.length) {
+                rosterEl.innerHTML = '<div style="color:#888; font-size:0.8rem; font-style:italic;">No players on roster.</div>';
+            } else {
+                rosterEl.innerHTML = roster.map(p => {
+                    const isUntradeable = untradeableSet.has(p.username);
+                    const safe = p.username.replace(/'/g, "\\'");
+                    return `
+                        <div class="asset-item-row ${isUntradeable ? 'untradeable' : ''}">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:${isUntradeable ? 'not-allowed' : 'pointer'};">
+                                <input type="checkbox" onchange="toggleAsset('partner', 'players', '${safe}', this.checked)" ${isUntradeable ? 'disabled' : ''}>
+                                <span style="color:#fff; font-weight:700;">${p.username}</span>
+                                ${isUntradeable ? '<span class="untradeable-badge">Untradeable</span>' : ''}
+                            </label>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const partnerS8Picks = getTeamS8Picks(partner);
+            if (!partnerS8Picks.length) {
+                picksEl.innerHTML = '<div style="color:#888; font-size:0.8rem; font-style:italic;">No Season 8 picks held.</div>';
+            } else {
+                picksEl.innerHTML = partnerS8Picks.map(pick => {
+                    const safe = pick.replace(/'/g, "\\'");
+                    return `
+                        <div class="asset-item-row">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" onchange="toggleAsset('partner', 'picks', '${safe}', this.checked)">
+                                <span style="color:var(--gold-light); font-weight:700;">${pick}</span>
+                            </label>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            updateTradeTermsPreview();
+        };
+
+        window.toggleAsset = (side, type, item, isChecked) => {
+            const targetSet = side === 'my' ? mySelectedTradeAssets[type] : partnerSelectedTradeAssets[type];
+            if (isChecked) targetSet.add(item);
+            else targetSet.delete(item);
+            updateTradeTermsPreview();
+        };
+
+        function updateTradeTermsPreview() {
+            const previewEl = document.getElementById('trade-terms-preview');
+            const submitBtn = document.getElementById('btn-send-trade');
+            const partner = document.getElementById('trade-partner-select').value;
+
+            const mySendList = [...mySelectedTradeAssets.players, ...mySelectedTradeAssets.picks];
+            const partnerSendList = [...partnerSelectedTradeAssets.players, ...partnerSelectedTradeAssets.picks];
+
+            if (!partner || (!mySendList.length && !partnerSendList.length)) {
+                previewEl.innerHTML = '<span style="color:#888; font-style:italic;">Select assets above to build proposal.</span>';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            const sendStr = mySendList.length ? mySendList.join(', ') : 'None';
+            const receiveStr = partnerSendList.length ? partnerSendList.join(', ') : 'None';
+
+            previewEl.innerHTML = `
+                <div><strong>${myTeam} get:</strong> <span style="color:#38bdf8;">${receiveStr}</span></div>
+                <div style="margin-top:4px;"><strong>${partner} get:</strong> <span style="color:#4ade80;">${sendStr}</span></div>
+            `;
+            submitBtn.disabled = !(mySendList.length > 0 && partnerSendList.length > 0);
+        }
+
+        window.loadActiveTrades = async () => {
+            const container = document.getElementById('active-trades-container');
+            if (!container) return;
+
+            try {
+                const res = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'get_trades' })
+                });
+                const data = await res.json();
+                const trades = data.trades || [];
+
+                const relevantTrades = trades.filter(t => 
+                    myTeam === 'ADMIN' || t.proposer === myTeam || t.receiver === myTeam
+                );
+
+                if (!relevantTrades.length) {
+                    container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">No active proposals pending in sheet.</div>';
+                    return;
+                }
+
+                container.innerHTML = relevantTrades.map(trade => {
+                    const isIncoming = trade.receiver === myTeam;
+                    const isOutgoing = trade.proposer === myTeam;
+
+                    let actionButtons = '';
+                    if (isIncoming) {
+                        actionButtons = `
+                            <div style="display:flex; gap:0.5rem;">
+                                <button onclick="respondTrade('${trade.id}', 'ACCEPT')" class="save-btn" style="margin:0; padding:0.4rem 0.8rem; font-size:0.75rem; background:linear-gradient(135deg, #4ade80, #22c55e);">Accept</button>
+                                <button onclick="respondTrade('${trade.id}', 'DECLINE')" class="save-btn" style="margin:0; padding:0.4rem 0.8rem; font-size:0.75rem; background:#334155; color:#fff;">Decline</button>
+                            </div>
+                        `;
+                    } else if (isOutgoing) {
+                        actionButtons = `
+                            <button onclick="respondTrade('${trade.id}', 'CANCEL')" class="save-btn" style="margin:0; padding:0.4rem 0.8rem; font-size:0.75rem; background:rgba(239, 68, 68, 0.2); border:1px solid rgba(239,68,68,0.5); color:#f87171;">Cancel Offer</button>
+                        `;
+                    } else if (myTeam === 'ADMIN') {
+                        actionButtons = `<span style="font-size:0.75rem; color:var(--text-muted);">Admin View</span>`;
+                    }
+
+                    return `
+                        <div class="trade-offer-item">
+                            <div style="flex:1; min-width:260px;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                    <span style="font-size:0.7rem; font-weight:800; padding:2px 6px; border-radius:3px; background:${isIncoming ? 'rgba(59,130,246,0.2); color:#60a5fa;' : 'rgba(212,175,55,0.2); color:var(--gold-mid);'}; text-transform:uppercase;">
+                                        ${isIncoming ? 'Incoming Offer' : (isOutgoing ? 'Outgoing Offer' : 'Pending')}
+                                    </span>
+                                    <strong style="color:#fff; font-size:0.95rem;">${trade.proposer} &rarr; ${trade.receiver}</strong>
+                                </div>
+                                <div style="font-size:0.8rem; color:var(--text-muted);">
+                                    <strong>${trade.proposer} get:</strong> <span style="color:#38bdf8;">${trade.requestedAssets.join(', ')}</span><br>
+                                    <strong>${trade.receiver} get:</strong> <span style="color:#4ade80;">${trade.offeredAssets.join(', ')}</span>
+                                </div>
+                            </div>
+                            ${actionButtons}
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) {
+                container.innerHTML = '<div style="color:#ef4444; font-size:0.85rem;">Error loading active proposals from sheet.</div>';
+            }
+        };
+
+        window.respondTrade = async (tradeId, decision) => {
+            if (!confirm(`Are you sure you want to ${decision} this trade proposal?`)) return;
+
+            try {
+                const res = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'respond_trade',
+                        tradeId: tradeId,
+                        decision: decision
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'error') throw new Error(data.message);
+
+                showToast(data.message || `Trade ${decision} executed.`);
+                window.loadActiveTrades();
+
+                if (decision === 'ACCEPT') {
+                    const rText = await fetchCSVRobust(playersCsvUrl);
+                    allPlayersData = parseCsvLocal(rText);
+                    initTradePortal();
+                    window.loadTradePartnerAssets();
+                }
+            } catch(e) {
+                showError("Trade action failed: " + e.message);
+            }
+        };
+
+        // ====================================================================
+        // DRAFT SUITE EXECUTION & REALTIME LISTENERS
+        // ====================================================================
+        async function updateDraftDoc(updates) {
+            try {
+                const draftRef = doc(db, 'system', 'draftState');
+                await updateDoc(draftRef, updates);
+            } catch (e) {
+                console.error("Draft update error:", e);
+                throw e; 
+            }
+        }
+
+        window.adminUpdateDraft = async (isActive) => {
+            if (myTeam !== 'ADMIN') return;
+            const timerEndsAt = isActive ? Date.now() + (2 * 60 * 1000) : 0;
+            await updateDraftDoc({ isActive, timerEndsAt });
+        };
+
+        window.adminResetDraft = async () => {
+            if (myTeam !== 'ADMIN') return;
+            if (!confirm("Are you sure you want to RESET the entire draft?")) return;
+            await updateDraftDoc({ isActive: false, currentPickIdx: 0, timerEndsAt: 0, picks: [], autopickGMs: [] });
+        };
+
+        window.toggleGMAutopick = async () => {
+            if (!myTeam || myTeam === 'ADMIN') return;
+            const isAuto = document.getElementById('gm-autopick-toggle').checked;
+            
+            try {
+                const draftRef = doc(db, 'system', 'draftState');
+                if (isAuto) {
+                    await updateDoc(draftRef, { autopickGMs: arrayUnion(myTeam) });
+                } else {
+                    const snap = await getDoc(draftRef);
+                    if (snap.exists()) {
+                        const currentList = snap.data().autopickGMs || [];
+                        await updateDoc(draftRef, { autopickGMs: currentList.filter(t => t !== myTeam) });
+                    }
+                }
+                showToast(isAuto ? "Autopick Enabled" : "Autopick Disabled");
+            } catch(e) {
+                document.getElementById('gm-autopick-toggle').checked = !isAuto;
+                showError("Could not update autopick status. Check database permissions.");
+            }
+        };
+
+        window.draftPlayer = async (playerName) => {
+            if (!draftState.isActive) { showError("The draft is currently paused."); return; }
+            if (isProcessingPick) return; 
+            
+            const expectedTeam = DRAFT_ORDER[draftState.currentPickIdx];
+            if (myTeam !== expectedTeam && myTeam !== 'ADMIN') {
+                showError(`It is not your turn! Waiting on ${expectedTeam}.`);
+                return;
+            }
+
+            if (myQueue.includes(playerName)) {
+                window.removeFromQueue(playerName);
+            }
+
+            isProcessingPick = true;
+            const sanitizedName = playerName.replace(/'/g, "\\'");
+            const btns = document.querySelectorAll(`button[onclick="draftPlayer('${sanitizedName}')"]`);
+            btns.forEach(btn => { btn.innerText = "Processing..."; btn.disabled = true; });
+
+            try {
+                const draftRef = doc(db, 'system', 'draftState');
+                await updateDoc(draftRef, {
+                    picks: arrayUnion({ team: expectedTeam, player: playerName }),
+                    currentPickIdx: draftState.currentPickIdx + 1,
+                    timerEndsAt: Date.now() + (2 * 60 * 1000)
+                });
+                
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({ action: 'draft_pick', team: expectedTeam, player: playerName, pickIdx: draftState.currentPickIdx + 1 })
+                }).catch(() => console.log("Sheet log failed, but DB succeeded."));
+
+            } catch (e) {
+                showError("Draft pick failed! Verify database permissions or contact the Commissioner.");
+            } finally {
+                isProcessingPick = false;
+                btns.forEach(btn => { btn.innerText = "Draft Player"; btn.disabled = false; });
+            }
+        };
+
+        function renderRecentPicks() {
+            const container = document.getElementById('recent-picks');
+            if (!container) return;
+            if (!draftState.picks || draftState.picks.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem;">No picks made yet.</div>';
+                return;
+            }
+            
+            let html = '';
+            const recent = [...draftState.picks].reverse().slice(0, 10);
+            recent.forEach((p, i) => {
+                const actualPickNum = draftState.picks.length - i;
+                html += `
+                    <div class="recent-pick-card">
+                        <div class="pick-num">Pick ${actualPickNum}</div>
+                        <div class="pick-team">${p.team}</div>
+                        <div class="pick-player" title="${p.player}">${p.player}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderUpcomingPicks() {
+            const container = document.getElementById('upcoming-picks');
+            if (!container) return;
+            if (!DRAFT_ORDER || DRAFT_ORDER.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem;">Draft order loading...</div>';
+                return;
+            }
+            
+            let html = '';
+            const upcoming = DRAFT_ORDER.slice(draftState.currentPickIdx, draftState.currentPickIdx + 10);
+            upcoming.forEach((team, i) => {
+                const actualPickNum = draftState.currentPickIdx + 1 + i;
+                html += `
+                    <div class="recent-pick-card" style="opacity: ${i === 0 ? '1' : '0.65'}; border-color: ${i === 0 ? 'var(--border-gold)' : 'var(--border-subtle)'};">
+                        <div class="pick-num">Pick ${actualPickNum}</div>
+                        <div class="pick-team" style="color: ${i === 0 ? 'var(--gold-light)' : '#fff'};">${team}</div>
+                        <div class="pick-player" style="color: var(--text-muted); font-style: italic;">On the clock...</div>
+                    </div>
+                `;
+            });
+            
+            if (upcoming.length === 0) html = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem;">Draft Complete!</div>';
+            container.innerHTML = html;
+        }
+
+        async function fetchTeamQueue(teamName) {
+            if (!QUEUE_CSV_URL || !QUEUE_CSV_URL.startsWith("http")) return [];
+            try {
+                const text = await fetchCSVRobust(QUEUE_CSV_URL);
+                if (!text) return [];
+                
+                const rows = text.trim().split(/\r?\n/);
+                if(rows.length < 2) return [];
+                const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+                const colIdx = headers.indexOf(teamName.toLowerCase());
+                if(colIdx === -1) return [];
+                
+                const queue = [];
+                for(let i=1; i<rows.length; i++) {
+                    const vals = rows[i].split(',');
+                    if(vals[colIdx] && vals[colIdx].trim()) {
+                        let val = vals[colIdx].trim();
+                        if(val.startsWith('"') && val.endsWith('"')) val = val.substring(1, val.length - 1);
+                        queue.push(val);
+                    }
+                }
+                return queue;
+            } catch (e) { return []; }
+        }
+
+        function persistQueueToSheet() {
+            if (myTeam === 'ADMIN') return;
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: JSON.stringify({ action: 'updateQueue', team: myTeam, queue: myQueue })
+            }).catch(e => console.error("Queue sync failed", e));
+        }
+
+        window.addToQueue = (username) => {
+            if (myTeam === 'ADMIN') return;
+            if (!myQueue.includes(username)) {
+                myQueue.push(username);
+                window.renderDraftPool();
+                persistQueueToSheet();
+            }
+        };
+
+        window.removeFromQueue = (username) => {
+            if (myTeam === 'ADMIN') return;
+            myQueue = myQueue.filter(u => u !== username);
+            window.renderDraftPool();
+            persistQueueToSheet();
+        };
+
+        window.moveInQueue = (username, dir) => {
+            if (myTeam === 'ADMIN') return;
+            const idx = myQueue.indexOf(username);
+            if (idx === -1) return;
+            
+            if (dir === 'up' && idx > 0) {
+                [myQueue[idx-1], myQueue[idx]] = [myQueue[idx], myQueue[idx-1]];
+            } else if (dir === 'down' && idx < myQueue.length - 1) {
+                [myQueue[idx+1], myQueue[idx]] = [myQueue[idx], myQueue[idx+1]];
+            }
+            window.renderDraftPool();
+            persistQueueToSheet();
+        };
+
+        window.renderDraftPool = function() {
+            const term = (document.getElementById('draft-search')?.value || '').toLowerCase();
+            const poolContainer = document.getElementById('draft-board-grid');
+            const queueContainer = document.getElementById('draft-queue-grid');
+            const queueSection = document.getElementById('draft-queue-section');
+            const availableHeader = document.getElementById('available-players-header');
+            
+            if (!poolContainer) return;
+
+            const draftedPlayers = (draftState.picks || []).map(p => p.player);
+            let availableFAs = allFaData.filter(p => p.username && !draftedPlayers.includes(p.username));
+
+            availableFAs.sort((a, b) => {
+                const statsA = faRealStatsCache[a.username];
+                const statsB = faRealStatsCache[b.username];
+                const powerA = statsA ? calculateOverallPower(statsA) : -1;
+                const powerB = statsB ? calculateOverallPower(statsB) : -1;
+                return powerB - powerA;
+            });
+
+            if (myTeam !== 'ADMIN' && !term && queueSection && queueContainer) {
+                queueSection.style.display = 'block';
+                if (availableHeader) availableHeader.style.display = 'block';
+
+                const queuedData = [];
+                myQueue.forEach(qUser => {
+                    const found = availableFAs.find(p => p.username === qUser);
+                    if (found) queuedData.push(found);
+                });
+
+                availableFAs = availableFAs.filter(p => !myQueue.includes(p.username));
+
+                if (queuedData.length === 0) {
+                    queueContainer.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 2rem; border: 1px dashed var(--border-subtle); border-radius: 8px; font-size: 0.85rem;">Your queue is empty. Click ➕ Add to Queue on a player below.</div>';
+                } else {
+                    queueContainer.innerHTML = '';
+                    queuedData.forEach(row => {
+                        const uid = row['user id'] || row['userid'] || row['id'];
+                        const card = document.createElement('div');
+                        card.className = 'draft-player-card';
+                        card.style.borderColor = '#3b82f6';
+                        card.innerHTML = createPlayerCardHTML(uid, row.username, faRealStatsCache[row.username] || {}, 'draft', true);
+                        queueContainer.appendChild(card);
+                    });
+                }
+            } else if (queueSection) {
+                queueSection.style.display = 'none';
+                if (availableHeader) availableHeader.style.display = 'none';
+            }
+
+            if (term) availableFAs = availableFAs.filter(p => p.username.toLowerCase().includes(term));
+
+            if (availableFAs.length === 0) {
+                poolContainer.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 2rem;">No available players matching criteria.</div>';
+                return;
+            }
+
+            poolContainer.innerHTML = '';
+            availableFAs.forEach(row => {
+                const name = row.username;
+                const uid = row['user id'] || row['userid'] || row['id'];
+                if (!uid) return;
+
+                const aggregatedStats = faRealStatsCache[name] || {};
+                const card = document.createElement('div');
+                card.className = 'draft-player-card';
+                card.innerHTML = createPlayerCardHTML(uid, name, aggregatedStats, 'draft', false);
+                poolContainer.appendChild(card);
+            });
+        };
+
+        window.filterDraftGrid = function() { window.renderDraftPool(); };
+
+        async function executeAutoPick(forTeam) {
+            if (isProcessingPick) return;
+            isProcessingPick = true;
+
+            const draftedPlayers = (draftState.picks || []).map(p => p.player);
+            let playerToPick = null;
+
+            try {
+                const latestQueue = await fetchTeamQueue(forTeam);
+                for(let u of latestQueue) {
+                    if(!draftedPlayers.includes(u)) {
+                        playerToPick = u;
+                        break;
+                    }
+                }
+
+                if (!playerToPick) {
+                    let availableFAs = allFaData.filter(p => p.username && !draftedPlayers.includes(p.username));
+                    availableFAs.sort((a, b) => {
+                        const statsA = faRealStatsCache[a.username];
+                        const statsB = faRealStatsCache[b.username];
+                        const powerA = statsA ? calculateOverallPower(statsA) : -1;
+                        const powerB = statsB ? calculateOverallPower(statsB) : -1;
+                        return powerB - powerA;
+                    });
+                    if (availableFAs.length > 0) playerToPick = availableFAs[0].username;
+                }
+
+                if (playerToPick) {
+                    const draftRef = doc(db, 'system', 'draftState');
+                    await updateDoc(draftRef, {
+                        picks: arrayUnion({ team: forTeam, player: playerToPick }),
+                        currentPickIdx: draftState.currentPickIdx + 1,
+                        timerEndsAt: Date.now() + (2 * 60 * 1000)
+                    });
+                    
+                    fetch(APPS_SCRIPT_URL, {
+                        method: 'POST', mode: 'no-cors',
+                        body: JSON.stringify({ action: 'draft_pick', team: forTeam, player: playerToPick, pickIdx: draftState.currentPickIdx + 1, autopicked: 'Yes' })
+                    }).catch(() => console.log("Sheet log failed"));
+                }
+            } catch (e) {
+                console.error("Autopick failed", e);
+            } finally {
+                isProcessingPick = false;
+            }
+        }
+
+        function listenToDraft() {
+            const draftRef = doc(db, 'system', 'draftState');
+            
+            getDoc(draftRef).then(snap => {
+                if (!snap.exists()) setDoc(draftRef, draftState);
+            });
+
+            onSnapshot(draftRef, (doc) => {
+                if (doc.exists()) {
+                    draftState = doc.data();
+                    
+                    const currentTeam = DRAFT_ORDER[draftState.currentPickIdx] || "Draft Complete";
+                    const displayTeam = currentTeam === 'Draft Complete' ? currentTeam : `On the Clock: <span>${currentTeam}</span>`;
+                    document.getElementById('on-the-clock-display').innerHTML = displayTeam;
+                    
+                    if (draftState.currentPickIdx < DRAFT_ORDER.length) {
+                        document.getElementById('draft-round-display').innerText = `Pick ${draftState.currentPickIdx + 1}`;
+                    } else {
+                        document.getElementById('draft-round-display').innerText = "Post-Draft";
+                    }
+
+                    const autopickGMs = draftState.autopickGMs || [];
+                    if (myTeam !== 'ADMIN' && document.getElementById('gm-autopick-toggle')) {
+                        document.getElementById('gm-autopick-toggle').checked = autopickGMs.includes(myTeam);
+                    }
+
+                    if (myTeam !== 'ADMIN' && DRAFT_ORDER.length > 0) {
+                        const myNextIdx = DRAFT_ORDER.indexOf(myTeam, draftState.currentPickIdx);
+                        const nextPickDiv = document.getElementById('my-next-pick-display');
+                        if (myNextIdx > -1) {
+                            document.getElementById('my-next-pick-val').innerText = `Overall #${myNextIdx + 1}`;
+                            nextPickDiv.style.display = 'block';
+                        } else {
+                            nextPickDiv.style.display = 'none';
+                        }
+                    }
+
+                    if (myTeam === 'ADMIN' && draftState.isActive && currentTeam !== 'Draft Complete') {
+                        if (autopickGMs.includes(currentTeam)) {
+                            executeAutoPick(currentTeam);
+                        }
+                    }
+
+                    renderRecentPicks();
+                    renderUpcomingPicks();
+                    
+                    if (document.getElementById('draft-section').style.display === 'block') {
+                        window.renderDraftPool();
+                    }
+                }
+            });
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const timerEl = document.getElementById('draft-timer');
+                if (!timerEl) return;
+                
+                if (!draftState.isActive) {
+                    timerEl.innerText = "PAUSED";
+                    timerEl.className = "draft-timer warning";
+                    return;
+                }
+
+                if (draftState.currentPickIdx >= DRAFT_ORDER.length) {
+                    timerEl.innerText = "00:00";
+                    timerEl.className = "draft-timer";
+                    return;
+                }
+
+                const now = Date.now();
+                const diff = draftState.timerEndsAt - now;
+
+                if (diff <= 0) {
+                    timerEl.innerText = "00:00";
+                    timerEl.className = "draft-timer danger";
+                    
+                    if (myTeam === 'ADMIN') {
+                        const currentTeam = DRAFT_ORDER[draftState.currentPickIdx];
+                        const draftRef = doc(db, 'system', 'draftState');
+                        updateDoc(draftRef, { autopickGMs: arrayUnion(currentTeam) });
+                        executeAutoPick(currentTeam);
+                    }
+                } else {
+                    const m = Math.floor(diff / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    timerEl.innerText = `0${m}:${s < 10 ? '0' : ''}${s}`;
+                    
+                    if (m === 0 && s <= 30) timerEl.className = "draft-timer danger";
+                    else if (m === 0) timerEl.className = "draft-timer warning";
+                    else timerEl.className = "draft-timer";
+                }
+            }, 1000);
         }
 
         window.switchTab = (tabId, element) => {
             document.querySelectorAll('.dashboard-section').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.sub-nav-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId + '-section').style.display = 'block';
-            if(element) element.classList.add('active');
+            if (element) element.classList.add('active');
             if (tabId === 'transactions') window.loadMyClaims();
+            if (tabId === 'trade-portal') initTradePortal();
+            if (tabId === 'draft') {
+                renderRecentPicks();
+                renderUpcomingPicks();
+                window.renderDraftPool();
+            }
         };
 
         function showToast(msg) {

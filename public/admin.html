@@ -1424,7 +1424,7 @@
             terminalStatus.style.color = '#a78bfa';
             output.textContent = `Fetching replies from Free Agency Thread...\n`;
             try {
-                const url = `https://web.realsports.io/comments/groups/46567/replies/178458037514000001?limit=100`;
+                const url = `https://web.realapp.com/comments/groups/46567/replies/179241867568000001?limit=100`;
                 const token = generateRequestToken();
                 const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
                 
