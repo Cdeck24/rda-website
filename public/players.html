@@ -32,7 +32,7 @@
 
         .search-input {
             flex: 2;
-            min-width: 220px;
+            min-width: 200px;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border-gold);
             color: #fff;
@@ -45,7 +45,7 @@
 
         .filter-select {
             flex: 1;
-            min-width: 140px;
+            min-width: 130px;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--border-subtle);
             color: var(--gold-light);
@@ -57,6 +57,29 @@
             cursor: pointer;
         }
         .filter-select:focus { border-color: var(--gold-mid); }
+
+        .btn-export {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            padding: 0.55rem 0.95rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-export:hover {
+            background: var(--gold-mid);
+            color: #000;
+            transform: translateY(-1px);
+        }
 
         /* Scaffolding Table */
         .table-wrapper {
@@ -206,7 +229,7 @@
         @media (max-width: 768px) {
             .player-content { padding: 0.5rem 0.5rem 3rem 0.5rem; }
             .controls-card { padding: 0.75rem; gap: 0.5rem; }
-            .search-input, .filter-select { width: 100%; min-width: 100%; }
+            .search-input, .filter-select, .btn-export { width: 100%; min-width: 100%; justify-content: center; }
             .charts-container { grid-template-columns: 1fr; }
             .metrics-grid { grid-template-columns: repeat(2, 1fr); }
             .modal-player-name { font-size: 1.3rem; }
@@ -245,6 +268,7 @@
                 <option value="peak">Sort: Peak Score</option>
                 <option value="share">Sort: Team % Share</option>
             </select>
+            <button type="button" class="btn-export" id="btn-export" onclick="exportPlayerStatsCSV()">📥 Export CSV</button>
         </div>
 
         <div class="table-wrapper">
@@ -325,11 +349,13 @@
         const seasonConfigs = {
             '4': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' },
             '5': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' },
-            '6': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' }
+            '6': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' },
+            '7': { players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv' }
         };
 
         window.userToIdMap = {};
         window.canonicalPlayerMap = {};
+        window.lastFilteredList = [];
 
         let allRawData = [];
         let leagueAvgPPG = 0;
@@ -410,7 +436,7 @@
             window.userToIdMap = {};
             window.canonicalPlayerMap = {};
 
-            const config = seasonConfigs[currentSeason] || seasonConfigs['6'];
+            const config = seasonConfigs[currentSeason] || seasonConfigs['7'];
             if (config) {
                 try {
                     const res = await fetch(workerProxy + '?url=' + encodeURIComponent(config.players));
@@ -636,6 +662,8 @@
                 return 0;
             });
 
+            window.lastFilteredList = mappedList;
+
             const headerDict = {
                 'total': 'Total Pts', 'bench': 'Bench Pts', 'avg': 'Points/Game', 'paa': 'Pts Above Avg', 'peak': 'Peak Score', 'share': 'Team % Share'
             };
@@ -686,6 +714,89 @@
                     </tr>
                 `;
             }).join('');
+        };
+
+        window.exportPlayerStatsCSV = function() {
+            const players = window.lastFilteredList || [];
+            if (!players.length) {
+                alert('No player stats available to export.');
+                return;
+            }
+
+            const sportsSet = new Set();
+            players.forEach(p => {
+                if (p.sportScores) {
+                    Object.keys(p.sportScores).forEach(s => sportsSet.add(s));
+                }
+            });
+            const sortedSports = Array.from(sportsSet).sort();
+
+            const headers = [
+                'Rank',
+                'Player',
+                'User ID',
+                'Franchise',
+                'Status',
+                'Games Played',
+                'Starter Points',
+                'Bench Points',
+                'Total Points',
+                'PPG',
+                'Points Above Avg (PAA)',
+                'Peak Score',
+                'Peak Date',
+                'Team Point Share %',
+                'Consistency',
+                ...sortedSports.map(s => `${s} Points`)
+            ];
+
+            const escapeCsv = (val) => {
+                if (val === undefined || val === null) return '""';
+                const str = String(val).replace(/"/g, '""');
+                return `"${str}"`;
+            };
+
+            const rows = players.map((p, idx) => {
+                const cons = getConsistencyInfo(p.perSportAverages || []);
+                const sportPoints = sortedSports.map(s => {
+                    const list = p.sportScores?.[s];
+                    if (!list || !list.length) return '0.00';
+                    const sum = list.reduce((a, b) => a + b, 0);
+                    return sum.toFixed(2);
+                });
+
+                return [
+                    idx + 1,
+                    escapeCsv(p.username),
+                    escapeCsv(p.id),
+                    escapeCsv(p.team || 'Free Agent'),
+                    escapeCsv(p.isRookie ? 'Rookie' : 'Veteran'),
+                    p.games || 0,
+                    (p.currentScore || 0).toFixed(2),
+                    (p.currentBenchScore || 0).toFixed(2),
+                    ((p.currentScore || 0) + (p.currentBenchScore || 0)).toFixed(2),
+                    (p.currentPPG || 0).toFixed(2),
+                    (p.currentPAA || 0).toFixed(2),
+                    (p.currentPeak || 0).toFixed(2),
+                    escapeCsv(p.peakDate || 'Unknown'),
+                    (p.currentShare || 0).toFixed(1) + '%',
+                    escapeCsv(cons.text),
+                    ...sportPoints
+                ].join(',');
+            });
+
+            const csvContent = '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const isPlayoff = document.getElementById('season-type')?.value === 'playoffs';
+            const dateStr = new Date().toISOString().split('T')[0];
+            a.href = url;
+            a.download = `RDA_Season_${currentSeason}_${isPlayoff ? 'Playoffs' : 'Regular'}_Player_Stats_${dateStr}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         };
 
         window.openPlayerModal = function(playerId) {

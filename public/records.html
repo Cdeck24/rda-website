@@ -573,7 +573,8 @@
                 <div class="controls-banner">
                     <span style="font-weight: 800; color: var(--gold-light);">Season Podium & Awards</span>
                     <select id="trophy-season-select" class="filter-select" onchange="renderTrophyCase(this.value)">
-                        <option value="6">Season 6</option>
+                        <option value="7">Season 7</option>
+                        <option value="6" selected>Season 6</option>
                         <option value="5">Season 5</option>
                         <option value="4">Season 4</option>
                         <option value="3">Season 3</option>
@@ -598,7 +599,7 @@
         initNav();
 
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
-        const seasonsToFetch = Object.keys(HISTORICAL_CSVS || { '1':{}, '2':{}, '3':{}, '4':{}, '5':{}, '6':{} });
+        const seasonsToFetch = Object.keys(HISTORICAL_CSVS || { '1':{}, '2':{}, '3':{}, '4':{}, '5':{}, '6':{}, '7':{} });
 
         window.switchCategory = (catId, defaultTabId, btn) => {
             document.querySelectorAll('.sub-tabs').forEach(el => el.style.display = 'none');
@@ -727,10 +728,23 @@
                 ]
             },
             '6': {
+                podium: { first: 'Reapers', second: 'Kings', third: 'Manatees' },
+                awards: [
+                    { icon: '🏆', title: 'League MVP', winner: 'TBD' },
+                    { icon: '🏅', title: 'Finals MVP', winner: '@r0dmanx' },
+                    { icon: '⚡', title: 'Sixth Man of the Year', winner: 'TBD' },
+                    { icon: '🤝', title: 'FA Pickup of Year', winner: 'TBD' },
+                    { icon: '👶', title: 'Rookie of the Year', winner: 'TBD' },
+                    { icon: '🧠', title: 'GM of the Year', winner: 'TBD' },
+                    { icon: '📈', title: 'Most Improved Player', winner: 'TBD' }
+                ]
+            },
+            '7': {
                 podium: { first: 'TBD', second: 'TBD', third: 'TBD' },
                 awards: [
                     { icon: '🏆', title: 'League MVP', winner: 'TBD' },
                     { icon: '🏅', title: 'Finals MVP', winner: 'TBD' },
+                    { icon: '⚡', title: 'Sixth Man of the Year', winner: 'TBD' },
                     { icon: '🤝', title: 'FA Pickup of Year', winner: 'TBD' },
                     { icon: '👶', title: 'Rookie of the Year', winner: 'TBD' },
                     { icon: '🧠', title: 'GM of the Year', winner: 'TBD' },
@@ -1252,11 +1266,12 @@
                 </tr>
             `).join('');
 
-            // 9. Initial Trophy View
+            // 9. Initial Trophy View (Default to Season 6 so visitors see the newly crowned champions)
             const selectEl = document.getElementById('trophy-season-select');
             if (selectEl) {
-                selectEl.value = currentSeason;
-                renderTrophyCase(currentSeason);
+                const initialSeason = (currentSeason === '7' && trophyData['7']?.podium.first === 'TBD') ? '6' : currentSeason;
+                selectEl.value = initialSeason;
+                renderTrophyCase(initialSeason);
             }
         }
 
