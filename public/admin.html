@@ -137,7 +137,8 @@
         }
 
         .form-group select,
-        .form-group input {
+        .form-group input,
+        .form-group textarea {
             width: 100%;
             padding: 0.6rem 0.75rem;
             background: rgba(0, 0, 0, 0.45);
@@ -151,7 +152,8 @@
             text-align: left;
         }
         .form-group select:focus,
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group textarea:focus {
             border-color: var(--gold-mid);
         }
 
@@ -258,7 +260,7 @@
             border: 1px solid var(--border-gold);
             border-radius: 12px;
             padding: 1.5rem;
-            max-width: 440px;
+            max-width: 480px;
             width: 100%;
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             box-sizing: border-box;
@@ -354,7 +356,10 @@
                         <button id="btn-rewrite" class="btn btn-orange">Undo & Rewrite</button>
                         <button id="btn-undo" class="btn btn-red">Undo Writes for Date</button>
                     </div>
-                    <button id="btn-override-open" type="button" class="btn btn-blue" style="width: 100%;">🛠️ Override User Draft / Duplicate</button>
+                    <div class="btn-row">
+                        <button id="btn-override-open" type="button" class="btn btn-blue">🛠️ Override User Draft</button>
+                        <button id="btn-usernames-open" type="button" class="btn btn-purple">🔄 Update Usernames (Draft 2300)</button>
+                    </div>
                 </div>
 
                 <div class="terminal-header">
@@ -417,6 +422,43 @@
             <div style="display:flex; gap:0.5rem;">
                 <button id="btn-apply-override" class="btn btn-primary-action" style="flex:1;">Apply & Rewrite Sheet</button>
                 <button id="btn-clear-overrides" class="btn btn-red" style="padding:0.5rem 0.75rem;">Clear Overrides</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Player Usernames Modal (Draft 2300) -->
+    <div id="usernames-modal" class="modal-bg">
+        <div class="modal-card" style="max-width: 520px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-subtle); padding-bottom:0.6rem;">
+                <h3 style="margin:0; color:var(--gold-mid); font-size:1.1rem; text-transform:uppercase; font-family:'Didot', serif;">Update Player Usernames</h3>
+                <button id="btn-close-usernames" style="background:none; border:none; color:#888; font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            
+            <div class="form-group" style="margin-bottom:0.75rem;">
+                <label for="input-user-ids">Input User IDs (One per line or comma-separated)</label>
+                <textarea id="input-user-ids" rows="5" placeholder="xnr5VpW3&#10;jvbb41pv&#10;kvMbxE63..." style="width:100%; background:rgba(0,0,0,0.5); border:1px solid var(--border-subtle); color:#fff; border-radius:6px; padding:0.6rem; font-family:monospace; font-size:0.85rem; box-sizing:border-box; outline:none; resize:vertical;"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.75rem;">
+                <label for="input-draft-id">Draft ID</label>
+                <input type="text" id="input-draft-id" value="2300" style="width:100%; background:rgba(0,0,0,0.5); border:1px solid var(--border-subtle); color:#fff; border-radius:6px; padding:0.6rem; font-size:0.85rem; box-sizing:border-box; outline:none;">
+            </div>
+
+            <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                <button id="btn-fetch-usernames" class="btn btn-primary-action" style="flex:1;">Fetch Usernames</button>
+                <button id="btn-clear-usernames" class="btn btn-red" style="padding:0.5rem 0.75rem;">Clear</button>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.75rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                    <label for="output-csv-result" style="margin-bottom:0;">Output CSV (Exact Order)</label>
+                    <button id="btn-copy-csv" type="button" style="background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-light); font-size:0.68rem; font-weight:800; padding:2px 8px; border-radius:4px; cursor:pointer; text-transform:uppercase;">Copy CSV</button>
+                </div>
+                <textarea id="output-csv-result" rows="6" readonly placeholder="username, user id&#10;@cdeck24, xnr5VpW3" style="width:100%; background:#050811; border:1px solid var(--border-gold); color:#4ade80; border-radius:6px; padding:0.6rem; font-family:monospace; font-size:0.85rem; box-sizing:border-box; outline:none; resize:vertical;"></textarea>
+            </div>
+            
+            <div style="font-size:0.72rem; color:var(--text-muted); line-height:1.4;">
+                Queries the RealApp draft contest API for each user ID in sequence, extracts their updated handle, and preserves the exact submission order.
             </div>
         </div>
     </div>
@@ -552,6 +594,122 @@
             if (success) {
                 await performFetchAndWrite();
             }
+        });
+
+        // ==========================================================
+        // UPDATE PLAYER USERNAMES (DRAFT 2300 LOOKUP)
+        // ==========================================================
+        const usernamesModal = document.getElementById('usernames-modal');
+        const btnUsernamesOpen = document.getElementById('btn-usernames-open');
+        const btnCloseUsernames = document.getElementById('btn-close-usernames');
+        const btnFetchUsernames = document.getElementById('btn-fetch-usernames');
+        const btnClearUsernames = document.getElementById('btn-clear-usernames');
+        const btnCopyCsv = document.getElementById('btn-copy-csv');
+        const inputUserIds = document.getElementById('input-user-ids');
+        const inputDraftId = document.getElementById('input-draft-id');
+        const outputCsvResult = document.getElementById('output-csv-result');
+
+        btnUsernamesOpen.addEventListener('click', () => {
+            usernamesModal.style.display = 'flex';
+        });
+
+        btnCloseUsernames.addEventListener('click', () => {
+            usernamesModal.style.display = 'none';
+        });
+
+        btnClearUsernames.addEventListener('click', () => {
+            inputUserIds.value = '';
+            outputCsvResult.value = '';
+        });
+
+        btnCopyCsv.addEventListener('click', () => {
+            if (!outputCsvResult.value.trim()) return;
+            navigator.clipboard.writeText(outputCsvResult.value.trim()).then(() => {
+                const orig = btnCopyCsv.textContent;
+                btnCopyCsv.textContent = 'Copied!';
+                setTimeout(() => { btnCopyCsv.textContent = orig; }, 2000);
+            });
+        });
+
+        btnFetchUsernames.addEventListener('click', async () => {
+            const rawText = inputUserIds.value.trim();
+            if (!rawText) {
+                alert('Please enter at least one User ID.');
+                return;
+            }
+
+            const draftId = (inputDraftId.value || '2300').trim();
+            const userIds = rawText.split(/[\r\n,]+/).map(s => s.trim()).filter(Boolean);
+
+            if (userIds.length === 0) {
+                alert('No valid User IDs found.');
+                return;
+            }
+
+            btnFetchUsernames.disabled = true;
+            btnFetchUsernames.textContent = `Fetching 0/${userIds.length}...`;
+            outputCsvResult.value = '';
+            terminalStatus.textContent = 'Updating Usernames';
+            terminalStatus.style.color = '#a78bfa';
+            output.textContent = `Starting batch username lookup for ${userIds.length} users on Draft ${draftId}...\n`;
+
+            const results = [];
+
+            for (let i = 0; i < userIds.length; i++) {
+                const uid = userIds[i];
+                btnFetchUsernames.textContent = `Fetching ${i + 1}/${userIds.length}...`;
+                
+                let fetchedName = null;
+                let retries = 0;
+
+                while (retries < 3) {
+                    try {
+                        const token = generateRequestToken();
+                        const targetUrl = `https://web.realsports.io/games/playerratingcontest/${draftId}/view/${uid}?contestType=sport&source=home`;
+                        const proxyUrl = `${workerProxy}?url=${encodeURIComponent(targetUrl)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
+                        
+                        const res = await fetch(proxyUrl);
+                        if (res.status === 429) {
+                            retries++;
+                            await sleep(2500);
+                            continue;
+                        }
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            fetchedName = data.info?.user?.userName || data.user?.userName || data.user?.name || data.info?.user?.username || data.user?.username || data.info?.user?.name || null;
+                            break;
+                        } else {
+                            break;
+                        }
+                    } catch (e) {
+                        retries++;
+                        await sleep(1500);
+                    }
+                }
+
+                let finalUsername = '';
+                if (fetchedName) {
+                    finalUsername = fetchedName.startsWith('@') ? fetchedName : `@${fetchedName}`;
+                    output.textContent += `[${i + 1}/${userIds.length}] ${uid} -> ${finalUsername}\n`;
+                } else {
+                    finalUsername = `@Unknown`;
+                    output.textContent += `[${i + 1}/${userIds.length}] ${uid} -> Not Found (using @Unknown)\n`;
+                }
+
+                results.push(`${finalUsername}, ${uid}`);
+                outputCsvResult.value = `username, user id\n` + results.join('\n');
+
+                if (i < userIds.length - 1) {
+                    await sleep(350);
+                }
+            }
+
+            btnFetchUsernames.disabled = false;
+            btnFetchUsernames.textContent = 'Fetch Usernames';
+            terminalStatus.textContent = 'Complete';
+            terminalStatus.style.color = '#4ade80';
+            output.textContent += `\nCompleted lookup for ${userIds.length} users in exact order.\n`;
         });
 
         onAuthStateChanged(auth, async (user) => {
@@ -908,7 +1066,7 @@
                         
                         let scoreDisplay = '0';
                         if (data.info?.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
-                        else if (data.rankDisplayInfos?.length > 0) scoreDisplay = data.rankDisplayInfos[0].scoreDisplay || '0';
+                        else if (data.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
                         else if (data.scoreDisplay) scoreDisplay = data.scoreDisplay;
                         else if (data.info?.score !== undefined) scoreDisplay = data.info.score;
                         else if (data.score !== undefined) scoreDisplay = data.score;
@@ -1424,7 +1582,7 @@
             terminalStatus.style.color = '#a78bfa';
             output.textContent = `Fetching replies from Free Agency Thread...\n`;
             try {
-                const url = `https://web.realsports.io/comments/groups/46567/replies/178458037514000001?limit=100`;
+                const url = `https://web.realapp.com/comments/groups/46567/replies/179241867568000001?limit=100`;
                 const token = generateRequestToken();
                 const proxyUrl = `${workerProxy}?url=${encodeURIComponent(url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
                 

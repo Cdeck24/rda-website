@@ -34,30 +34,38 @@
             margin: 0;
         }
 
-        /* Dual-Tier Category & Sub Navigation */
+        /* Dual-Tier Category & Sub Navigation (Mobile-Responsive Scrollable Tracks) */
         .category-tabs {
             display: flex;
             justify-content: center;
-            gap: 1rem;
+            gap: 0.75rem;
             margin-bottom: 1rem;
             border-bottom: 1px solid var(--border-subtle);
             padding-bottom: 0;
-            overflow: visible;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            max-width: 100%;
+        }
+        .category-tabs::-webkit-scrollbar {
+            display: none;
         }
 
         .cat-btn {
             background: none;
             border: none;
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             font-weight: 700;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.85rem;
             cursor: pointer;
             position: relative;
             transition: color 0.2s;
             text-transform: uppercase;
             letter-spacing: 0.75px;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .cat-btn:hover { color: #fff; }
@@ -76,9 +84,17 @@
         .sub-tabs {
             display: flex;
             justify-content: center;
-            flex-wrap: wrap;
             gap: 0.5rem;
             margin-bottom: 1.5rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+            max-width: 100%;
+        }
+        .sub-tabs::-webkit-scrollbar {
+            display: none;
         }
 
         .tab-btn {
@@ -94,6 +110,7 @@
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            flex-shrink: 0;
         }
 
         .tab-btn:hover {
@@ -134,6 +151,29 @@
             font-weight: 700;
             outline: none;
             cursor: pointer;
+        }
+
+        .btn-export {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-light);
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-export:hover {
+            background: var(--gold-mid);
+            color: #000;
+            transform: translateY(-1px);
         }
 
         /* Overview Cards Grid */
@@ -335,6 +375,107 @@
         .award-title { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 2px; }
         .award-winner { font-size: 0.95rem; font-weight: 800; color: #fff; }
 
+        /* All-RDA Teams Grid */
+        .all-rda-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .all-rda-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .all-rda-card.first-team {
+            border-color: var(--border-gold);
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+        }
+
+        .all-rda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.6rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .all-rda-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .first-team .all-rda-title { color: var(--gold-mid); }
+        .second-team .all-rda-title { color: #cbd5e1; }
+
+        .all-rda-player-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 0.55rem 0.75rem;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+        .all-rda-player-row:hover { background: rgba(255, 255, 255, 0.06); }
+
+        .all-rda-player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .all-rda-num {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            width: 16px;
+        }
+        .first-team .all-rda-num { color: var(--gold-light); }
+
+        .all-rda-name {
+            font-weight: 800;
+            color: #fff;
+            font-size: 0.88rem;
+        }
+
+        .all-rda-team {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .all-rda-team-logo {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+
+        .all-rda-stat-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--gold-light);
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
         .loading-container {
             text-align: center;
             padding: 4rem 1rem;
@@ -354,15 +495,55 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        @media (max-width: 650px) {
+        @media (max-width: 768px) {
             .records-content { padding: 0.5rem 0.5rem 3rem 0.5rem; }
-            .category-tabs { justify-content: flex-start; gap: 0.5rem; }
-            .cat-btn { font-size: 0.82rem; padding: 0.4rem 0.6rem; }
-            .sub-tabs { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.4rem; }
-            .tab-btn { flex: 0 0 auto; font-size: 0.75rem; padding: 0.4rem 0.7rem; }
+            .category-tabs {
+                justify-content: flex-start;
+                gap: 0.4rem;
+                padding: 0 0.25rem;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .cat-btn {
+                font-size: 0.8rem;
+                padding: 0.45rem 0.65rem;
+                letter-spacing: 0.5px;
+            }
+            .sub-tabs {
+                justify-content: flex-start;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                flex-wrap: nowrap;
+                gap: 0.4rem;
+                padding: 0 0.25rem 0.4rem 0.25rem;
+            }
+            .tab-btn {
+                flex: 0 0 auto;
+                font-size: 0.72rem;
+                padding: 0.4rem 0.65rem;
+            }
+            .controls-banner {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.6rem;
+            }
+            .controls-banner > div {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .filter-select, .btn-export {
+                width: 100%;
+                justify-content: center;
+                box-sizing: border-box;
+            }
             .record-value { font-size: 1.7rem; }
             .record-card { padding: 1rem 0.75rem; }
             .data-table th, .data-table td { padding: 0.6rem 0.45rem; font-size: 0.78rem; }
+            .all-rda-grid { grid-template-columns: 1fr; }
+            .podium-container { gap: 0.4rem; padding: 1rem 0; }
+            .podium-logo { width: 36px; height: 36px; }
+            .podium-team-name { font-size: 0.75rem; }
+            .awards-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
         }
     </style>
 </head>
@@ -423,6 +604,10 @@
 
             <!-- TAB PANE: ALL-TIME CAREER POINTS -->
             <div id="all-time-pts" class="tab-pane">
+                <div class="controls-banner">
+                    <span style="font-weight: 800; color: #fff; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;">Career Points Leaderboard</span>
+                    <button type="button" class="btn-export" onclick="exportCareerPointsCSV()">📥 Export CSV</button>
+                </div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -446,7 +631,10 @@
                         <img id="team-filter-logo" src="" class="team-logo" onerror="this.style.display='none'">
                         <span id="team-filter-name" style="font-weight: 800; color: #fff;">Franchise Scorers</span>
                     </div>
-                    <select id="team-filter" class="filter-select" onchange="window.renderTeamLeaderboard(this.value)"></select>
+                    <div style="display:flex; align-items:center; gap: 8px; flex-wrap: wrap;">
+                        <select id="team-filter" class="filter-select" onchange="window.renderTeamLeaderboard(this.value)"></select>
+                        <button type="button" class="btn-export" onclick="exportTeamScorersCSV()">📥 Export CSV</button>
+                    </div>
                 </div>
                 <div class="table-wrapper">
                     <table class="data-table">
@@ -466,7 +654,10 @@
             <div id="sport-pts" class="tab-pane">
                 <div class="controls-banner">
                     <span id="sport-filter-name" style="font-weight: 800; color: var(--gold-mid); text-transform: uppercase;">Sport Leaders</span>
-                    <select id="sport-filter" class="filter-select" onchange="window.renderSportLeaderboard(this.value)"></select>
+                    <div style="display:flex; align-items:center; gap: 8px; flex-wrap: wrap;">
+                        <select id="sport-filter" class="filter-select" onchange="window.renderSportLeaderboard(this.value)"></select>
+                        <button type="button" class="btn-export" onclick="exportSportLeadersCSV()">📥 Export CSV</button>
+                    </div>
                 </div>
                 <div class="table-wrapper">
                     <table class="data-table">
@@ -484,6 +675,10 @@
 
             <!-- TAB PANE: SINGLE GAME HIGHS -->
             <div id="single-game" class="tab-pane">
+                <div class="controls-banner">
+                    <span style="font-weight: 800; color: #fff; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;">All-Time Single-Game Highs</span>
+                    <button type="button" class="btn-export" onclick="exportSingleGameHighsCSV()">📥 Export CSV</button>
+                </div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -502,6 +697,10 @@
 
             <!-- TAB PANE: TEAM SCORES -->
             <div id="team-scores" class="tab-pane">
+                <div class="controls-banner">
+                    <span style="font-weight: 800; color: #fff; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;">Team High Scores</span>
+                    <button type="button" class="btn-export" onclick="exportTeamHighScoresCSV()">📥 Export CSV</button>
+                </div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -521,6 +720,10 @@
 
             <!-- TAB PANE: ALL-TIME FRANCHISE WINS -->
             <div id="team-wins" class="tab-pane">
+                <div class="controls-banner">
+                    <span style="font-weight: 800; color: #fff; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;">All-Time Franchise Wins</span>
+                    <button type="button" class="btn-export" onclick="exportFranchiseWinsCSV()">📥 Export CSV</button>
+                </div>
                 <div class="table-wrapper">
                     <table class="data-table">
                         <thead>
@@ -587,6 +790,9 @@
 
                 <div style="font-size: 0.85rem; font-weight: 800; color: var(--gold-mid); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.75rem;">Major Honors</div>
                 <div class="awards-grid" id="awards-view"></div>
+
+                <div style="font-size: 0.85rem; font-weight: 800; color: var(--gold-mid); text-transform: uppercase; letter-spacing: 1px; margin-top: 1.5rem; margin-bottom: 0.75rem;">All-RDA Teams</div>
+                <div class="all-rda-grid" id="all-rda-view"></div>
             </div>
         </div>
     </div>
@@ -601,12 +807,20 @@
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
         const seasonsToFetch = Object.keys(HISTORICAL_CSVS || { '1':{}, '2':{}, '3':{}, '4':{}, '5':{}, '6':{}, '7':{} });
 
+        window.allTimeLeaderboardData = [];
+        window.franchiseWinsData = [];
+        window.allSingleGamesData = [];
+        window.allTeamGamesData = [];
+
         window.switchCategory = (catId, defaultTabId, btn) => {
             document.querySelectorAll('.sub-tabs').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.cat-btn').forEach(el => el.classList.remove('active'));
             const subTabContainer = document.getElementById(catId);
             if (subTabContainer) subTabContainer.style.display = 'flex';
-            if (btn) btn.classList.add('active');
+            if (btn) {
+                btn.classList.add('active');
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
             const defaultBtn = subTabContainer ? subTabContainer.querySelector(`[onclick*="${defaultTabId}"]`) : null;
             window.switchTab(defaultTabId, defaultBtn);
         };
@@ -617,6 +831,7 @@
                 const parent = btn.closest('.sub-tabs');
                 if (parent) parent.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
                 btn.classList.add('active');
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             }
             const target = document.getElementById(tabId);
             if (target) target.classList.add('active');
@@ -675,81 +890,409 @@
             return `#${rank}`;
         };
 
-        // --- TROPHY REPOSITORY DATA ---
+        // --- CSV EXPORT HELPERS ---
+        const escapeCsv = (val) => {
+            if (val === undefined || val === null) return '""';
+            const str = String(val).replace(/"/g, '""');
+            return `"${str}"`;
+        };
+
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        window.exportCareerPointsCSV = function() {
+            const list = window.allTimeLeaderboardData || [];
+            if (!list.length) {
+                alert('No career points data available to export.');
+                return;
+            }
+            const headers = ['Rank', 'Player', 'Seasons Played', 'Games Played', 'Career Points'];
+            const rows = list.map((p, idx) => [
+                idx + 1,
+                escapeCsv(p.name),
+                p.seasons,
+                p.games,
+                p.careerPts.toFixed(2)
+            ].join(','));
+
+            const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadCSV(csvContent, `RDA_Career_Points_Leaderboard_${dateStr}.csv`);
+        };
+
+        window.exportTeamScorersCSV = function() {
+            const team = document.getElementById('team-filter')?.value;
+            const list = window.globalTeamScorersData[team] || [];
+            if (!list.length) {
+                alert(`No scoring data available for ${team}.`);
+                return;
+            }
+            const headers = ['Rank', 'Player', 'Franchise', 'Total Points for Franchise'];
+            const rows = list.map((p, idx) => [
+                idx + 1,
+                escapeCsv(p.name),
+                escapeCsv(team),
+                p.pts.toFixed(2)
+            ].join(','));
+
+            const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+            const dateStr = new Date().toISOString().split('T')[0];
+            const safeTeam = team.replace(/[^a-zA-Z0-9_-]/g, '_');
+            downloadCSV(csvContent, `RDA_Franchise_Scorers_${safeTeam}_${dateStr}.csv`);
+        };
+
+        window.exportSportLeadersCSV = function() {
+            const sport = document.getElementById('sport-filter')?.value;
+            const list = window.globalSportData[sport] || [];
+            if (!list.length) {
+                alert(`No scoring data available for ${sport}.`);
+                return;
+            }
+            const headers = ['Rank', 'Player', 'Sport', 'Total Points'];
+            const rows = list.map((p, idx) => [
+                idx + 1,
+                escapeCsv(p.name),
+                escapeCsv(sport),
+                p.pts.toFixed(2)
+            ].join(','));
+
+            const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadCSV(csvContent, `RDA_Sport_Leaders_${sport}_${dateStr}.csv`);
+        };
+
+        window.exportSingleGameHighsCSV = function() {
+            const list = window.allSingleGamesData || [];
+            if (!list.length) {
+                alert('No single-game data available to export.');
+                return;
+            }
+            const headers = ['Rank', 'Player', 'Date', 'Season', 'Score'];
+            const rows = list.map((g, idx) => [
+                idx + 1,
+                escapeCsv(g.name),
+                escapeCsv(g.date),
+                `Season ${g.season}`,
+                g.score.toFixed(2)
+            ].join(','));
+
+            const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadCSV(csvContent, `RDA_Single_Game_Highs_${dateStr}.csv`);
+        };
+
+        window.exportFranchiseWinsCSV = function() {
+            const list = window.franchiseWinsData || [];
+            if (!list.length) {
+                alert('No franchise wins data available to export.');
+                return;
+            }
+            const headers = ['Rank', 'Franchise', 'All-Time Wins'];
+            const rows = list.map((t, idx) => [
+                idx + 1,
+                escapeCsv(t.team),
+                t.wins
+            ].join(','));
+
+            const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadCSV(csvContent, `RDA_All_Time_Franchise_Wins_${dateStr}.csv`);
+        };
+
+        window.exportTeamHighScoresCSV = function() {
+            const list = window.allTeamGamesData || [];
+            if (!list.length) {
+                alert('No team high score data available to export.');
+                return;
+            }
+            const headers = ['Rank', 'Franchise', 'Opponent', 'Date', 'Season', 'Score'];
+            const rows = list.slice(0, 100).map((g, idx) => [
+                idx + 1,
+                escapeCsv(g.team),
+                escapeCsv(g.opponent),
+                escapeCsv(g.date),
+                `Season ${g.season}`,
+                g.score.toFixed(2)
+            ].join(','));
+
+            const csvContent = [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadCSV(csvContent, `RDA_Team_High_Scores_${dateStr}.csv`);
+        };
+
+        // --- AUTHENTIC HISTORICAL TROPHY & HONORS ARCHIVE ---
         const trophyData = {
             '1': {
                 podium: { first: 'Manatees', second: 'Stars', third: 'Kings' },
                 awards: [
-                    { icon: '🏆', title: 'League MVP', winner: '@alp' },
+                    { icon: '🏆', title: 'Regular Season MVP', winner: '@alp' },
                     { icon: '🏅', title: 'Finals MVP', winner: '@alp' },
-                    { icon: '🕴🏻', title: 'GM of the Year', winner: '@vortexed' }
-                ]
+                    { icon: '🧠', title: 'GM of the Year', winner: '@vortexed' },
+                    { icon: '🤝', title: 'FA Pickup of the Year', winner: '@alessia_russo' }
+                ],
+                allRDA: {
+                    title1: '👑 All-RDA First Team',
+                    badge1: '5 Starters',
+                    firstTeam: [
+                        { player: '@alp', team: 'Manatees', stat: 'Regular & Finals MVP' },
+                        { player: '@sean_03', team: '', stat: '1st Team' },
+                        { player: '@vortexed', team: 'Manatees', stat: 'Champion' },
+                        { player: '@r0dmanx', team: '', stat: '1st Team' },
+                        { player: '@samuel_skol', team: '', stat: '1st Team' }
+                    ],
+                    title2: '🥈 All-RDA Second Team',
+                    badge2: '5 Starters',
+                    secondTeam: [
+                        { player: '@cadeottonlover', team: '', stat: '2nd Team' },
+                        { player: '@alessia_russo', team: '', stat: 'FA of the Year' },
+                        { player: '@fabri0897', team: '', stat: '2nd Team' },
+                        { player: '@tex', team: '', stat: '2nd Team' },
+                        { player: '@whereis905', team: '', stat: '2nd Team' }
+                    ]
+                }
             },
             '2': {
                 podium: { first: 'Kings', second: 'Stars', third: 'Underdogs' },
                 awards: [
                     { icon: '🏆', title: 'League MVP', winner: '@croze' },
                     { icon: '👶', title: 'Rookie of the Year', winner: '@bc' },
-                    { icon: '🕴🏻', title: 'GM of the Year', winner: '@cdeck24' },
-                    { icon: '📈', title: 'Most Improved', winner: '@fourr' }
-                ]
+                    { icon: '🤝', title: 'FA Pickup of the Year', winner: '@bc (Kings)' },
+                    { icon: '🧠', title: 'GM of the Year', winner: '@cdeck24 (Bajas)' },
+                    { icon: '📈', title: 'Most Improved Player', winner: '@fourr (Bajas)' },
+                    { icon: '🏅', title: 'Finals MVP', winner: 'Not Recorded' }
+                ],
+                allStars: {
+                    title1: '🌟 East Conference All-Stars',
+                    badge1: '10 Selections',
+                    firstTeam: [
+                        { player: '@fourr', team: 'Bajas', stat: 'MIP' },
+                        { player: '@cdeck24', team: 'Bajas', stat: 'GMOTY' },
+                        { player: '@balt', team: 'Bajas', stat: 'All-Star' },
+                        { player: '@vortexed', team: 'Manatees', stat: 'All-Star' },
+                        { player: '@log.an', team: '', stat: 'All-Star' },
+                        { player: '@gmoneytb', team: '', stat: 'All-Star' },
+                        { player: '@cadeottonlover', team: '', stat: 'All-Star' },
+                        { player: '@ar27g', team: '', stat: 'All-Star' },
+                        { player: '@holliday', team: '', stat: 'All-Star' },
+                        { player: '@jtj', team: '', stat: 'All-Star' }
+                    ],
+                    title2: '🌟 West Conference All-Stars',
+                    badge2: '10 Selections',
+                    secondTeam: [
+                        { player: '@croze', team: 'Stars', stat: 'League MVP' },
+                        { player: '@kronic1x', team: '', stat: 'All-Star' },
+                        { player: '@sean_03', team: '', stat: 'All-Star' },
+                        { player: '@mattisss', team: '', stat: 'All-Star' },
+                        { player: '@alp', team: '', stat: 'All-Star' },
+                        { player: '@fabri0897', team: '', stat: 'All-Star' },
+                        { player: '@bucksmuse', team: '', stat: 'All-Star' },
+                        { player: '@jcsuvy', team: '', stat: 'All-Star' },
+                        { player: '@jabahhh', team: '', stat: 'All-Star' },
+                        { player: '@r0dmanx', team: '', stat: 'All-Star' }
+                    ]
+                }
             },
             '3': {
                 podium: { first: 'Kings', second: 'Bajas', third: 'Dragons' },
                 awards: [
                     { icon: '🏆', title: 'League MVP', winner: '@bc' },
                     { icon: '🏅', title: 'Finals MVP', winner: '@bc' },
-                    { icon: '🤝', title: 'FA Pickup of Year', winner: '@thegreekfreak31' },
                     { icon: '👶', title: 'Rookie of the Year', winner: '@ant2holy' },
                     { icon: '🧠', title: 'GM of the Year', winner: '@r0dmanx' },
-                    { icon: '📈', title: 'Most Improved', winner: '@florida_sportsfan' }
-                ]
+                    { icon: '🤝', title: 'FA Pickup of the Year', winner: '@thegreekfreak31' },
+                    { icon: '📈', title: 'Most Improved Player', winner: '@florida_sportsfan' }
+                ],
+                allStars: {
+                    title1: '🌟 East Conference All-Stars',
+                    badge1: '12 Selections',
+                    firstTeam: [
+                        { player: '@dylan430', team: '', stat: 'All-Star' },
+                        { player: '@vortexed', team: '', stat: 'All-Star' },
+                        { player: '@realkam', team: '', stat: 'All-Star' },
+                        { player: '@caustic', team: '', stat: 'All-Star' },
+                        { player: '@ar27g', team: '', stat: 'All-Star' },
+                        { player: '@griff168', team: '', stat: 'All-Star' },
+                        { player: '@victorosimhen', team: '', stat: 'All-Star' },
+                        { player: '@ozone', team: '', stat: 'All-Star' },
+                        { player: '@sua', team: '', stat: 'All-Star' },
+                        { player: '@chuiso', team: '', stat: 'All-Star' },
+                        { player: '@ferrari', team: '', stat: 'All-Star' },
+                        { player: '@gmoneytb', team: '', stat: 'All-Star' }
+                    ],
+                    title2: '🌟 West Conference All-Stars',
+                    badge2: '12 Selections',
+                    secondTeam: [
+                        { player: '@florida_sportsfan', team: '', stat: 'MIP' },
+                        { player: '@avrohomm', team: '', stat: 'All-Star' },
+                        { player: '@bc', team: 'Kings', stat: 'MVP & Finals MVP' },
+                        { player: '@gio', team: '', stat: 'All-Star' },
+                        { player: '@jjettasbets', team: '', stat: 'All-Star' },
+                        { player: '@stephskid', team: '', stat: 'All-Star' },
+                        { player: '@ant2holy', team: '', stat: 'ROTY' },
+                        { player: '@croze', team: '', stat: 'All-Star' },
+                        { player: '@alp', team: '', stat: 'All-Star' },
+                        { player: '@nottherealben', team: '', stat: 'All-Star' },
+                        { player: '@boombeast', team: '', stat: 'All-Star' },
+                        { player: '@thegreekfreak31', team: '', stat: 'FA of Year' }
+                    ]
+                }
             },
             '4': {
                 podium: { first: 'Reapers', second: 'Underdogs', third: 'Kings' },
                 awards: [
                     { icon: '🏆', title: 'League MVP', winner: '@balt' },
                     { icon: '🏅', title: 'Finals MVP', winner: '@nottherealben' },
-                    { icon: '🤝', title: 'FA Pickup of Year', winner: '@chuiso' },
                     { icon: '👶', title: 'Rookie of the Year', winner: '@psyklone' },
                     { icon: '🧠', title: 'GM of the Year', winner: '@jabahhh' },
+                    { icon: '🤝', title: 'FA Pickup of the Year', winner: '@chuiso' },
                     { icon: '📈', title: 'Most Improved Player', winner: '@tinosthe2nd' }
-                ]
+                ],
+                allStars: {
+                    title1: '🌟 East Conference All-Stars',
+                    badge1: '16 Selections',
+                    firstTeam: [
+                        { player: '@sean_03', team: '', stat: 'All-Star' },
+                        { player: '@xxt_kraftpropsxx', team: '', stat: 'All-Star' },
+                        { player: '@realkam', team: '', stat: 'All-Star' },
+                        { player: '@fourr', team: '', stat: 'All-Star' },
+                        { player: '@dylan430', team: '', stat: 'All-Star' },
+                        { player: '@tinosthe2nd', team: '', stat: 'MIP' },
+                        { player: '@chet', team: '', stat: 'All-Star' },
+                        { player: '@pcaisthegoat', team: '', stat: 'All-Star' },
+                        { player: '@amonraprops', team: '', stat: 'All-Star' },
+                        { player: '@braeden42', team: '', stat: 'All-Star' },
+                        { player: '@sua', team: '', stat: 'All-Star' },
+                        { player: '@ferrari', team: '', stat: 'All-Star' },
+                        { player: '@victorosimhen', team: '', stat: 'All-Star' },
+                        { player: '@chefcurryy', team: '', stat: 'All-Star' },
+                        { player: '@bc', team: '', stat: 'All-Star' },
+                        { player: '@cdeck24', team: '', stat: 'All-Star' }
+                    ],
+                    title2: '🌟 West Conference All-Stars',
+                    badge2: '16 Selections',
+                    secondTeam: [
+                        { player: '@dead', team: '', stat: 'All-Star' },
+                        { player: '@kronic1x', team: '', stat: 'All-Star' },
+                        { player: '@nottherealben', team: 'Reapers', stat: 'Finals MVP' },
+                        { player: '@jabahhh', team: '', stat: 'GMOTY' },
+                        { player: '@psyklone', team: '', stat: 'ROTY' },
+                        { player: '@florida_sportsfan', team: '', stat: 'All-Star' },
+                        { player: '@ant2holy', team: '', stat: 'All-Star' },
+                        { player: '@jcsuvy', team: '', stat: 'All-Star' },
+                        { player: '@greektime', team: '', stat: 'All-Star' },
+                        { player: '@gundy32', team: '', stat: 'All-Star' },
+                        { player: '@cmg', team: '', stat: 'All-Star' },
+                        { player: '@fowler', team: '', stat: 'All-Star' },
+                        { player: '@kninja', team: '', stat: 'All-Star' },
+                        { player: '@alp', team: '', stat: 'All-Star' },
+                        { player: '@r0dmanx', team: '', stat: 'All-Star' },
+                        { player: '@gio', team: '', stat: 'All-Star' }
+                    ]
+                }
             },
             '5': {
                 podium: { first: 'Dragons', second: 'Reapers', third: 'Bajas' },
                 awards: [
                     { icon: '🏆', title: 'League MVP', winner: '@nottherealben' },
                     { icon: '🏅', title: 'Finals MVP', winner: '@victorosimhen' },
-                    { icon: '🤝', title: 'FA Pickup of Year', winner: '@e3thqn' },
                     { icon: '👶', title: 'Rookie of the Year', winner: '@fbb77' },
                     { icon: '🧠', title: 'GM of the Year', winner: '@r0dmanx' },
+                    { icon: '🤝', title: 'FA Pickup of the Year', winner: '@e3thqn' },
                     { icon: '📈', title: 'Most Improved Player', winner: '@tredawg' }
-                ]
+                ],
+                allStars: {
+                    title1: '🌟 East Conference All-Stars',
+                    badge1: '12 Selections',
+                    firstTeam: [
+                        { player: '@bc', team: 'Kings', stat: 'All-Star' },
+                        { player: '@realkam', team: 'Bajas', stat: 'All-Star' },
+                        { player: '@ceedee88lamb', team: 'Dragons', stat: 'Champion' },
+                        { player: '@fbb77', team: 'Buffaloes', stat: 'ROTY' },
+                        { player: '@ar27g', team: 'Underdogs', stat: 'All-Star' },
+                        { player: '@alp_unc', team: 'Knights', stat: 'All-Star' },
+                        { player: '@tredawg', team: 'Kings', stat: 'MIP' },
+                        { player: '@pigskin', team: 'Kings', stat: 'All-Star' },
+                        { player: '@upvotefarmer', team: 'Kings', stat: 'All-Star' },
+                        { player: '@thathuey5', team: 'Bajas', stat: 'All-Star' },
+                        { player: '@pookielukey', team: 'Underdogs', stat: 'All-Star' },
+                        { player: '@braeden42', team: 'Dragons', stat: 'Champion' }
+                    ],
+                    title2: '🌟 West Conference All-Stars',
+                    badge2: '12 Selections',
+                    secondTeam: [
+                        { player: '@psyklone', team: 'Tigers', stat: 'All-Star' },
+                        { player: '@noahmulford', team: 'Reapers', stat: 'All-Star' },
+                        { player: '@greektime', team: 'Zombies', stat: 'All-Star' },
+                        { player: '@aayan.t', team: 'Manatees', stat: 'All-Star' },
+                        { player: '@mke', team: 'Stars', stat: 'All-Star' },
+                        { player: '@danielwest', team: 'Voyagers', stat: 'All-Star' },
+                        { player: '@nottherealben', team: 'Reapers', stat: 'League MVP' },
+                        { player: '@jcsuvy', team: 'Tigers', stat: 'All-Star' },
+                        { player: '@chet', team: 'Reapers', stat: 'All-Star' },
+                        { player: '@e3thqn', team: 'Reapers', stat: 'FA of Year' },
+                        { player: '@calebownsgb', team: 'Tigers', stat: 'All-Star' },
+                        { player: '@bixz', team: 'Zombies', stat: 'All-Star' }
+                    ]
+                }
             },
             '6': {
                 podium: { first: 'Reapers', second: 'Kings', third: 'Manatees' },
                 awards: [
-                    { icon: '🏆', title: 'League MVP', winner: 'TBD' },
+                    { icon: '🏆', title: 'League MVP', winner: '@r0dmanx' },
                     { icon: '🏅', title: 'Finals MVP', winner: '@r0dmanx' },
-                    { icon: '⚡', title: 'Sixth Man of the Year', winner: 'TBD' },
-                    { icon: '🤝', title: 'FA Pickup of Year', winner: 'TBD' },
-                    { icon: '👶', title: 'Rookie of the Year', winner: 'TBD' },
-                    { icon: '🧠', title: 'GM of the Year', winner: 'TBD' },
-                    { icon: '📈', title: 'Most Improved Player', winner: 'TBD' }
-                ]
+                    { icon: '👶', title: 'Rookie of the Year', winner: '@rome' },
+                    { icon: '🧠', title: 'GM of the Year', winner: '@aayan.t' },
+                    { icon: '⚡', title: 'Sixth Man of the Year', winner: '@to' },
+                    { icon: '📈', title: 'Most Improved Player', winner: '@masons07' }
+                ],
+                allRDA: {
+                    title1: '👑 All-RDA First Team',
+                    badge1: '5 Starters',
+                    firstTeam: [
+                        { player: '@r0dmanx', team: 'Reapers', stat: 'League & Finals MVP' },
+                        { player: '@ceedee88lamb', team: 'Dragons', stat: '1st Team' },
+                        { player: '@psyklone', team: 'Tigers', stat: '1st Team' },
+                        { player: '@gio', team: 'Manatees', stat: '1st Team' },
+                        { player: '@masons07', team: 'Kings', stat: 'MIP / 1st Team' }
+                    ],
+                    title2: '🥈 All-RDA Second Team',
+                    badge2: '5 Starters',
+                    secondTeam: [
+                        { player: '@stormttruper', team: 'Knights', stat: '2nd Team' },
+                        { player: '@ant2holy', team: 'Manatees', stat: '2nd Team' },
+                        { player: '@realkam', team: 'Bajas', stat: '2nd Team' },
+                        { player: '@purdyfaithful', team: 'Manatees', stat: '2nd Team' },
+                        { player: '@spidermonkee', team: 'Zombies', stat: '2nd Team' }
+                    ]
+                }
             },
             '7': {
                 podium: { first: 'TBD', second: 'TBD', third: 'TBD' },
                 awards: [
                     { icon: '🏆', title: 'League MVP', winner: 'TBD' },
                     { icon: '🏅', title: 'Finals MVP', winner: 'TBD' },
-                    { icon: '⚡', title: 'Sixth Man of the Year', winner: 'TBD' },
-                    { icon: '🤝', title: 'FA Pickup of Year', winner: 'TBD' },
                     { icon: '👶', title: 'Rookie of the Year', winner: 'TBD' },
                     { icon: '🧠', title: 'GM of the Year', winner: 'TBD' },
+                    { icon: '⚡', title: 'Sixth Man of the Year', winner: 'TBD' },
                     { icon: '📈', title: 'Most Improved Player', winner: 'TBD' }
-                ]
+                ],
+                allRDA: {
+                    title1: '👑 All-RDA First Team',
+                    badge1: '5 Starters',
+                    firstTeam: [],
+                    title2: '🥈 All-RDA Second Team',
+                    badge2: '5 Starters',
+                    secondTeam: []
+                }
             }
         };
 
@@ -758,6 +1301,12 @@
             const p = data.podium;
             const podiumEl = document.getElementById('podium-view');
             const awardsEl = document.getElementById('awards-view');
+            const allRdaEl = document.getElementById('all-rda-view');
+            const headerEl = document.getElementById('all-teams-header');
+
+            if (headerEl) {
+                headerEl.innerText = data.allStars ? 'Seasonal All-Star Rosters' : 'All-RDA Teams';
+            }
 
             podiumEl.innerHTML = `
                 <div class="podium-card second">
@@ -786,6 +1335,48 @@
                     </div>
                 </div>
             `).join('');
+
+            const teamGroup = data.allRDA || data.allStars || { title1: '👑 First Team', title2: '🥈 Second Team', firstTeam: [], secondTeam: [] };
+
+            const buildRosterHtml = (teamList) => {
+                if (!teamList || teamList.length === 0) {
+                    return `<div style="color:var(--text-muted); font-size:0.8rem; font-style:italic; padding:1.5rem; text-align:center;">Selection pending / TBA.</div>`;
+                }
+                return teamList.map((item, idx) => {
+                    const playerName = typeof item === 'string' ? item : item.player;
+                    const teamName = typeof item === 'object' ? item.team : '';
+                    const badgeText = typeof item === 'object' ? (item.stat || '') : '';
+                    const logoHtml = teamName ? `<img src="${getTeamLogoPath(teamName)}" class="all-rda-team-logo" onerror="this.style.display='none'"><span>${teamName}</span>` : '';
+
+                    return `
+                        <div class="all-rda-player-row">
+                            <div class="all-rda-player-info">
+                                <span class="all-rda-num">${idx + 1}</span>
+                                <span class="all-rda-name">${playerName}</span>
+                                ${teamName ? `<span class="all-rda-team">${logoHtml}</span>` : ''}
+                            </div>
+                            ${badgeText ? `<span class="all-rda-stat-badge">${badgeText}</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            allRdaEl.innerHTML = `
+                <div class="all-rda-card first-team">
+                    <div class="all-rda-header">
+                        <span class="all-rda-title">${teamGroup.title1 || '👑 First Team'}</span>
+                        <span style="font-size:0.7rem; color:var(--gold-mid); font-weight:800; text-transform:uppercase;">${teamGroup.badge1 || 'Selections'}</span>
+                    </div>
+                    ${buildRosterHtml(teamGroup.firstTeam)}
+                </div>
+                <div class="all-rda-card second-team">
+                    <div class="all-rda-header">
+                        <span class="all-rda-title">${teamGroup.title2 || '🥈 Second Team'}</span>
+                        <span style="font-size:0.7rem; color:#94a3b8; font-weight:800; text-transform:uppercase;">${teamGroup.badge2 || 'Selections'}</span>
+                    </div>
+                    ${buildRosterHtml(teamGroup.secondTeam)}
+                </div>
+            `;
         };
 
         async function compileHistory() {
@@ -1084,6 +1675,13 @@
             });
             franchiseWinsTable.sort((a,b) => b.wins - a.wins);
 
+            // Store Leaderboards Globally for CSV Export
+            allTimeLeaderboard.sort((a, b) => b.careerPts - a.careerPts);
+            window.allTimeLeaderboardData = allTimeLeaderboard;
+            window.allSingleGamesData = topSingleGames;
+            window.franchiseWinsData = franchiseWinsTable;
+            window.allTeamGamesData = allTeamGames;
+
             // Render UI
             document.getElementById('loading-area').style.display = 'none';
             document.getElementById('data-area').style.display = 'block';
@@ -1150,7 +1748,6 @@
             `;
 
             // 2. Career Leaderboard
-            allTimeLeaderboard.sort((a, b) => b.careerPts - a.careerPts);
             document.getElementById('leaderboard-tbody').innerHTML = allTimeLeaderboard.map((p, idx) => `
                 <tr>
                     <td class="rank-col">${getRankHtml(idx + 1)}</td>
@@ -1266,7 +1863,7 @@
                 </tr>
             `).join('');
 
-            // 9. Initial Trophy View (Default to Season 6 so visitors see the newly crowned champions)
+            // 9. Initial Trophy View
             const selectEl = document.getElementById('trophy-season-select');
             if (selectEl) {
                 const initialSeason = (currentSeason === '7' && trophyData['7']?.podium.first === 'TBD') ? '6' : currentSeason;

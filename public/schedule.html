@@ -514,51 +514,53 @@
             return Array.from(sports);
         }
 
+        // Accurately extracts playoff round classification based on Excel schema
         function getRowPlayoffRound(r) {
             if (!r) return null;
+            
+            // Check Game Type first: if explicitly not playoffs, return null
+            const gameTypeVal = String(r['game type'] || r['gametype'] || r['type'] || '').trim().toLowerCase();
+            if (gameTypeVal === 'regular season' || gameTypeVal === 'regular' || gameTypeVal === 'preseason') {
+                return null;
+            }
+
             for (const [k, v] of Object.entries(r)) {
                 if (!v || typeof v !== 'string') continue;
                 const lowerK = k.toLowerCase().trim();
                 const lowerV = v.toLowerCase().trim();
 
-                if (lowerK.includes('round')) {
-                    if (lowerV.includes('wild')) return 'Wild Card';
-                    if (lowerV.includes('semi')) return 'Semi-Finals';
-                    if (lowerV.includes('conf')) return 'Conference Finals';
-                    if (lowerV.includes('final')) return 'Finals';
-                    if (lowerV) return v.trim();
-                }
+                // Ignore standard regular season round headers (Round 1, Round 2, etc.)
+                if (/^round\s*\d+$/i.test(lowerV)) continue;
 
-                if (lowerV === 'wild card' || lowerV === 'wildcard') return 'Wild Card';
-                if (lowerV === 'semifinals' || lowerV === 'semi-finals' || lowerV === 'semis') return 'Semi-Finals';
-                if (lowerV === 'conference finals' || lowerV === 'conf finals') return 'Conference Finals';
-                if (lowerV === 'finals' || lowerV === 'championship') return 'Finals';
+                if (lowerV.includes('semi')) return 'Conference Semifinals';
+                if (lowerV.includes('conference final') || lowerV.includes('conf final')) return 'Conference Finals';
+                if (lowerV.includes('championship') || lowerV.includes('finals') || lowerV === 'final') return 'RDA Championship';
+                if (lowerV.includes('third-place') || lowerV.includes('3rd place')) return 'RDA Championship';
+                if (lowerV.includes('wild')) return 'Wild Card';
+
+                if (lowerK === 'round' && (gameTypeVal === 'playoffs' || gameTypeVal === 'playoff')) {
+                    return v.trim();
+                }
             }
             return null;
         }
 
         function checkPlayoffRow(r) {
             if (!r) return false;
-            if (getRowPlayoffRound(r)) return true;
-            for (const [k, v] of Object.entries(r)) {
-                if (typeof v === 'string') {
-                    const lower = v.trim().toLowerCase();
-                    if (lower === 'playoffs' || lower === 'playoff' || lower === 'postseason' || lower.includes('playoff')) {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            const gameTypeVal = String(r['game type'] || r['gametype'] || r['type'] || '').trim().toLowerCase();
+            if (gameTypeVal === 'playoffs' || gameTypeVal === 'playoff' || gameTypeVal === 'postseason') return true;
+            if (gameTypeVal === 'regular season' || gameTypeVal === 'regular' || gameTypeVal === 'preseason') return false;
+            return !!getRowPlayoffRound(r);
         }
 
         function checkPreseasonRow(r) {
             if (!r) return false;
+            const gameTypeVal = String(r['game type'] || r['gametype'] || r['type'] || '').trim().toLowerCase();
+            if (gameTypeVal === 'preseason' || gameTypeVal === 'pre-season') return true;
             for (const [k, v] of Object.entries(r)) {
                 if (typeof v === 'string') {
                     const lower = v.trim().toLowerCase();
-                    if (lower === 'preseason' || lower === 'pre-season' || lower.includes('preseason')) {
-                        return true;
-                    }
+                    if (lower.startsWith('preseason')) return true;
                 }
             }
             return false;
@@ -624,6 +626,9 @@
                 const isPreseason = checkPreseasonRow(r);
                 const playoffRound = getRowPlayoffRound(r);
 
+                // Specific round description from sheet (e.g. "Round 1", "Conference Semifinals (Game 1)")
+                const explicitRound = (r.round || r.Round || '').trim();
+
                 if (!dateGroups[date]) {
                     dateGroups[date] = {
                         date,
@@ -631,6 +636,7 @@
                         isPlayoff: false,
                         isPreseason: false,
                         playoffRound: null,
+                        explicitRound: null,
                         sports: new Set(),
                         games: []
                     };
@@ -641,6 +647,9 @@
                 if (playoffRound && !dateGroups[date].playoffRound) {
                     dateGroups[date].playoffRound = playoffRound;
                 }
+                if (explicitRound && !dateGroups[date].explicitRound) {
+                    dateGroups[date].explicitRound = explicitRound;
+                }
 
                 const gameIdxInDate = dateGroups[date].games.length;
 
@@ -649,7 +658,7 @@
                 if (!t1 && !t2) {
                     isPlaceholder = true;
                     const roundName = playoffRound || dateGroups[date].playoffRound || '';
-                    if (roundName === 'Finals') {
+                    if (roundName === 'RDA Championship') {
                         t1 = 'East Champion';
                         t2 = 'West Champion';
                     } else if (roundName === 'Conference Finals') {
@@ -676,8 +685,8 @@
                 }
 
                 if (!isPlaceholder) {
-                    if (t1 !== 'TBD') teamSet.add(t1);
-                    if (t2 !== 'TBD') teamSet.add(t2);
+                    if (t1 !== 'TBD' && !t1.includes('Winner') && !t1.includes('Seed') && !t1.includes('Champion')) teamSet.add(t1);
+                    if (t2 !== 'TBD' && !t2.includes('Winner') && !t2.includes('Seed') && !t2.includes('Champion')) teamSet.add(t2);
                 }
 
                 const rowSports = extractSportsFromRow(r);
@@ -741,6 +750,7 @@
                     date,
                     type: isPlayoff ? 'Playoffs' : (isPreseason ? 'Preseason' : 'Regular'),
                     playoffRound: playoffRound || dateGroups[date].playoffRound,
+                    explicitRound,
                     isPlaceholder,
                     s1Series,
                     s2Series,
@@ -768,22 +778,17 @@
             const sortedDates = Object.values(dateGroups).sort((a, b) => a.sortDate - b.sortDate);
             let preSlateIndex = 1;
             let regSlateIndex = 1;
-            const roundGameIndexMap = { 'Wild Card': 1, 'Semi-Finals': 1, 'Conference Semis': 1, 'Conference Finals': 1, 'Finals': 1, 'Championship': 1 };
-            const hasPreseasonTag = sortedDates.some(s => s.isPreseason);
 
             allSlates = sortedDates.map(slate => {
                 let slateLabel = '';
-                const isPre = slate.isPreseason || (!hasPreseasonTag && !slate.isPlayoff && preSlateIndex <= 4);
 
                 if (slate.isPlayoff) {
-                    const rName = slate.playoffRound || 'Wild Card';
-                    if (!roundGameIndexMap[rName]) roundGameIndexMap[rName] = 1;
-                    slateLabel = `${rName} • Game ${roundGameIndexMap[rName]++}`;
-                } else if (isPre) {
-                    slate.isPreseason = true;
-                    slateLabel = `Preseason • Game ${preSlateIndex++} of 4`;
+                    slateLabel = slate.explicitRound || `${slate.playoffRound || 'Playoffs'}`;
+                } else if (slate.isPreseason) {
+                    slateLabel = slate.explicitRound || `Preseason • Day ${preSlateIndex++} of 4`;
                 } else {
-                    slateLabel = `Game ${regSlateIndex++} of 21`;
+                    const roundNum = slate.explicitRound ? slate.explicitRound.replace(/[^0-9]/g, '') : regSlateIndex;
+                    slateLabel = `Round ${roundNum || regSlateIndex} • Game ${regSlateIndex++} of 21`;
                 }
 
                 return { 
@@ -1048,7 +1053,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-subtle); padding-bottom:0.75rem;">
                     <div>
                         <div style="font-size:1.1rem; font-weight:800; color:#fff;">${g.team1} vs ${g.team2}</div>
-                        <div style="font-size:0.72rem; color:var(--text-muted);">${g.date} &bull; ${g.playoffRound || g.type}</div>
+                        <div style="font-size:0.72rem; color:var(--text-muted);">${g.date} &bull; ${g.explicitRound || g.playoffRound || g.type}</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:1.1rem; font-weight:900; color:var(--gold-mid);">${g.s1Series} - ${g.s2Series}</div>
@@ -1205,12 +1210,13 @@
                 return;
             }
 
+            // Structured hierarchy for Playoffs tab matching Excel schema
             if (currentTypeFilter === 'playoffs') {
-                const roundOrder = ['Wild Card', 'Semi-Finals', 'Conference Semis', 'Conference Finals', 'Finals', 'Championship'];
+                const roundOrder = ['Conference Semifinals', 'Conference Finals', 'RDA Championship', 'Third-Place Match'];
                 const roundGroups = {};
 
                 filteredSlates.forEach(s => {
-                    const r = s.playoffRound || 'Wild Card';
+                    const r = s.playoffRound || 'Playoffs';
                     if (!roundGroups[r]) roundGroups[r] = [];
                     roundGroups[r].push(s);
                 });
@@ -1223,7 +1229,7 @@
                             <div class="round-group-section">
                                 <div class="round-group-header">
                                     <div class="round-group-title">${rName}</div>
-                                    <span class="round-group-badge">${slatesInRound.length} Gameday Slates</span>
+                                    <span class="round-group-badge">${slatesInRound.length} Slates</span>
                                 </div>
                                 ${slatesInRound.map(slate => renderSlateCardHtml(slate, todayStr)).join('')}
                             </div>
@@ -1238,7 +1244,7 @@
                             <div class="round-group-section">
                                 <div class="round-group-header">
                                     <div class="round-group-title">${rName}</div>
-                                    <span class="round-group-badge">${slatesInRound.length} Gameday Slates</span>
+                                    <span class="round-group-badge">${slatesInRound.length} Slates</span>
                                 </div>
                                 ${slatesInRound.map(slate => renderSlateCardHtml(slate, todayStr)).join('')}
                             </div>

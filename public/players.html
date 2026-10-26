@@ -269,6 +269,7 @@
                 <option value="share">Sort: Team % Share</option>
             </select>
             <button type="button" class="btn-export" id="btn-export" onclick="exportPlayerStatsCSV()">📥 Export CSV</button>
+            <a href="player.html" class="btn-export" style="text-decoration:none;">🏆 All-Time Career Leaders</a>
         </div>
 
         <div class="table-wrapper">
@@ -695,7 +696,7 @@
                 const rookieBadge = p.isRookie ? '<span class="rookie-badge">R</span>' : '';
 
                 return `
-                    <tr onclick="openPlayerModal('${p.id}')">
+                    <tr onclick="window.location.href='player.html?id=${encodeURIComponent(p.id)}'">
                         <td class="rank-cell ${rankClass}">${rankDisplay}</td>
                         <td class="player-name-cell">
                             <span class="player-name-wrap">

@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Career Leaders & Player Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global-v2.css">
+    <style>
+        .profile-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0.75rem 0.75rem 4rem 0.75rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.3s ease-out;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Top Bar: Mode Switcher & Search */
+        .player-search-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .nav-view-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 0.45rem 0.9rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-view-btn:hover { color: #fff; border-color: var(--gold-mid); }
+        .nav-view-btn.active {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--border-gold);
+            color: var(--gold-light);
+        }
+
+        .search-input-box {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-gold);
+            color: #fff;
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .search-input-box:focus { border-color: var(--gold-light); }
+
+        /* =========================================================
+           4-COLUMN LEADERS BOARD (CONTAINED & FULLY RESPONSIVE)
+           ========================================================= */
+        .sref-leaders-wrapper {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-subtle);
+            border-top: 3px solid #800000;
+            border-radius: 10px;
+            padding: 1.25rem 1rem;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.4);
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .sref-leaders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .sref-leaders-title {
+            margin: 0;
+            font-size: 1.65rem;
+            color: #e2e8f0;
+            font-family: 'Didot', Georgia, serif;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+        .sref-leaders-title span { color: var(--gold-mid); }
+
+        .sref-leaders-subnav {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .sref-leaders-subnav a {
+            color: #38bdf8;
+            text-decoration: underline;
+            font-weight: 700;
+        }
+        .sref-leaders-subnav a:hover { color: #7dd3fc; }
+
+        .sref-leaders-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .sref-col {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        .sref-col-header {
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid var(--border-gold);
+            padding: 8px 10px;
+            font-size: 0.72rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gold-mid);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sref-leader-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.76rem;
+            transition: background 0.15s ease;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+        .sref-leader-row:hover { background: rgba(255, 255, 255, 0.04); }
+
+        .sref-metric-name {
+            color: #cbd5e1;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .sref-leader-entry {
+            white-space: nowrap;
+            text-align: right;
+            font-size: 0.76rem;
+            flex-shrink: 0;
+        }
+
+        .sref-leader-link {
+            color: #38bdf8;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .sref-leader-link:hover { text-decoration: underline; color: #7dd3fc; }
+
+        .sref-team-abbr {
+            color: #94a3b8;
+            font-size: 0.65rem;
+            font-weight: 800;
+            margin-left: 2px;
+        }
+
+        .sref-val {
+            color: #fff;
+            font-weight: 800;
+            margin-left: 3px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* =========================================================
+           PLAYER DOSSIER (B-REF STYLE HEADER & SABERMETRIC SPLITS)
+           ========================================================= */
+        .sref-header-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid var(--border-subtle);
+            border-top: 3px solid var(--gold-mid);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .sref-top-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .sref-avatar-box {
+            width: 110px;
+            height: 130px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--border-subtle);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .sref-avatar-initials {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            font-family: 'Didot', serif;
+            text-transform: uppercase;
+        }
+
+        .sref-bio-col {
+            flex: 1;
+            min-width: 240px;
+        }
+
+        .sref-player-name {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #fff;
+            margin: 0 0 0.4rem 0;
+            font-family: 'Didot', serif;
+            line-height: 1.1;
+        }
+
+        .sref-bio-line {
+            font-size: 0.84rem;
+            color: #cbd5e1;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .sref-bio-line strong {
+            color: #94a3b8;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+        }
+
+        .sref-awards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, auto);
+            gap: 6px;
+            justify-content: end;
+        }
+
+        .sref-badge {
+            background: #800000;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            white-space: nowrap;
+            text-align: center;
+        }
+        .sref-badge.gold { background: #b45309; color: #fef3c7; border: 1px solid #f59e0b; }
+        .sref-badge.silver { background: #475569; color: #f8fafc; }
+
+        .sref-summary-box {
+            margin-top: 1.25rem;
+            border-top: 2px solid #b91c1c;
+            padding-top: 0.75rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .sref-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            white-space: nowrap;
+            text-align: right;
+            font-size: 0.82rem;
+        }
+        .sref-summary-table th {
+            color: #94a3b8;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sref-summary-table td {
+            padding: 6px 8px;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            color: #fff;
+        }
+        .sref-summary-table th:first-child,
+        .sref-summary-table td:first-child {
+            text-align: left;
+            font-weight: 900;
+            color: #e2e8f0;
+        }
+
+        .section-header {
+            margin: 2rem 0 0.85rem 0;
+            border-bottom: 2px solid var(--border-gold);
+            padding-bottom: 0.4rem;
+        }
+        .section-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            font-family: 'Didot', serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(15, 23, 42, 0.6);
+            margin-bottom: 1.5rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+        .data-table th, .data-table td {
+            padding: 0.7rem 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .data-table th {
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--gold-mid);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        /* Responsive Breakpoints: 4 cols on desktop, 2 on tablet, 1 on mobile */
+        @media (max-width: 1024px) {
+            .sref-leaders-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 640px) {
+            .profile-container { padding: 0.5rem 0.5rem 3rem 0.5rem; }
+            .sref-leaders-grid { grid-template-columns: minmax(0, 1fr); }
+            .sref-top-row { flex-direction: column; align-items: center; text-align: center; }
+            .sref-bio-col { width: 100%; }
+            .sref-bio-line { justify-content: center; }
+            .sref-awards-grid { grid-template-columns: 1fr; width: 100%; }
+            .player-search-bar { flex-direction: column; align-items: stretch; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <h1>RDA Player Directory</h1>
+
+    <div class="profile-container">
+        <div class="player-search-bar">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button class="nav-view-btn active" id="btn-show-leaders" onclick="navigateToLeaders()">🏆 Career Leaders</button>
+                <button class="nav-view-btn" id="btn-back-profile" style="display:none;" onclick="navigateToLeaders()">← All Leaders</button>
+            </div>
+            <div style="flex:1; max-width:320px;">
+                <input type="text" id="player-search-input" class="search-input-box" placeholder="Search any player (e.g. @r0dmanx)..." oninput="handlePlayerSearch(this.value)">
+            </div>
+        </div>
+
+        <div id="profile-content">
+            <div style="text-align:center; padding:4rem; color:var(--gold-mid); font-style:italic;">Loading database...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason, getTeamLogoPath } from './js/app.js?v=7';
+
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const SUMMARY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=2033320026&single=true&output=csv';
+
+        let playerRegistry = [];
+        let playerMap = {};
+
+        const FRANCHISE_ABBRS = {
+            'dragons': 'DRAG', 'bajas': 'BAJA', 'buffaloes': 'BUFF', 'kings': 'KING',
+            'underdogs': 'DOGS', 'knights': 'KNIG', 'reapers': 'REAP', 'stars': 'STAR',
+            'saucers': 'SAUC', 'zombies': 'ZOMB', 'manatees': 'MANA', 'tigers': 'TIGE', 'voyagers': 'VOYA'
+        };
+
+        function getTeamAbbr(teamName) {
+            if (!teamName) return '';
+            const clean = teamName.toLowerCase().trim();
+            return FRANCHISE_ABBRS[clean] || (teamName.length <= 4 ? teamName.toUpperCase() : teamName.slice(0, 4).toUpperCase());
+        }
+
+        function cleanHandle(u) {
+            if (!u) return '';
+            return String(u).replace(/^@/, '').trim().toLowerCase();
+        }
+
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            const headers = rows[0].split(delimiter).map(h => 
+                h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase()
+            );
+            return rows.slice(1).map(row => {
+                let inQuotes = false;
+                let currentVal = '';
+                const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim();
+                });
+                return obj;
+            });
+        }
+
+        async function initHub() {
+            try {
+                const res = await fetch(`${workerProxy}?url=${encodeURIComponent(SUMMARY_CSV_URL)}`);
+                const csvText = await res.text();
+                const rawRows = parseCsvLocal(csvText);
+
+                playerRegistry = rawRows.map(r => {
+                    const uName = r.username || r.player || r.user || '';
+                    const uId = r.user_id || r.userid || r.id || 'N/A';
+
+                    return {
+                        id: uId !== 'N/A' ? uId : cleanHandle(uName),
+                        userId: uId,
+                        username: uName.startsWith('@') ? uName : '@' + uName,
+                        cleanHandle: cleanHandle(uName),
+                        team: r.team || r.franchise || 'Free Agent',
+                        seasons: parseInt(r.seasons_active || r.seasons || 1, 10),
+                        games: parseInt(r.career_games || r.games || r.gp || 1, 10),
+                        careerPoints: parseFloat(r.career_points || r.points || 0),
+                        starterPoints: parseFloat(r.starter_points || r.career_points || 0),
+                        benchPoints: parseFloat(r.bench_points || 0),
+                        ppg: parseFloat(r.career_ppg || r.ppg || 0),
+                        war: parseFloat(r.war || 0),
+                        rdaPlus: parseInt(r.rda_plus || r.rda || 100, 10),
+                        paa: parseFloat(r.paa || 0),
+                        par: parseFloat(r.par || 0),
+                        peakSlate: parseFloat(r.peak_slate || r.peak || 0),
+                        boomPct: parseFloat(r.boom_pct || 0),
+                        bustPct: parseFloat(r.bust_pct || 0),
+                        consistencyCv: parseFloat(r.consistency_cv || r.cv || 0),
+                        sports: {
+                            NBA: parseFloat(r.nba_pts || r.nba || 0),
+                            NFL: parseFloat(r.nfl_pts || r.nfl || 0),
+                            MLB: parseFloat(r.mlb_pts || r.mlb || 0),
+                            NHL: parseFloat(r.nhl_pts || r.nhl || 0),
+                            CFB: parseFloat(r.cfb_pts || r.cfb || 0),
+                            CBB: parseFloat(r.cbb_pts || r.cbb || 0),
+                            FC: parseFloat(r.fc_pts || r.fc || r.soccer || 0),
+                            WNBA: parseFloat(r.wnba_pts || r.wnba || 0)
+                        }
+                    };
+                }).filter(p => p.cleanHandle);
+
+                playerMap = {};
+                playerRegistry.forEach(p => {
+                    playerMap[p.id] = p;
+                    playerMap[p.cleanHandle] = p;
+                });
+
+                routeView();
+            } catch(e) {
+                document.getElementById('profile-content').innerHTML = `
+                    <div style="color:var(--danger); text-align:center; padding:3rem;">
+                        Failed to load player summary sheet. Check network or published link.
+                    </div>`;
+            }
+        }
+
+        function routeView() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const target = urlParams.get('id') || urlParams.get('player');
+
+            if (target) {
+                const clean = cleanHandle(target);
+                const found = playerMap[clean] || playerRegistry.find(p => p.id === target || p.userId === target);
+                if (found) {
+                    renderProfile(found);
+                    return;
+                }
+            }
+            renderCareerLeaders();
+        }
+
+        window.navigateToLeaders = function() {
+            history.pushState({}, '', 'player.html');
+            renderCareerLeaders();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.navigateToPlayer = function(playerId) {
+            history.pushState({ playerId }, '', `player.html?id=${encodeURIComponent(playerId)}`);
+            const p = playerRegistry.find(pl => pl.id === playerId || pl.userId === playerId);
+            if (p) renderProfile(p);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.onpopstate = () => routeView();
+
+        function renderCareerLeaders() {
+            const container = document.getElementById('profile-content');
+            document.getElementById('btn-show-leaders').classList.add('active');
+            document.getElementById('btn-back-profile').style.display = 'none';
+
+            const getLeader = (fn, minGames = 0, isHigherBetter = true) => {
+                const pool = playerRegistry.filter(p => p.games >= minGames);
+                if (!pool.length) return { leaders: [], val: 0 };
+                pool.sort((a, b) => isHigherBetter ? fn(b) - fn(a) : fn(a) - fn(b));
+                const topVal = fn(pool[0]);
+                const ties = pool.filter(p => Math.abs(fn(p) - topVal) < 1e-4);
+                return { leaders: ties, val: topVal };
+            };
+
+            const formatRow = (label, leaderObj, decimals = 2, unit = '') => {
+                const { leaders, val } = leaderObj;
+                if (!leaders || !leaders.length || val === 0) {
+                    return `
+                        <div class="sref-leader-row">
+                            <span class="sref-metric-name" title="${label}">${label}</span>
+                            <span class="sref-leader-entry"><span style="color:#64748b;">--</span></span>
+                        </div>`;
+                }
+
+                const valStr = typeof val === 'number' ? (decimals > 0 ? val.toFixed(decimals) : Math.round(val)) : val;
+                const p = leaders[0];
+                const abbr = getTeamAbbr(p.team);
+                const tieStr = leaders.length > 1 ? ` <span style="color:#94a3b8; font-size:0.68rem;">(+${leaders.length - 1})</span>` : '';
+
+                return `
+                    <div class="sref-leader-row">
+                        <span class="sref-metric-name" title="${label}">${label}</span>
+                        <span class="sref-leader-entry">
+                            <a href="player.html?id=${encodeURIComponent(p.id)}" class="sref-leader-link" onclick="event.preventDefault(); navigateToPlayer('${p.id}');">${p.username.replace(/^@/, '')}</a>
+                            ${abbr ? `<span class="sref-team-abbr">${abbr}</span>` : ''}${tieStr}
+                            <span class="sref-val">(${valStr}${unit})</span>
+                        </span>
+                    </div>`;
+            };
+
+            const makeStaticHonorsRow = (title, primaryWinner, teamName, countStr) => {
+                const clean = cleanHandle(primaryWinner);
+                const foundP = playerMap[clean] || { id: clean, username: primaryWinner, team: teamName };
+                const abbr = getTeamAbbr(teamName || foundP.team);
+
+                return `
+                    <div class="sref-leader-row">
+                        <span class="sref-metric-name" title="${title}">${title}</span>
+                        <span class="sref-leader-entry">
+                            <a href="player.html?id=${encodeURIComponent(foundP.id)}" class="sref-leader-link" onclick="event.preventDefault(); navigateToPlayer('${foundP.id}');">${primaryWinner.replace(/^@/, '')}</a>
+                            ${abbr ? `<span class="sref-team-abbr">${abbr}</span>` : ''}
+                            <span class="sref-val">(${countStr})</span>
+                        </span>
+                    </div>`;
+            };
+
+            // Column 1: Career Volume & Longevity
+            const col1 = [
+                formatRow('Career Points', getLeader(p => p.careerPoints), 1),
+                formatRow('Starter Points', getLeader(p => p.starterPoints), 1),
+                formatRow('Peak Slate Score', getLeader(p => p.peakSlate), 2),
+                formatRow('100+ Pt Slates', getLeader(p => p.boomPct > 0 ? (p.boomPct * p.games / 100) : 0), 0),
+                formatRow('Career Games', getLeader(p => p.games), 0),
+                formatRow('Seasons Active', getLeader(p => p.seasons), 0),
+                formatRow('Sports Contested', getLeader(p => Object.values(p.sports).filter(pts => pts > 0).length), 0),
+                formatRow('Points / Season', getLeader(p => p.seasons > 0 ? (p.careerPoints / p.seasons) : 0), 1),
+                formatRow('Slates / Season', getLeader(p => p.seasons > 0 ? (p.games / p.seasons) : 0), 1)
+            ];
+
+            // Column 2: Value & Advanced Metrics (No Blanks)
+            const col2 = [
+                formatRow('Wins Above Replacement', getLeader(p => p.war), 2),
+                formatRow('Points Per Game', getLeader(p => p.ppg, 10), 2),
+                formatRow('RDA+ Index (100=Avg)', getLeader(p => p.rdaPlus, 10), 0),
+                formatRow('Points Above Average', getLeader(p => p.paa), 1),
+                formatRow('Points Above Replacement', getLeader(p => p.par), 1),
+                formatRow('Boom % (100+ Pt Rate)', getLeader(p => p.boomPct, 10), 1, '%'),
+                formatRow('Lowest Bust Rate', getLeader(p => p.bustPct, 10, false), 1, '%'),
+                formatRow('Consistency Index (CV)', getLeader(p => p.consistencyCv, 10, false), 1),
+                formatRow('Peak / PPG Ratio', getLeader(p => p.ppg > 0 ? (p.peakSlate / p.ppg) : 0, 10), 2)
+            ];
+
+            // Column 3: Sport Specialists
+            const getSportLeader = (s) => getLeader(p => p.sports[s] || 0);
+            const col3 = [
+                formatRow('NBA Career Pts', getSportLeader('NBA'), 1),
+                formatRow('NFL Career Pts', getSportLeader('NFL'), 1),
+                formatRow('MLB Career Pts', getSportLeader('MLB'), 1),
+                formatRow('NHL Career Pts', getSportLeader('NHL'), 1),
+                formatRow('CFB Career Pts', getSportLeader('CFB'), 1),
+                formatRow('CBB Career Pts', getSportLeader('CBB'), 1),
+                formatRow('FC / Soccer Pts', getSportLeader('FC'), 1),
+                formatRow('WNBA Career Pts', getSportLeader('WNBA'), 1),
+                formatRow('Top Sport Share', getLeader(p => {
+                    const pts = Object.values(p.sports);
+                    const max = Math.max(...pts, 0);
+                    return p.starterPoints > 0 ? (max / p.starterPoints * 100) : 0;
+                }, 10), 1, '%')
+            ];
+
+            // Column 4: Hardware & Accolades (Official Records)
+            const col4 = [
+                makeStaticHonorsRow('League MVP (Reigning)', '@r0dmanx', 'Reapers', 'S6'),
+                makeStaticHonorsRow('Finals MVP (Reigning)', '@r0dmanx', 'Reapers', 'S6'),
+                makeStaticHonorsRow('All-Star Leader', '@alp', 'Knights', '5x'),
+                makeStaticHonorsRow('All-RDA 1st Teams', '@r0dmanx', 'Reapers', '2x'),
+                makeStaticHonorsRow('All-RDA 2nd Teams', '@realkam', 'Bajas', '2x'),
+                makeStaticHonorsRow('Rookie of the Year', '@rome', 'Bajas', 'S6'),
+                makeStaticHonorsRow('GM of the Year Leader', '@r0dmanx', 'Reapers', '2x'),
+                makeStaticHonorsRow('Most Improved Player', '@masons07', 'Kings', 'S6'),
+                makeStaticHonorsRow('Sixth Man of the Year', '@to', 'Reapers', 'S6'),
+                makeStaticHonorsRow('FA Pickup of Year', '@e3thqn', 'Reapers', 'S5')
+            ];
+
+            container.innerHTML = `
+                <div class="sref-leaders-wrapper">
+                    <div class="sref-leaders-header">
+                        <h2 class="sref-leaders-title">All-Time <span>Career Leaders</span></h2>
+                        <div class="sref-leaders-subnav">
+                            <a href="#col-vol">Volume</a> &bull;
+                            <a href="#col-eff">Sabermetrics</a> &bull;
+                            <a href="#col-sp">Sport Specialists</a> &bull;
+                            <a href="#col-hon">Hardware & Accolades</a>
+                        </div>
+                    </div>
+
+                    <div class="sref-leaders-grid">
+                        <div class="sref-col" id="col-vol">
+                            <div class="sref-col-header">Career Volume</div>
+                            ${col1.join('')}
+                        </div>
+                        <div class="sref-col" id="col-eff">
+                            <div class="sref-col-header">Sabermetrics & Value</div>
+                            ${col2.join('')}
+                        </div>
+                        <div class="sref-col" id="col-sp">
+                            <div class="sref-col-header">Sport Specialists</div>
+                            ${col3.join('')}
+                        </div>
+                        <div class="sref-col" id="col-hon">
+                            <div class="sref-col-header">Hardware & Accolades</div>
+                            ${col4.join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderProfile(p) {
+            const container = document.getElementById('profile-content');
+            document.getElementById('btn-show-leaders').classList.remove('active');
+            document.getElementById('btn-back-profile').style.display = 'inline-flex';
+
+            const initials = p.cleanHandle.slice(0, 2).toUpperCase();
+
+            let topSport = 'NBA';
+            let maxSportPts = 0;
+            Object.entries(p.sports).forEach(([sp, pts]) => {
+                if (pts > maxSportPts) { maxSportPts = pts; topSport = sp; }
+            });
+
+            container.innerHTML = `
+                <div class="sref-header-card">
+                    <div class="sref-top-row">
+                        <div class="sref-avatar-box">
+                            <div class="sref-avatar-initials">${initials}</div>
+                        </div>
+
+                        <div class="sref-bio-col">
+                            <h1 class="sref-player-name">${p.username}</h1>
+                            <div class="sref-bio-line">
+                                <strong>Franchise:</strong> <span>${p.team}</span>
+                                <span style="color:#64748b;">&bull;</span>
+                                <strong>RealApp ID:</strong> <span style="color:#38bdf8; font-family:monospace;">${p.userId}</span>
+                            </div>
+                            <div class="sref-bio-line">
+                                <strong>Experience:</strong> <span>${p.seasons} Seasons (${p.games} Gameday Slates)</span>
+                                <span style="color:#64748b;">&bull;</span>
+                                <strong>Primary Sport:</strong> <span style="color:var(--gold-mid); font-weight:800;">${topSport}</span>
+                            </div>
+                        </div>
+
+                        <div class="sref-awards-container">
+                            <div class="sref-awards-grid">
+                                <div class="sref-badge gold">${p.war.toFixed(2)} WAR</div>
+                                <div class="sref-badge">${p.rdaPlus} RDA+</div>
+                                <div class="sref-badge silver">${p.boomPct.toFixed(0)}% Boom Rate</div>
+                                <div class="sref-badge silver">${p.paa > 0 ? '+' : ''}${p.paa.toFixed(1)} PAA</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sref-summary-box">
+                        <table class="sref-summary-table">
+                            <thead>
+                                <tr>
+                                    <th>SUMMARY</th>
+                                    <th>WAR</th>
+                                    <th>RDA+</th>
+                                    <th>GP</th>
+                                    <th>STARTER PTS</th>
+                                    <th>PPG</th>
+                                    <th>PEAK</th>
+                                    <th>BOOM %</th>
+                                    <th>BUST %</th>
+                                    <th>CV (FL)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Career Total</td>
+                                    <td style="color:#4ade80; font-weight:900;">${p.war.toFixed(2)}</td>
+                                    <td style="color:var(--gold-light); font-weight:900;">${p.rdaPlus}</td>
+                                    <td>${p.games}</td>
+                                    <td>${p.starterPoints.toFixed(2)}</td>
+                                    <td>${p.ppg.toFixed(2)}</td>
+                                    <td style="color:var(--gold-mid);">${p.peakSlate.toFixed(2)}</td>
+                                    <td>${p.boomPct.toFixed(1)}%</td>
+                                    <td>${p.bustPct.toFixed(1)}%</td>
+                                    <td>${p.consistencyCv.toFixed(1)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>Sport-by-Sport Scoring Yield</h2>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Sport</th>
+                                <th style="text-align:right;">Career Points</th>
+                                <th style="text-align:right;">% of Starting Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(p.sports).sort((a,b) => b[1] - a[1]).map(([sp, pts]) => {
+                                const share = p.starterPoints > 0 ? ((pts / p.starterPoints) * 100).toFixed(1) : '0.0';
+                                return `
+                                    <tr>
+                                        <td style="font-weight:800; color:var(--gold-light);">${sp}</td>
+                                        <td style="text-align:right; font-weight:800; color:#fff;">${pts.toFixed(2)}</td>
+                                        <td style="text-align:right; color:#94a3b8;">${share}%</td>
+                                    </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.handlePlayerSearch = function(query) {
+            if (!query) return;
+            const clean = cleanHandle(query);
+            const found = playerRegistry.find(p => p.cleanHandle.includes(clean) || p.userId.toLowerCase().includes(clean));
+            if (found) navigateToPlayer(found.id);
+        };
+
+        initHub();
+    </script>
+</body>
+</html>
