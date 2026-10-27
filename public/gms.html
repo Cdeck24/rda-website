@@ -503,6 +503,61 @@
         .on-the-clock { font-size: 1.1rem; font-weight: bold; color: var(--text-muted); }
         .on-the-clock span { color: var(--gold-mid); font-weight: 900; }
 
+        /* LIVE BROADCAST NARRATOR BOX */
+        .draft-narrator-box {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-gold);
+            border-left: 4px solid var(--gold-mid);
+            border-radius: 8px;
+            padding: 0.85rem 1.25rem;
+            margin: 0.6rem auto 0 auto;
+            max-width: 650px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+            position: relative;
+        }
+        .narrator-header-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.35rem;
+        }
+        .narrator-tag {
+            font-size: 0.7rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .narrator-voice-toggle-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .narrator-voice-toggle-btn.voice-on {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+        .narrator-text {
+            color: #f1f5f9;
+            font-size: 0.95rem;
+            font-weight: 700;
+            line-height: 1.4;
+            min-height: 22px;
+        }
+
         .autopick-toggle-container {
             margin-top: 0.5rem;
             display: inline-flex;
@@ -738,10 +793,7 @@
         <!-- TRADE PORTAL SECTION -->
         <div id="trade-portal-section" class="dashboard-section" style="display: none;">
             <div class="trade-portal-container">
-                
-                <!-- Trade Machine Block -->
                 <div class="trade-machine-grid">
-                    <!-- Left: My Team Asset Box -->
                     <div class="trade-asset-card">
                         <div class="trade-asset-header">
                             <span class="trade-asset-title" id="trade-my-team-title">My Franchise</span>
@@ -755,7 +807,6 @@
                         <div id="trade-my-picks-list"><div style="color:#888; font-size:0.8rem; font-style:italic;">Loading S8 picks...</div></div>
                     </div>
 
-                    <!-- Right: Partner Team Asset Box -->
                     <div class="trade-asset-card">
                         <div class="trade-asset-header">
                             <select id="trade-partner-select" class="team-select" style="margin: 0; max-width: 220px;" onchange="loadTradePartnerAssets()">
@@ -772,14 +823,12 @@
                     </div>
                 </div>
 
-                <!-- Trade Action & Summary Card -->
                 <div class="trade-summary-card">
                     <div style="font-size: 0.85rem; font-weight: 800; color: var(--gold-light); text-transform: uppercase; margin-bottom: 0.5rem;">Trade Terms Summary</div>
                     <div id="trade-terms-preview" style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 1rem; min-height: 24px;">Select assets above to build proposal.</div>
                     <button class="save-btn" id="btn-send-trade" style="margin: 0 auto; max-width: 280px;" onclick="submitTradeProposal()" disabled>Send Trade Proposal</button>
                 </div>
 
-                <!-- Active Trade Ledger & Offers -->
                 <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-gold); padding: 1.25rem; border-radius: 10px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
                         <h3 style="color: var(--gold-mid); margin: 0; text-transform: uppercase; font-size: 0.95rem; letter-spacing: 0.75px;">Active Trade Proposals</h3>
@@ -802,7 +851,7 @@
             </div>
 
             <div class="draft-status-banner">
-                <h2 id="draft-round-display">Pre-Draft</h2>
+                <h2 id="draft-round-display">Season 7 Draft</h2>
                 <div class="on-the-clock" id="on-the-clock-display">Waiting for commissioner to open room...</div>
                 
                 <div id="my-next-pick-display" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem; display: none;">
@@ -810,6 +859,19 @@
                 </div>
 
                 <div class="draft-timer" id="draft-timer">02:00</div>
+
+                <!-- LIVE BROADCAST NARRATOR BOX -->
+                <div class="draft-narrator-box" id="draft-narrator-box">
+                    <div class="narrator-header-line">
+                        <span class="narrator-tag">🎙️ Live Draft Desk</span>
+                        <button type="button" class="narrator-voice-toggle-btn" id="voice-narration-btn" onclick="toggleVoiceNarration()">
+                            🔇 Voice: Muted
+                        </button>
+                    </div>
+                    <div class="narrator-text" id="draft-narrator-text">
+                        Welcome to the Season 7 RDA Draft. Awaiting official opening pick...
+                    </div>
+                </div>
                 
                 <div class="autopick-toggle-container" id="autopick-container" style="display: none;">
                     <label class="toggle-switch">
@@ -823,7 +885,7 @@
             <h3 style="color: #fff; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Recent Picks</h3>
             <div class="recent-picks-container" id="recent-picks"></div>
 
-            <h3 style="color: #fff; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Upcoming Picks</h3>
+            <h3 style="color: #fff; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.4rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Upcoming Season 7 Order</h3>
             <div class="recent-picks-container" id="upcoming-picks" style="margin-bottom: 2rem;"></div>
 
             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.85rem; margin-bottom: 1.5rem;">
@@ -904,6 +966,7 @@
 
         // Draft Architecture
         let DRAFT_ORDER = [];
+        let DRAFT_METADATA = [];
         let myQueue = [];
         let draftState = {
             isActive: false,
@@ -914,6 +977,11 @@
         };
         let timerInterval = null;
         let isProcessingPick = false;
+
+        // Narration State
+        window.voiceNarrationEnabled = false;
+        let lastNarratedPickCount = -1;
+        let lastNarratedClockTeam = '';
 
         // Trade System State
         let allS8DraftPicks = [];
@@ -926,16 +994,64 @@
         const faCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=334253637&single=true&output=csv';
         const waiverOrderCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=160021912&single=true&output=csv';
         
-        const draftOrderUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=1179989426&single=true&output=csv';
+        // Season 7 Official Draft Order CSV
+        const draftOrderUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=1962401407&single=true&output=csv';
         const QUEUE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=811898684&single=true&output=csv';
         const S8_DRAFT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6guczrffNh2FLCGJz5v-ko-1RpwVMxVCJK2HTHYJXJE85u0dJmO5oi1eq_aLLky0a5v2DVGE1T1w3/pub?gid=1306361585&single=true&output=csv';
 
         const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f';
-        const REAL_VERSION = '27';
 
         function showError(msg) {
             document.getElementById('error-modal-msg').innerText = msg;
             document.getElementById('error-modal').style.display = 'flex';
+        }
+
+        // ====================================================================
+        // DRAFT NARRATION ENGINE (TEXT-TO-SPEECH & TICKER)
+        // ====================================================================
+        window.toggleVoiceNarration = () => {
+            window.voiceNarrationEnabled = !window.voiceNarrationEnabled;
+            const btn = document.getElementById('voice-narration-btn');
+            if (btn) {
+                if (window.voiceNarrationEnabled) {
+                    btn.classList.add('voice-on');
+                    btn.innerText = "🔊 Voice: Active";
+                    narrateDraft("Announcer audio enabled for the Season 7 Draft.");
+                } else {
+                    btn.classList.remove('voice-on');
+                    btn.innerText = "🔇 Voice: Muted";
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                }
+            }
+        };
+
+        function narrateDraft(text, spokenText = null) {
+            const narratorEl = document.getElementById('draft-narrator-text');
+            if (narratorEl) {
+                narratorEl.innerText = text;
+            }
+
+            if (window.voiceNarrationEnabled && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const phraseToSpeak = (spokenText || text).replace(/[@#*_]/g, '');
+                const utterance = new SpeechSynthesisUtterance(phraseToSpeak);
+                utterance.rate = 1.05;
+                utterance.pitch = 1.0;
+
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v => 
+                    v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'))
+                );
+                if (preferredVoice) utterance.voice = preferredVoice;
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
         }
 
         onAuthStateChanged(auth, async (user) => {
@@ -1146,27 +1262,40 @@
                 const rows = parseCsvLocal(text);
                 
                 if (rows.length > 0) {
-                    const validRows = rows.map(r => {
+                    const formattedPicks = [];
+                    let runningOverall = 1;
+
+                    rows.forEach((r) => {
                         const keys = Object.keys(r);
-                        const pickKey = keys.find(k => k.includes('pick'));
-                        const teamKey = keys.find(k => k.includes('team'));
-                        
-                        let pickNum = 999;
-                        if (pickKey && r[pickKey]) {
-                            const parsed = parseInt(r[pickKey].replace(/\D/g, ''), 10);
-                            if (!isNaN(parsed)) pickNum = parsed;
+                        const teamKey = keys.find(k => k === 'team' || k.includes('franchise') || k.includes('team'));
+                        const teamRaw = teamKey && r[teamKey] ? r[teamKey].trim() : '';
+
+                        if (teamRaw && teamRaw.toLowerCase() !== 'team') {
+                            const roundKey = keys.find(k => k === 'round' || k.includes('rd'));
+                            const pickKey = keys.find(k => k === 'pick');
+
+                            let roundVal = roundKey && r[roundKey] ? parseInt(r[roundKey].replace(/\D/g, ''), 10) : Math.ceil(runningOverall / 12);
+                            let pickVal = pickKey && r[pickKey] ? parseInt(r[pickKey].replace(/\D/g, ''), 10) : ((runningOverall - 1) % 12 + 1);
+
+                            if (isNaN(roundVal)) roundVal = Math.ceil(runningOverall / 12);
+                            if (isNaN(pickVal)) pickVal = (runningOverall - 1) % 12 + 1;
+
+                            const canonicalTeam = teamRaw.charAt(0).toUpperCase() + teamRaw.slice(1).toLowerCase();
+
+                            formattedPicks.push({
+                                overall: runningOverall,
+                                round: roundVal,
+                                pickInRound: pickVal,
+                                team: canonicalTeam
+                            });
+                            runningOverall++;
                         }
+                    });
 
-                        return {
-                            pick: pickNum,
-                            team: teamKey && r[teamKey] ? r[teamKey].trim() : ''
-                        };
-                    }).filter(r => r.team !== ''); 
-
-                    validRows.sort((a, b) => a.pick - b.pick);
-                    DRAFT_ORDER = validRows.map(r => r.team.charAt(0).toUpperCase() + r.team.slice(1).toLowerCase());
+                    DRAFT_METADATA = formattedPicks;
+                    DRAFT_ORDER = formattedPicks.map(p => p.team);
                 }
-            } catch(e) { console.warn("Failed to load Draft Order CSV", e); }
+            } catch(e) { console.warn("Failed to load Season 7 Draft Order CSV", e); }
         }
 
         function isLineupLocked(dateStr) {
@@ -2112,11 +2241,13 @@
         };
 
         // ====================================================================
-        // DRAFT SUITE EXECUTION & REALTIME LISTENERS
+        // DRAFT SUITE EXECUTION & REALTIME NARRATION (SEASON 7 SCOPED)
         // ====================================================================
+        const DRAFT_DOC_ID = `draftState_s${currentSeason || '7'}`;
+
         async function updateDraftDoc(updates) {
             try {
-                const draftRef = doc(db, 'system', 'draftState');
+                const draftRef = doc(db, 'system', DRAFT_DOC_ID);
                 await updateDoc(draftRef, updates);
             } catch (e) {
                 console.error("Draft update error:", e);
@@ -2128,12 +2259,15 @@
             if (myTeam !== 'ADMIN') return;
             const timerEndsAt = isActive ? Date.now() + (2 * 60 * 1000) : 0;
             await updateDraftDoc({ isActive, timerEndsAt });
+            if (isActive) narrateDraft("The Commissioner has resumed the Season 7 RDA Draft. Teams are on the clock.");
+            else narrateDraft("The Commissioner has paused the draft. The clock is currently stopped.");
         };
 
         window.adminResetDraft = async () => {
             if (myTeam !== 'ADMIN') return;
-            if (!confirm("Are you sure you want to RESET the entire draft?")) return;
+            if (!confirm("Are you sure you want to RESET the Season 7 draft back to Pick 1?")) return;
             await updateDraftDoc({ isActive: false, currentPickIdx: 0, timerEndsAt: 0, picks: [], autopickGMs: [] });
+            narrateDraft("The draft board has been reset. Preparing for Round 1, Pick 1.");
         };
 
         window.toggleGMAutopick = async () => {
@@ -2141,7 +2275,7 @@
             const isAuto = document.getElementById('gm-autopick-toggle').checked;
             
             try {
-                const draftRef = doc(db, 'system', 'draftState');
+                const draftRef = doc(db, 'system', DRAFT_DOC_ID);
                 if (isAuto) {
                     await updateDoc(draftRef, { autopickGMs: arrayUnion(myTeam) });
                 } else {
@@ -2178,16 +2312,17 @@
             btns.forEach(btn => { btn.innerText = "Processing..."; btn.disabled = true; });
 
             try {
-                const draftRef = doc(db, 'system', 'draftState');
+                const pickNumber = draftState.currentPickIdx + 1;
+                const draftRef = doc(db, 'system', DRAFT_DOC_ID);
                 await updateDoc(draftRef, {
-                    picks: arrayUnion({ team: expectedTeam, player: playerName }),
+                    picks: arrayUnion({ team: expectedTeam, player: playerName, pick: pickNumber }),
                     currentPickIdx: draftState.currentPickIdx + 1,
                     timerEndsAt: Date.now() + (2 * 60 * 1000)
                 });
                 
                 fetch(APPS_SCRIPT_URL, {
                     method: 'POST', mode: 'no-cors',
-                    body: JSON.stringify({ action: 'draft_pick', team: expectedTeam, player: playerName, pickIdx: draftState.currentPickIdx + 1 })
+                    body: JSON.stringify({ action: 'draft_pick', team: expectedTeam, player: playerName, pickIdx: pickNumber })
                 }).catch(() => console.log("Sheet log failed, but DB succeeded."));
 
             } catch (e) {
@@ -2202,7 +2337,7 @@
             const container = document.getElementById('recent-picks');
             if (!container) return;
             if (!draftState.picks || draftState.picks.length === 0) {
-                container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem;">No picks made yet.</div>';
+                container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem;">No picks made yet in Season 7.</div>';
                 return;
             }
             
@@ -2212,7 +2347,7 @@
                 const actualPickNum = draftState.picks.length - i;
                 html += `
                     <div class="recent-pick-card">
-                        <div class="pick-num">Pick ${actualPickNum}</div>
+                        <div class="pick-num">Pick #${actualPickNum}</div>
                         <div class="pick-team">${p.team}</div>
                         <div class="pick-player" title="${p.player}">${p.player}</div>
                     </div>
@@ -2230,19 +2365,22 @@
             }
             
             let html = '';
-            const upcoming = DRAFT_ORDER.slice(draftState.currentPickIdx, draftState.currentPickIdx + 10);
+            const upcoming = DRAFT_ORDER.slice(draftState.currentPickIdx, draftState.currentPickIdx + 12);
             upcoming.forEach((team, i) => {
                 const actualPickNum = draftState.currentPickIdx + 1 + i;
+                const meta = DRAFT_METADATA[actualPickNum - 1] || {};
+                const roundText = meta.round ? `Rd ${meta.round}, Pk ${meta.pickInRound}` : `Overall #${actualPickNum}`;
+
                 html += `
                     <div class="recent-pick-card" style="opacity: ${i === 0 ? '1' : '0.65'}; border-color: ${i === 0 ? 'var(--border-gold)' : 'var(--border-subtle)'};">
-                        <div class="pick-num">Pick ${actualPickNum}</div>
+                        <div class="pick-num">Pick #${actualPickNum} &bull; ${roundText}</div>
                         <div class="pick-team" style="color: ${i === 0 ? 'var(--gold-light)' : '#fff'};">${team}</div>
-                        <div class="pick-player" style="color: var(--text-muted); font-style: italic;">On the clock...</div>
+                        <div class="pick-player" style="color: var(--text-muted); font-style: italic;">${i === 0 ? 'On the Clock...' : 'Upcoming'}</div>
                     </div>
                 `;
             });
             
-            if (upcoming.length === 0) html = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem;">Draft Complete!</div>';
+            if (upcoming.length === 0) html = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem;">Season 7 Draft Complete!</div>';
             container.innerHTML = html;
         }
 
@@ -2303,7 +2441,7 @@
             if (dir === 'up' && idx > 0) {
                 [myQueue[idx-1], myQueue[idx]] = [myQueue[idx], myQueue[idx-1]];
             } else if (dir === 'down' && idx < myQueue.length - 1) {
-                [myQueue[idx+1], myQueue[idx]] = [myQueue[idx], myQueue[idx+1]];
+                [myQueue[idx+1], myQueue[idx]] = [myQueue[idx], myQueue[idx-1]];
             }
             window.renderDraftPool();
             persistQueueToSheet();
@@ -2391,8 +2529,8 @@
 
             try {
                 const latestQueue = await fetchTeamQueue(forTeam);
-                for(let u of latestQueue) {
-                    if(!draftedPlayers.includes(u)) {
+                for (let u of latestQueue) {
+                    if (!draftedPlayers.includes(u)) {
                         playerToPick = u;
                         break;
                     }
@@ -2411,16 +2549,17 @@
                 }
 
                 if (playerToPick) {
-                    const draftRef = doc(db, 'system', 'draftState');
+                    const pickNumber = draftState.currentPickIdx + 1;
+                    const draftRef = doc(db, 'system', DRAFT_DOC_ID);
                     await updateDoc(draftRef, {
-                        picks: arrayUnion({ team: forTeam, player: playerToPick }),
+                        picks: arrayUnion({ team: forTeam, player: playerToPick, pick: pickNumber }),
                         currentPickIdx: draftState.currentPickIdx + 1,
                         timerEndsAt: Date.now() + (2 * 60 * 1000)
                     });
                     
                     fetch(APPS_SCRIPT_URL, {
                         method: 'POST', mode: 'no-cors',
-                        body: JSON.stringify({ action: 'draft_pick', team: forTeam, player: playerToPick, pickIdx: draftState.currentPickIdx + 1, autopicked: 'Yes' })
+                        body: JSON.stringify({ action: 'draft_pick', team: forTeam, player: playerToPick, pickIdx: pickNumber, autopicked: 'Yes' })
                     }).catch(() => console.log("Sheet log failed"));
                 }
             } catch (e) {
@@ -2431,54 +2570,109 @@
         }
 
         function listenToDraft() {
-            const draftRef = doc(db, 'system', 'draftState');
+            const draftRef = doc(db, 'system', DRAFT_DOC_ID);
             
+            // Auto-initialize Season 7 draft document if not yet created in Firestore
             getDoc(draftRef).then(snap => {
-                if (!snap.exists()) setDoc(draftRef, draftState);
+                if (!snap.exists()) {
+                    setDoc(draftRef, {
+                        isActive: false,
+                        currentPickIdx: 0,
+                        timerEndsAt: 0,
+                        picks: [],
+                        autopickGMs: []
+                    });
+                }
             });
 
-            onSnapshot(draftRef, (doc) => {
-                if (doc.exists()) {
-                    draftState = doc.data();
+            onSnapshot(draftRef, (docSnap) => {
+                if (!docSnap.exists()) {
+                    setDoc(draftRef, {
+                        isActive: false,
+                        currentPickIdx: 0,
+                        timerEndsAt: 0,
+                        picks: [],
+                        autopickGMs: []
+                    });
+                    return;
+                }
+
+                const prevPicks = draftState.picks || [];
+                draftState = docSnap.data();
+                const newPicks = draftState.picks || [];
+
+                // Guard against legacy Season 6 picks (>36 picks) accidentally loading
+                if (draftState.picks && draftState.picks.length > DRAFT_ORDER.length && DRAFT_ORDER.length > 0) {
+                    console.warn("Legacy draft data detected. Resetting to Season 7 Pick 1.");
+                    updateDoc(draftRef, { isActive: false, currentPickIdx: 0, timerEndsAt: 0, picks: [], autopickGMs: [] });
+                    return;
+                }
+                
+                const currentTeam = DRAFT_ORDER[draftState.currentPickIdx] || "Draft Complete";
+                const displayTeam = currentTeam === 'Draft Complete' ? currentTeam : `On the Clock: <span>${currentTeam}</span>`;
+                document.getElementById('on-the-clock-display').innerHTML = displayTeam;
+                
+                if (draftState.currentPickIdx < DRAFT_ORDER.length) {
+                    const meta = DRAFT_METADATA[draftState.currentPickIdx];
+                    const metaRound = meta ? `Round ${meta.round}, Pick ${meta.pickInRound} (Overall #${draftState.currentPickIdx + 1})` : `Pick #${draftState.currentPickIdx + 1}`;
+                    document.getElementById('draft-round-display').innerText = metaRound;
+                } else {
+                    document.getElementById('draft-round-display').innerText = "Season 7 Draft Complete";
+                }
+
+                // --- NARRATION HOOKS ---
+                if (newPicks.length > prevPicks.length && lastNarratedPickCount !== -1) {
+                    const latestPick = newPicks[newPicks.length - 1];
+                    const pickNum = newPicks.length;
+                    const pickOrdinal = getOrdinal(pickNum);
                     
-                    const currentTeam = DRAFT_ORDER[draftState.currentPickIdx] || "Draft Complete";
-                    const displayTeam = currentTeam === 'Draft Complete' ? currentTeam : `On the Clock: <span>${currentTeam}</span>`;
-                    document.getElementById('on-the-clock-display').innerHTML = displayTeam;
+                    const textAnnouncement = `With the ${pickOrdinal} pick in the Season 7 RDA Draft, the ${latestPick.team} select ${latestPick.player}!`;
+                    const spokenAnnouncement = `With the ${pickOrdinal} pick, the ${latestPick.team} select ${latestPick.player.replace('@', '')}.`;
                     
-                    if (draftState.currentPickIdx < DRAFT_ORDER.length) {
-                        document.getElementById('draft-round-display').innerText = `Pick ${draftState.currentPickIdx + 1}`;
+                    narrateDraft(textAnnouncement, spokenAnnouncement);
+                    lastNarratedClockTeam = '';
+                } else if (draftState.isActive && currentTeam !== 'Draft Complete' && currentTeam !== lastNarratedClockTeam && draftState.currentPickIdx < DRAFT_ORDER.length) {
+                    lastNarratedClockTeam = currentTeam;
+                    const pickNum = draftState.currentPickIdx + 1;
+                    const meta = DRAFT_METADATA[draftState.currentPickIdx] || {};
+                    const roundStr = meta.round ? `Round ${meta.round}, ` : '';
+
+                    const clockText = `⏱️ The ${currentTeam} are now on the clock for ${roundStr}Pick #${pickNum}.`;
+                    const spokenClock = `The ${currentTeam} are now on the clock for pick ${pickNum}.`;
+                    
+                    narrateDraft(clockText, spokenClock);
+                }
+                lastNarratedPickCount = newPicks.length;
+
+                const autopickGMs = draftState.autopickGMs || [];
+                if (myTeam !== 'ADMIN' && document.getElementById('gm-autopick-toggle')) {
+                    document.getElementById('gm-autopick-toggle').checked = autopickGMs.includes(myTeam);
+                }
+
+                if (myTeam !== 'ADMIN' && DRAFT_ORDER.length > 0) {
+                    const myNextIdx = DRAFT_ORDER.indexOf(myTeam, draftState.currentPickIdx);
+                    const nextPickDiv = document.getElementById('my-next-pick-display');
+                    if (myNextIdx > -1) {
+                        const meta = DRAFT_METADATA[myNextIdx];
+                        const roundSub = meta ? ` (Round ${meta.round}, Pick ${meta.pickInRound})` : '';
+                        document.getElementById('my-next-pick-val').innerText = `Overall #${myNextIdx + 1}${roundSub}`;
+                        nextPickDiv.style.display = 'block';
                     } else {
-                        document.getElementById('draft-round-display').innerText = "Post-Draft";
+                        nextPickDiv.style.display = 'none';
                     }
+                }
 
-                    const autopickGMs = draftState.autopickGMs || [];
-                    if (myTeam !== 'ADMIN' && document.getElementById('gm-autopick-toggle')) {
-                        document.getElementById('gm-autopick-toggle').checked = autopickGMs.includes(myTeam);
+                if (myTeam === 'ADMIN' && draftState.isActive && currentTeam !== 'Draft Complete') {
+                    if (autopickGMs.includes(currentTeam)) {
+                        executeAutoPick(currentTeam);
                     }
+                }
 
-                    if (myTeam !== 'ADMIN' && DRAFT_ORDER.length > 0) {
-                        const myNextIdx = DRAFT_ORDER.indexOf(myTeam, draftState.currentPickIdx);
-                        const nextPickDiv = document.getElementById('my-next-pick-display');
-                        if (myNextIdx > -1) {
-                            document.getElementById('my-next-pick-val').innerText = `Overall #${myNextIdx + 1}`;
-                            nextPickDiv.style.display = 'block';
-                        } else {
-                            nextPickDiv.style.display = 'none';
-                        }
-                    }
-
-                    if (myTeam === 'ADMIN' && draftState.isActive && currentTeam !== 'Draft Complete') {
-                        if (autopickGMs.includes(currentTeam)) {
-                            executeAutoPick(currentTeam);
-                        }
-                    }
-
-                    renderRecentPicks();
-                    renderUpcomingPicks();
-                    
-                    if (document.getElementById('draft-section').style.display === 'block') {
-                        window.renderDraftPool();
-                    }
+                renderRecentPicks();
+                renderUpcomingPicks();
+                
+                if (document.getElementById('draft-section').style.display === 'block') {
+                    window.renderDraftPool();
                 }
             });
 
@@ -2508,7 +2702,7 @@
                     
                     if (myTeam === 'ADMIN') {
                         const currentTeam = DRAFT_ORDER[draftState.currentPickIdx];
-                        const draftRef = doc(db, 'system', 'draftState');
+                        const draftRef = doc(db, 'system', DRAFT_DOC_ID);
                         updateDoc(draftRef, { autopickGMs: arrayUnion(currentTeam) });
                         executeAutoPick(currentTeam);
                     }

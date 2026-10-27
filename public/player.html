@@ -276,6 +276,42 @@
             text-transform: uppercase;
         }
 
+        .sref-more-bio-toggle {
+            background: none;
+            border: none;
+            color: var(--gold-mid);
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 0.4rem 0;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .sref-more-bio-toggle:hover { color: #fff; }
+
+        .sref-expanded-bio {
+            display: none;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px dashed var(--border-subtle);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .sref-awards-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.6rem;
+            margin-left: auto;
+        }
+
         .sref-awards-grid {
             display: grid;
             grid-template-columns: repeat(2, auto);
@@ -298,6 +334,23 @@
         }
         .sref-badge.gold { background: #b45309; color: #fef3c7; border: 1px solid #f59e0b; }
         .sref-badge.silver { background: #475569; color: #f8fafc; }
+        .sref-badge.blue { background: #1e3a8a; color: #93c5fd; border: 1px solid #3b82f6; }
+
+        .sref-circle-num {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #800000;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 0.95rem;
+            font-family: monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
 
         .sref-summary-box {
             margin-top: 1.25rem;
@@ -377,7 +430,7 @@
             font-weight: 800;
         }
 
-        /* Responsive Breakpoints: 4 cols on desktop, 2 on tablet, 1 on mobile */
+        /* Responsive Breakpoints */
         @media (max-width: 1024px) {
             .sref-leaders-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -388,6 +441,7 @@
             .sref-top-row { flex-direction: column; align-items: center; text-align: center; }
             .sref-bio-col { width: 100%; }
             .sref-bio-line { justify-content: center; }
+            .sref-awards-container { align-items: center; width: 100%; margin-top: 1rem; }
             .sref-awards-grid { grid-template-columns: 1fr; width: 100%; }
             .player-search-bar { flex-direction: column; align-items: stretch; }
         }
@@ -469,6 +523,59 @@
                 return obj;
             });
         }
+
+        // ====================================================================
+        // MASTER CAREER HONORS & AWARDS ARCHIVE
+        // ====================================================================
+        const MASTER_HONORS_DB = {
+            mvp: { '1': 'alp', '2': 'croze', '3': 'bc', '4': 'balt', '5': 'nottherealben', '6': 'r0dmanx' },
+            fmvp: { '1': 'alp', '3': 'bc', '4': 'nottherealben', '5': 'victorosimhen', '6': 'r0dmanx' },
+            roty: { '2': 'bc', '3': 'ant2holy', '4': 'psyklone', '5': 'fbb77', '6': 'rome' },
+            gmoty: { '1': 'vortexed', '2': 'cdeck24', '3': 'r0dmanx', '4': 'jabahhh', '5': 'r0dmanx', '6': 'aayan.t' },
+            mip: { '2': 'fourr', '3': 'florida_sportsfan', '4': 'tinosthe2nd', '5': 'tredawg', '6': 'masons07' },
+            smoy: { '6': 'to' },
+            fapoty: { '1': 'alessia_russo', '2': 'bc', '3': 'thegreekfreak31', '4': 'chuiso', '5': 'e3thqn' },
+            champions: {
+                '1': ['alp', 'vortexed'],
+                '2': ['thathuey5', 'bc'],
+                '3': ['bc', 'r0dmanx', 'thegreekfreak31'],
+                '4': ['nottherealben', 'chuiso'],
+                '5': ['victorosimhen', 'ceedee88lamb', 'braeden42', 'e3thqn', 'fbb77'],
+                '6': ['r0dmanx', 'to', 'nottherealben', 'chuiso']
+            },
+            allRda1st: {
+                '1': ['alp', 'sean_03', 'vortexed', 'r0dmanx', 'samuel_skol'],
+                '6': ['r0dmanx', 'ceedee88lamb', 'psyklone', 'gio', 'masons07']
+            },
+            allRda2nd: {
+                '1': ['cadeottonlover', 'alessia_russo', 'fabri0897', 'tex', 'whereis905'],
+                '6': ['stormttruper', 'ant2holy', 'realkam', 'purdyfaithful', 'spidermonkee']
+            },
+            allStarsBySeason: {
+                '2': ['fourr', 'cdeck24', 'balt', 'vortexed', 'log.an', 'gmoneytb', 'cadeottonlover', 'ar27g', 'holliday', 'jtj',
+                      'croze', 'kronic1x', 'sean_03', 'mattisss', 'alp', 'fabri0897', 'bucksmuse', 'jcsuvy', 'jabahhh', 'r0dmanx'],
+                '3': ['dylan430', 'vortexed', 'realkam', 'caustic', 'ar27g', 'griff168', 'victorosimhen', 'ozone', 'sua', 'chuiso', 'ferrari', 'gmoneytb',
+                      'florida_sportsfan', 'avrohomm', 'bc', 'gio', 'jjettasbets', 'stephskid', 'ant2holy', 'croze', 'alp', 'nottherealben', 'boombeast', 'thegreekfreak31'],
+                '4': ['sean_03', 'xxt_kraftpropsxx', 'realkam', 'fourr', 'dylan430', 'tinosthe2nd', 'chet', 'pcaisthegoat', 'amonraprops', 'braeden42', 'sua', 'ferrari', 'victorosimhen', 'chefcurryy', 'bc', 'cdeck24',
+                      'dead', 'kronic1x', 'nottherealben', 'jabahhh', 'psyklone', 'florida_sportsfan', 'ant2holy', 'jcsuvy', 'greektime', 'gundy32', 'cmg', 'fowler', 'kninja', 'alp', 'r0dmanx', 'gio'],
+                '5': ['bc', 'realkam', 'ceedee88lamb', 'fbb77', 'ar27g', 'alp_unc', 'tredawg', 'pigskin', 'upvotefarmer', 'thathuey5', 'pookielukey', 'braeden42',
+                      'psyklone', 'noahmulford', 'greektime', 'aayan.t', 'mke', 'danielwest', 'nottherealben', 'jcsuvy', 'chet', 'e3thqn', 'calebownsgb', 'bixz'],
+                '6': ['rome', 'gio', 'nottherealben', 'aidothebeast', 'r0dmanx', 'thathuey5', 'realkam', 'purdyfaithful', 'sua', '👾',
+                      'fbb77', 'pigskin', 'psyklone', 'ceedee88lamb', 'victorosimhen', 'ant2holy', 'drakexsnake', 'rafaela', 'ozone', 'gmoney676']
+            }
+        };
+
+        const KNOWN_ALIASES = {
+            'alp_unc': 'alp',
+            'mehhssi': 'r0dmanx',
+            'mke': 'thegreekfreak31',
+            'thegreekfreak31': 'mke',
+            'pcaisthegoat': 'christianbraunenthusiast',
+            'christianbraunenthusiast': 'pcaisthegoat',
+            'purdy013': 'purdyfaithful',
+            'alvarez': 'hayes23',
+            'to_11': 'to'
+        };
 
         async function initHub() {
             try {
@@ -627,7 +734,7 @@
                 formatRow('Slates / Season', getLeader(p => p.seasons > 0 ? (p.games / p.seasons) : 0), 1)
             ];
 
-            // Column 2: Value & Advanced Metrics (No Blanks)
+            // Column 2: Value & Advanced Metrics
             const col2 = [
                 formatRow('Wins Above Replacement', getLeader(p => p.war), 2),
                 formatRow('Points Per Game', getLeader(p => p.ppg, 10), 2),
@@ -658,7 +765,7 @@
                 }, 10), 1, '%')
             ];
 
-            // Column 4: Hardware & Accolades (Official Records)
+            // Column 4: Hardware & Accolades
             const col4 = [
                 makeStaticHonorsRow('League MVP (Reigning)', '@r0dmanx', 'Reapers', 'S6'),
                 makeStaticHonorsRow('Finals MVP (Reigning)', '@r0dmanx', 'Reapers', 'S6'),
@@ -713,11 +820,66 @@
 
             const initials = p.cleanHandle.slice(0, 2).toUpperCase();
 
+            // Find top sport
             let topSport = 'NBA';
             let maxSportPts = 0;
             Object.entries(p.sports).forEach(([sp, pts]) => {
                 if (pts > maxSportPts) { maxSportPts = pts; topSport = sp; }
             });
+
+            // Gather known handles for award verification
+            const handle = p.cleanHandle;
+            const namesToCheck = new Set([handle, p.username.replace(/^@/, '').toLowerCase()]);
+            if (KNOWN_ALIASES[handle]) namesToCheck.add(KNOWN_ALIASES[handle]);
+            if (p.userId === 'wJ28WP63') { namesToCheck.add('r0dmanx'); namesToCheck.add('mehhssi'); }
+            if (p.userId === 'PJPlXgwJ') { namesToCheck.add('bc'); }
+            if (p.userId === 'jvbb41pv') { namesToCheck.add('alp'); namesToCheck.add('alp_unc'); }
+            if (p.userId === 'X3o2XPbv') { namesToCheck.add('thegreekfreak31'); namesToCheck.add('mke'); }
+            if (p.userId === 'dvd4p4mv') { namesToCheck.add('dylan430'); }
+            if (p.userId === '4JZ281PJ') { namesToCheck.add('realkam'); }
+            if (p.userId === 'gv8D5Q0v') { namesToCheck.add('chuiso'); }
+
+            const hasAward = (winner) => {
+                if (!winner) return false;
+                const cleanW = winner.replace(/^@/, '').trim().toLowerCase();
+                return namesToCheck.has(cleanW) || (KNOWN_ALIASES[cleanW] && namesToCheck.has(KNOWN_ALIASES[cleanW]));
+            };
+
+            const mvpSeasons = Object.keys(MASTER_HONORS_DB.mvp).filter(s => hasAward(MASTER_HONORS_DB.mvp[s]));
+            const fmvpSeasons = Object.keys(MASTER_HONORS_DB.fmvp).filter(s => hasAward(MASTER_HONORS_DB.fmvp[s]));
+            const rotySeasons = Object.keys(MASTER_HONORS_DB.roty).filter(s => hasAward(MASTER_HONORS_DB.roty[s]));
+            const gmotySeasons = Object.keys(MASTER_HONORS_DB.gmoty).filter(s => hasAward(MASTER_HONORS_DB.gmoty[s]));
+            const mipSeasons = Object.keys(MASTER_HONORS_DB.mip).filter(s => hasAward(MASTER_HONORS_DB.mip[s]));
+            const fapotySeasons = Object.keys(MASTER_HONORS_DB.fapoty).filter(s => hasAward(MASTER_HONORS_DB.fapoty[s]));
+            const smoySeasons = Object.keys(MASTER_HONORS_DB.smoy).filter(s => hasAward(MASTER_HONORS_DB.smoy[s]));
+
+            const allRda1stSeasons = Object.keys(MASTER_HONORS_DB.allRda1st).filter(s => MASTER_HONORS_DB.allRda1st[s].some(hasAward));
+            const allRda2ndSeasons = Object.keys(MASTER_HONORS_DB.allRda2nd).filter(s => MASTER_HONORS_DB.allRda2nd[s].some(hasAward));
+            const allStarSeasons = Object.keys(MASTER_HONORS_DB.allStarsBySeason).filter(s => MASTER_HONORS_DB.allStarsBySeason[s].some(hasAward));
+            const champSeasons = Object.keys(MASTER_HONORS_DB.champions).filter(s => MASTER_HONORS_DB.champions[s].some(hasAward));
+
+            // Generate Sports Reference Awards Badges
+            const awardsList = [];
+            if (mvpSeasons.length > 0) awardsList.push({ label: `${mvpSeasons.length}x League MVP`, type: 'gold' });
+            if (fmvpSeasons.length > 0) awardsList.push({ label: `${fmvpSeasons.length}x Finals MVP`, type: 'gold' });
+            if (allStarSeasons.length > 0) awardsList.push({ label: `${allStarSeasons.length}x All-Star`, type: 'maroon' });
+            if (allRda1stSeasons.length > 0) awardsList.push({ label: `${allRda1stSeasons.length}x All-RDA 1st`, type: 'gold' });
+            if (rotySeasons.length > 0) awardsList.push({ label: `Rookie of the Year`, type: 'maroon' });
+            if (allRda2ndSeasons.length > 0) awardsList.push({ label: `${allRda2ndSeasons.length}x All-RDA 2nd`, type: 'silver' });
+            if (gmotySeasons.length > 0) awardsList.push({ label: `${gmotySeasons.length}x GM of the Year`, type: 'silver' });
+            if (champSeasons.length > 0) awardsList.push({ label: `${champSeasons.length}x Champion`, type: 'gold' });
+            if (mipSeasons.length > 0) awardsList.push({ label: `Most Improved`, type: 'blue' });
+            if (smoySeasons.length > 0) awardsList.push({ label: `Sixth Man of Year`, type: 'blue' });
+            if (fapotySeasons.length > 0) awardsList.push({ label: `FA Pickup of Year`, type: 'blue' });
+
+            let badgesGridHtml = awardsList.map(a => {
+                const cls = a.type === 'gold' ? 'gold' : (a.type === 'silver' ? 'silver' : (a.type === 'blue' ? 'blue' : ''));
+                return `<div class="sref-badge ${cls}">${a.label}</div>`;
+            }).join('');
+
+            if (!badgesGridHtml) {
+                badgesGridHtml = `<div class="sref-badge silver">Active Franchise Asset</div>`;
+            }
 
             container.innerHTML = `
                 <div class="sref-header-card">
@@ -738,18 +900,30 @@
                                 <span style="color:#64748b;">&bull;</span>
                                 <strong>Primary Sport:</strong> <span style="color:var(--gold-mid); font-weight:800;">${topSport}</span>
                             </div>
+
+                            <button type="button" class="sref-more-bio-toggle" onclick="toggleMoreBio()">
+                                More bio, accolades, draft history <span id="bio-arrow">▼</span>
+                            </button>
+
+                            <div class="sref-expanded-bio" id="expanded-bio">
+                                <div><strong>All-Star Appearances:</strong> ${allStarSeasons.length > 0 ? allStarSeasons.map(s => `Season ${s}`).join(', ') : 'None'}</div>
+                                <div><strong>All-RDA Selections:</strong> ${[...allRda1stSeasons.map(s => `S${s} 1st Team`), ...allRda2ndSeasons.map(s => `S${s} 2nd Team`)].join(', ') || 'None'}</div>
+                                <div><strong>Championships:</strong> ${champSeasons.length > 0 ? champSeasons.map(s => `Season ${s}`).join(', ') : 'None'}</div>
+                                <div><strong>Career High Slate:</strong> ${p.peakSlate.toFixed(2)} pts</div>
+                                <div><strong>Known Aliases:</strong> ${Array.from(namesToCheck).join(', ')}</div>
+                            </div>
                         </div>
 
+                        <!-- Honors Stack (Awards Badges) -->
                         <div class="sref-awards-container">
                             <div class="sref-awards-grid">
-                                <div class="sref-badge gold">${p.war.toFixed(2)} WAR</div>
-                                <div class="sref-badge">${p.rdaPlus} RDA+</div>
-                                <div class="sref-badge silver">${p.boomPct.toFixed(0)}% Boom Rate</div>
-                                <div class="sref-badge silver">${p.paa > 0 ? '+' : ''}${p.paa.toFixed(1)} PAA</div>
+                                ${badgesGridHtml}
                             </div>
+                            <div class="sref-circle-num" title="Active Season Number">S${currentSeason || '7'}</div>
                         </div>
                     </div>
 
+                    <!-- Quick Sabermetric Summary Table -->
                     <div class="sref-summary-box">
                         <table class="sref-summary-table">
                             <thead>
@@ -811,6 +985,18 @@
                 </div>
             `;
         }
+
+        window.toggleMoreBio = function() {
+            const bio = document.getElementById('expanded-bio');
+            const arrow = document.getElementById('bio-arrow');
+            if (bio.style.display === 'block') {
+                bio.style.display = 'none';
+                arrow.textContent = '▼';
+            } else {
+                bio.style.display = 'block';
+                arrow.textContent = '▲';
+            }
+        };
 
         window.handlePlayerSearch = function(query) {
             if (!query) return;
