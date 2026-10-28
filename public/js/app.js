@@ -126,6 +126,7 @@ export function parseCsvToObject(csvText) {
 export function initNav() {
     const primaryNavItems = [
         { id: 'nav-live', label: '⚡ Live', href: `index.html?season=${currentSeason}` },
+        { id: 'nav-draft', label: '🔴 Draft', href: `draft.html` },
         { id: 'nav-standings', label: 'Standings', href: `standings.html?season=${currentSeason}` },
         { id: 'nav-players', label: 'Players', href: `players.html?season=${currentSeason}` }
     ];

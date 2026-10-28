@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Season 7 Live Draft Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global-v2.css">
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.2.10/dist/hashids.min.js"></script>
+    <style>
+        .draft-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1rem 4rem 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        /* Hero Stage */
+        .draft-stage-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid var(--border-gold);
+            border-top: 3px solid var(--gold-mid);
+            border-radius: 12px;
+            padding: 1.75rem 1.25rem;
+            margin-bottom: 1.75rem;
+            text-align: center;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .live-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .live-status-pill.active {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.4);
+            color: #4ade80;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            display: inline-block;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .stage-pick-title {
+            margin: 0;
+            color: var(--gold-light);
+            font-size: 1.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: 'Didot', serif;
+            line-height: 1.2;
+        }
+
+        .stage-clock-team {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #cbd5e1;
+            margin: 0.4rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .stage-clock-team span {
+            color: #fff;
+            font-size: 1.4rem;
+        }
+        .stage-team-logo {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .stage-timer {
+            font-size: 3.4rem;
+            font-weight: 900;
+            color: #fff;
+            font-family: monospace;
+            letter-spacing: 2px;
+            line-height: 1.1;
+            margin: 0.25rem 0 0.5rem 0;
+            font-variant-numeric: tabular-nums;
+        }
+        .stage-timer.warning { color: #facc15; }
+        .stage-timer.danger { color: #f87171; }
+
+        /* Announcer Ticker */
+        .stage-narrator-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-gold);
+            border-left: 4px solid var(--gold-mid);
+            border-radius: 8px;
+            padding: 0.85rem 1.25rem;
+            margin: 0.75rem auto 0 auto;
+            max-width: 680px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+        }
+        .narrator-header-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.35rem;
+        }
+        .narrator-tag {
+            font-size: 0.7rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .narrator-voice-toggle-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            border-radius: 4px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .narrator-voice-toggle-btn.voice-on {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+        .narrator-text {
+            color: #f1f5f9;
+            font-size: 0.95rem;
+            font-weight: 700;
+            line-height: 1.4;
+            min-height: 22px;
+        }
+
+        /* Recent Picks Strip */
+        .section-headline {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin: 1.75rem 0 0.85rem 0;
+            border-bottom: 2px solid var(--border-gold);
+            padding-bottom: 0.4rem;
+        }
+        .section-headline h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            font-family: 'Didot', serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .recent-picks-container {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding-bottom: 0.6rem;
+            margin-bottom: 1.5rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        .recent-pick-card {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--border-subtle);
+            padding: 0.75rem 0.9rem;
+            border-radius: 8px;
+            min-width: 150px;
+            text-align: left;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .recent-pick-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--gold-mid);
+        }
+        .recent-pick-card .pick-num {
+            font-size: 0.62rem;
+            color: var(--text-muted);
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .recent-pick-card .pick-team {
+            font-size: 0.85rem;
+            color: var(--gold-mid);
+            font-weight: 800;
+            margin: 3px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .recent-pick-card .pick-player {
+            font-size: 0.92rem;
+            color: #fff;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* View Mode Switcher */
+        .view-switcher-bar {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .view-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 0.45rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+        .view-btn:hover { color: #fff; border-color: var(--gold-mid); }
+        .view-btn.active {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--border-gold);
+            color: var(--gold-light);
+        }
+
+        /* 3-Round Grid Board */
+        .rounds-grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .round-column {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .round-col-header {
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid var(--border-gold);
+            padding: 0.6rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .board-pick-row {
+            display: grid;
+            grid-template-columns: 28px 1fr auto;
+            align-items: center;
+            gap: 8px;
+            padding: 0.55rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.82rem;
+            box-sizing: border-box;
+            transition: background 0.15s ease;
+        }
+        .board-pick-row:hover { background: rgba(255, 255, 255, 0.03); }
+        .board-pick-row.on-clock {
+            background: rgba(212, 175, 55, 0.12);
+            border-left: 3px solid var(--gold-mid);
+        }
+        .board-pick-row.completed {
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        .board-pick-num {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .board-team-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .board-team-name {
+            font-weight: 700;
+            color: #cbd5e1;
+            font-size: 0.8rem;
+        }
+        .board-selection-cell {
+            text-align: right;
+            white-space: nowrap;
+        }
+        .board-player-link {
+            color: var(--gold-light);
+            font-weight: 800;
+            text-decoration: none;
+            font-size: 0.82rem;
+        }
+        .board-player-link:hover { text-decoration: underline; }
+        .board-clock-badge {
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px solid var(--border-gold);
+            color: var(--gold-mid);
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 5px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            animation: pulse 1.5s infinite;
+        }
+        .board-pending-badge {
+            color: #64748b;
+            font-size: 0.72rem;
+            font-style: italic;
+        }
+
+        /* Chronological Table View */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(15, 23, 42, 0.6);
+            margin-bottom: 2rem;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+        .data-table th, .data-table td {
+            padding: 0.7rem 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .data-table th {
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--gold-mid);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        /* Available Player Pool */
+        .fa-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .fa-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .fa-card:hover {
+            border-color: var(--border-gold);
+            transform: translateY(-2px);
+        }
+        .fa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 0.6rem;
+            margin-bottom: 0.75rem;
+        }
+        .fa-name { font-size: 1.05rem; font-weight: 800; color: #fff; }
+        .fa-id { font-size: 0.68rem; color: var(--text-muted); font-family: monospace; }
+        .search-input-box {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--border-gold);
+            color: #fff;
+            padding: 0.55rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto 1.25rem auto;
+            display: block;
+            box-sizing: border-box;
+        }
+        .search-input-box:focus { border-color: var(--gold-light); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 980px) {
+            .rounds-grid-container { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .draft-container { padding: 0.5rem 0.5rem 3rem 0.5rem; }
+            .stage-timer { font-size: 2.5rem; }
+            .stage-pick-title { font-size: 1.35rem; }
+            .stage-clock-team span { font-size: 1.1rem; }
+            .fa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.5rem; }
+            .fa-card { padding: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>RDA Season 7 Live Draft Center</h1>
+
+    <div class="draft-container">
+        <!-- LIVE STAGE CARD -->
+        <div class="draft-stage-card">
+            <div class="live-status-pill" id="live-indicator">
+                <span class="live-dot"></span> <span id="live-indicator-text">Drafting Live</span>
+            </div>
+            
+            <h2 class="stage-pick-title" id="stage-round-display">Round 1, Pick 1 (Overall #1)</h2>
+            
+            <div class="stage-clock-team" id="stage-clock-display">
+                On the Clock: <img src="" id="stage-team-logo" class="stage-team-logo" onerror="this.style.display='none'"> <span id="stage-team-name">Voyagers</span>
+            </div>
+
+            <div class="stage-timer" id="stage-timer">00:00</div>
+
+            <!-- ANNOUNCER DESK -->
+            <div class="stage-narrator-box">
+                <div class="narrator-header-line">
+                    <span class="narrator-tag">🎙️ Live Draft Desk</span>
+                    <button type="button" class="narrator-voice-toggle-btn" id="voice-toggle-btn" onclick="toggleVoiceNarration()">
+                        🔇 Voice: Muted
+                    </button>
+                </div>
+                <div class="narrator-text" id="stage-narrator-text">
+                    Welcome to the Season 7 RDA Draft. Teams are preparing for Round 1, Pick 1.
+                </div>
+            </div>
+        </div>
+
+        <!-- RECENT PICKS RIBBON -->
+        <div class="section-headline">
+            <h2>Recent Selections</h2>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Live Feed</span>
+        </div>
+        <div class="recent-picks-container" id="recent-picks-carousel">
+            <div style="color:var(--text-muted); font-style:italic; font-size:0.85rem; padding:0.5rem 0;">No picks made yet in Season 7.</div>
+        </div>
+
+        <!-- BOARD VIEW CONTROLS -->
+        <div class="section-headline">
+            <h2>Draft Board</h2>
+            <div class="view-switcher-bar" style="margin:0;">
+                <button class="view-btn active" id="btn-grid-view" onclick="switchBoardView('grid')">📊 3-Round Grid</button>
+                <button class="view-btn" id="btn-table-view" onclick="switchBoardView('table')">📋 Chronological Order</button>
+            </div>
+        </div>
+
+        <!-- 3-ROUND GRID VIEW -->
+        <div id="board-grid-view" class="rounds-grid-container">
+            <div class="round-column" id="col-round-1"><div class="round-col-header">Round 1</div><div class="round-picks-list" id="list-round-1"></div></div>
+            <div class="round-column" id="col-round-2"><div class="round-col-header">Round 2</div><div class="round-picks-list" id="list-round-2"></div></div>
+            <div class="round-column" id="col-round-3"><div class="round-col-header">Round 3</div><div class="round-picks-list" id="list-round-3"></div></div>
+        </div>
+
+        <!-- CHRONOLOGICAL TABLE VIEW -->
+        <div id="board-table-view" class="table-wrapper" style="display:none;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:70px;">Pick #</th>
+                        <th>Round</th>
+                        <th>Franchise</th>
+                        <th>Selection</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="board-table-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- AVAILABLE PLAYERS POOL -->
+        <div class="section-headline">
+            <h2>Available Player Pool</h2>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;" id="pool-count">Loading...</span>
+        </div>
+        <input type="text" id="pool-search-input" class="search-input-box" placeholder="Search available players..." oninput="filterAvailablePool(this.value)">
+        <div class="fa-grid" id="available-player-grid">
+            <div style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:2rem;">Loading Player Board...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
+        import { initNav, currentSeason, getTeamLogoPath } from './js/app.js?v=7';
+
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        const draftOrderUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=1962401407&single=true&output=csv';
+        const faCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=334253637&single=true&output=csv';
+
+        const DRAFT_DOC_ID = `draftState_s${currentSeason || '7'}`;
+
+        let DRAFT_METADATA = [];
+        let DRAFT_ORDER = [];
+        let allFaData = [];
+        let draftState = {
+            isActive: false,
+            currentPickIdx: 0,
+            timerEndsAt: 0,
+            picks: []
+        };
+        let timerInterval = null;
+        let lastNarratedPickCount = -1;
+        let lastNarratedClockTeam = '';
+        window.voiceNarrationEnabled = false;
+
+        function cleanHandle(u) {
+            if (!u) return '';
+            return String(u).replace(/^@/, '').trim().toLowerCase();
+        }
+
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            const headers = rows[0].split(delimiter).map(h => 
+                h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase()
+            );
+            return rows.slice(1).map(row => {
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim();
+                });
+                return obj;
+            });
+        }
+
+        async function fetchCSVRobust(url) {
+            const directUrl = url.includes('docs.google.com') ? url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now() : workerProxy + '?url=' + encodeURIComponent(url);
+            try {
+                const res = await fetch(directUrl);
+                return await res.text();
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // ====================================================================
+        // DRAFT NARRATION ENGINE
+        // ====================================================================
+        window.toggleVoiceNarration = () => {
+            window.voiceNarrationEnabled = !window.voiceNarrationEnabled;
+            const btn = document.getElementById('voice-toggle-btn');
+            if (btn) {
+                if (window.voiceNarrationEnabled) {
+                    btn.classList.add('voice-on');
+                    btn.innerText = "🔊 Voice: Active";
+                    narrateDraft("Announcer audio enabled for the live draft.");
+                } else {
+                    btn.classList.remove('voice-on');
+                    btn.innerText = "🔇 Voice: Muted";
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                }
+            }
+        };
+
+        function narrateDraft(text, spokenText = null) {
+            const el = document.getElementById('stage-narrator-text');
+            if (el) el.innerText = text;
+
+            if (window.voiceNarrationEnabled && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const phrase = (spokenText || text).replace(/[@#*_]/g, '');
+                const utterance = new SpeechSynthesisUtterance(phrase);
+                utterance.rate = 1.05;
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')));
+                if (preferredVoice) utterance.voice = preferredVoice;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+
+        function isDraftActiveHours(date) {
+            const estString = (date || new Date()).toLocaleString("en-US", { timeZone: "America/New_York" });
+            const current = new Date(estString);
+            const dayOfWeek = current.getDay();
+            const h = current.getHours();
+
+            if (dayOfWeek === 6) return h >= 12; // Saturday
+            return h >= 15 && h < 23;            // Weekdays
+        }
+
+        // ====================================================================
+        // DATA LOADERS & REALTIME LISTENER
+        // ====================================================================
+        async function initLiveCenter() {
+            try {
+                const [orderText, faText] = await Promise.all([
+                    fetchCSVRobust(draftOrderUrl),
+                    fetchCSVRobust(faCsvUrl)
+                ]);
+
+                // Parse Order
+                const rows = parseCsvLocal(orderText);
+                if (rows.length > 0) {
+                    const formatted = [];
+                    let running = 1;
+                    rows.forEach(r => {
+                        const keys = Object.keys(r);
+                        const teamKey = keys.find(k => k === 'team' || k.includes('franchise') || k.includes('team'));
+                        const teamRaw = teamKey && r[teamKey] ? r[teamKey].trim() : '';
+
+                        if (teamRaw && teamRaw.toLowerCase() !== 'team') {
+                            const roundKey = keys.find(k => k === 'round' || k.includes('rd'));
+                            const pickKey = keys.find(k => k === 'pick');
+
+                            let roundVal = roundKey && r[roundKey] ? parseInt(r[roundKey].replace(/\D/g, ''), 10) : Math.ceil(running / 12);
+                            let pickVal = pickKey && r[pickKey] ? parseInt(r[pickKey].replace(/\D/g, ''), 10) : ((running - 1) % 12 + 1);
+
+                            if (isNaN(roundVal)) roundVal = Math.ceil(running / 12);
+                            if (isNaN(pickVal)) pickVal = (running - 1) % 12 + 1;
+
+                            const canonicalTeam = teamRaw.charAt(0).toUpperCase() + teamRaw.slice(1).toLowerCase();
+                            formatted.push({
+                                overall: running,
+                                round: roundVal,
+                                pickInRound: pickVal,
+                                team: canonicalTeam
+                            });
+                            running++;
+                        }
+                    });
+                    DRAFT_METADATA = formatted;
+                    DRAFT_ORDER = formatted.map(p => p.team);
+                }
+
+                // Parse FAs
+                allFaData = parseCsvLocal(faText).filter(p => p.username);
+                renderAvailablePool();
+
+                // Connect to realtime Firestore
+                listenToLiveDraft();
+            } catch(e) {
+                console.error("Live center load error:", e);
+            }
+        }
+
+        function listenToLiveDraft() {
+            const draftRef = doc(db, 'system', DRAFT_DOC_ID);
+
+            onSnapshot(draftRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const prevPicks = draftState.picks || [];
+                    draftState = docSnap.data();
+                    const newPicks = draftState.picks || [];
+
+                    const currentTeam = DRAFT_ORDER[draftState.currentPickIdx] || "Draft Complete";
+                    const isFinished = draftState.currentPickIdx >= DRAFT_ORDER.length;
+
+                    // Update Stage
+                    const stageRoundEl = document.getElementById('stage-round-display');
+                    const stageTeamNameEl = document.getElementById('stage-team-name');
+                    const stageLogoEl = document.getElementById('stage-team-logo');
+                    const liveIndicatorText = document.getElementById('live-indicator-text');
+                    const liveIndicator = document.getElementById('live-indicator');
+
+                    if (isFinished) {
+                        stageRoundEl.innerText = "Season 7 Draft Complete";
+                        stageTeamNameEl.innerText = "All Picks Completed";
+                        stageLogoEl.style.display = 'none';
+                        liveIndicatorText.innerText = "Concluded";
+                        liveIndicator.classList.remove('active');
+                    } else {
+                        const meta = DRAFT_METADATA[draftState.currentPickIdx];
+                        stageRoundEl.innerText = meta ? `Round ${meta.round}, Pick ${meta.pickInRound} (Overall #${draftState.currentPickIdx + 1})` : `Pick #${draftState.currentPickIdx + 1}`;
+                        stageTeamNameEl.innerText = currentTeam;
+                        stageLogoEl.src = getTeamLogoPath(currentTeam);
+                        stageLogoEl.style.display = 'inline-block';
+
+                        if (draftState.isActive) {
+                            liveIndicatorText.innerText = "Live";
+                            liveIndicator.classList.add('active');
+                        } else {
+                            liveIndicatorText.innerText = "Paused";
+                            liveIndicator.classList.remove('active');
+                        }
+                    }
+
+                    // Narration Hooks
+                    if (newPicks.length > prevPicks.length && lastNarratedPickCount !== -1) {
+                        const latest = newPicks[newPicks.length - 1];
+                        const pickOrdinal = getOrdinal(newPicks.length);
+                        const txt = `With the ${pickOrdinal} pick in the Season 7 RDA Draft, the ${latest.team} select ${latest.player}!`;
+                        const spk = `With the ${pickOrdinal} pick, the ${latest.team} select ${latest.player.replace('@', '')}.`;
+                        narrateDraft(txt, spk);
+                        lastNarratedClockTeam = '';
+                    } else if (draftState.isActive && !isFinished && currentTeam !== lastNarratedClockTeam) {
+                        lastNarratedClockTeam = currentTeam;
+                        const pickNum = draftState.currentPickIdx + 1;
+                        const meta = DRAFT_METADATA[draftState.currentPickIdx] || {};
+                        const roundStr = meta.round ? `Round ${meta.round}, ` : '';
+                        const txt = `⏱️ The ${currentTeam} are now on the clock for ${roundStr}Pick #${pickNum}.`;
+                        const spk = `The ${currentTeam} are now on the clock for pick ${pickNum}.`;
+                        narrateDraft(txt, spk);
+                    }
+                    lastNarratedPickCount = newPicks.length;
+
+                    renderRecentPicks();
+                    renderBoardViews();
+                    renderAvailablePool();
+                }
+            });
+
+            // Live Countdown Clock
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const timerEl = document.getElementById('stage-timer');
+                if (!timerEl) return;
+
+                if (!draftState.isActive) {
+                    timerEl.innerText = "PAUSED";
+                    timerEl.className = "stage-timer warning";
+                    return;
+                }
+
+                if (draftState.currentPickIdx >= DRAFT_ORDER.length) {
+                    timerEl.innerText = "00:00";
+                    timerEl.className = "stage-timer";
+                    return;
+                }
+
+                const now = Date.now();
+                const active = isDraftActiveHours(new Date(now));
+                const diff = draftState.timerEndsAt - now;
+
+                if (!active) {
+                    const estNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+                    const day = estNow.getDay();
+                    const h = estNow.getHours();
+
+                    if (day === 6) timerEl.innerText = "RESUMES 12:00 PM";
+                    else if (h < 15) timerEl.innerText = "STARTS 3:00 PM";
+                    else timerEl.innerText = "FROZEN (11PM-3PM)";
+
+                    timerEl.className = "stage-timer warning";
+                    return;
+                }
+
+                if (diff <= 0) {
+                    timerEl.innerText = "00:00";
+                    timerEl.className = "stage-timer danger";
+                } else {
+                    const totalSec = Math.floor(diff / 1000);
+                    const hours = Math.floor(totalSec / 3600);
+                    const m = Math.floor((totalSec % 3600) / 60);
+                    const s = totalSec % 60;
+
+                    if (hours > 0) timerEl.innerText = `${hours}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+                    else timerEl.innerText = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+
+                    if (hours === 0 && m <= 5) timerEl.className = "stage-timer danger";
+                    else if (hours === 0 && m <= 15) timerEl.className = "stage-timer warning";
+                    else timerEl.className = "stage-timer";
+                }
+            }, 1000);
+        }
+
+        // ====================================================================
+        // RENDERERS
+        // ====================================================================
+        function renderRecentPicks() {
+            const container = document.getElementById('recent-picks-carousel');
+            if (!container) return;
+            const picks = draftState.picks || [];
+
+            if (!picks.length) {
+                container.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.85rem; padding:0.5rem 0;">No picks made yet in Season 7.</div>';
+                return;
+            }
+
+            container.innerHTML = [...picks].reverse().slice(0, 10).map((p, idx) => {
+                const pickNum = picks.length - idx;
+                return `
+                    <div class="recent-pick-card">
+                        <div class="pick-num">Pick #${pickNum}</div>
+                        <div class="pick-team">
+                            <img src="${getTeamLogoPath(p.team)}" style="width:16px; height:16px; object-fit:contain;" onerror="this.style.display='none'">
+                            <span>${p.team}</span>
+                        </div>
+                        <div class="pick-player" title="${p.player}">
+                            <a href="player.html?player=${encodeURIComponent(cleanHandle(p.player))}" style="color:#fff; text-decoration:none;">${p.player}</a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderBoardViews() {
+            const picks = draftState.picks || [];
+            const currentIdx = draftState.currentPickIdx;
+
+            // 1. Grid Lists (Rounds 1, 2, 3)
+            for (let rd = 1; rd <= 3; rd++) {
+                const colEl = document.getElementById(`list-round-${rd}`);
+                if (!colEl) continue;
+
+                const roundPicks = DRAFT_METADATA.filter(m => m.round === rd);
+                colEl.innerHTML = roundPicks.map(slot => {
+                    const pickZeroIdx = slot.overall - 1;
+                    const isDrafted = pickZeroIdx < picks.length;
+                    const isOnClock = pickZeroIdx === currentIdx && currentIdx < DRAFT_ORDER.length;
+                    const pickedObj = isDrafted ? picks[pickZeroIdx] : null;
+
+                    let selHtml = '';
+                    if (isDrafted && pickedObj) {
+                        selHtml = `<a href="player.html?player=${encodeURIComponent(cleanHandle(pickedObj.player))}" class="board-player-link">${pickedObj.player}</a>`;
+                    } else if (isOnClock) {
+                        selHtml = `<span class="board-clock-badge">On Clock</span>`;
+                    } else {
+                        selHtml = `<span class="board-pending-badge">Upcoming</span>`;
+                    }
+
+                    return `
+                        <div class="board-pick-row ${isOnClock ? 'on-clock' : (isDrafted ? 'completed' : '')}">
+                            <div class="board-pick-num">#${slot.overall}</div>
+                            <div class="board-team-cell">
+                                <img src="${getTeamLogoPath(slot.team)}" style="width:18px; height:18px; object-fit:contain;" onerror="this.style.display='none'">
+                                <span class="board-team-name">${slot.team}</span>
+                            </div>
+                            <div class="board-selection-cell">${selHtml}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 2. Table View
+            const tbody = document.getElementById('board-table-tbody');
+            if (tbody) {
+                tbody.innerHTML = DRAFT_METADATA.map(slot => {
+                    const pickZeroIdx = slot.overall - 1;
+                    const isDrafted = pickZeroIdx < picks.length;
+                    const isOnClock = pickZeroIdx === currentIdx && currentIdx < DRAFT_ORDER.length;
+                    const pickedObj = isDrafted ? picks[pickZeroIdx] : null;
+
+                    let statusBadge = isDrafted ? `<span style="color:#4ade80; font-weight:800;">✓ Picked</span>` : (isOnClock ? `<span style="color:var(--gold-mid); font-weight:800;">⏱️ On Clock</span>` : `<span style="color:#64748b;">Pending</span>`);
+                    let playerLink = isDrafted && pickedObj ? `<a href="player.html?player=${encodeURIComponent(cleanHandle(pickedObj.player))}" style="color:var(--gold-light); font-weight:800; text-decoration:none;">${pickedObj.player}</a>` : '<span style="color:#64748b;">-</span>';
+
+                    return `
+                        <tr style="${isOnClock ? 'background:rgba(212,175,55,0.1); font-weight:800;' : ''}">
+                            <td style="font-weight:800; color:#fff;">#${slot.overall}</td>
+                            <td style="color:var(--text-muted);">Round ${slot.round}, Pick ${slot.pickInRound}</td>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <img src="${getTeamLogoPath(slot.team)}" style="width:18px; height:18px; object-fit:contain;" onerror="this.style.display='none'">
+                                    <span style="color:#fff; font-weight:700;">${slot.team}</span>
+                                </div>
+                            </td>
+                            <td>${playerLink}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        window.switchBoardView = (viewType) => {
+            const gridEl = document.getElementById('board-grid-view');
+            const tableEl = document.getElementById('board-table-view');
+            const btnGrid = document.getElementById('btn-grid-view');
+            const btnTable = document.getElementById('btn-table-view');
+
+            if (viewType === 'grid') {
+                gridEl.style.display = 'grid';
+                tableEl.style.display = 'none';
+                btnGrid.classList.add('active');
+                btnTable.classList.remove('active');
+            } else {
+                gridEl.style.display = 'none';
+                tableEl.style.display = 'block';
+                btnGrid.classList.remove('active');
+                btnTable.classList.add('active');
+            }
+        };
+
+        function renderAvailablePool() {
+            const container = document.getElementById('available-player-grid');
+            const searchVal = (document.getElementById('pool-search-input')?.value || '').toLowerCase().trim();
+            const poolCountEl = document.getElementById('pool-count');
+            if (!container) return;
+
+            const draftedSet = new Set((draftState.picks || []).map(p => cleanHandle(p.player)));
+            let available = allFaData.filter(p => !draftedSet.has(cleanHandle(p.username)));
+
+            if (poolCountEl) poolCountEl.innerText = `${available.length} Players on Board`;
+
+            if (searchVal) {
+                available = available.filter(p => p.username.toLowerCase().includes(searchVal));
+            }
+
+            if (!available.length) {
+                container.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:2rem;">No matching players found.</div>';
+                return;
+            }
+
+            container.innerHTML = available.slice(0, 60).map(p => {
+                const u = p.username;
+                const uid = p['user id'] || p.userid || p.id || '';
+                return `
+                    <div class="fa-card">
+                        <div class="fa-header">
+                            <span class="fa-name">${u}</span>
+                            <span class="fa-id">${uid}</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                            Eligible Franchise Asset &bull; Available
+                        </div>
+                        <a href="player.html?player=${encodeURIComponent(cleanHandle(u))}" style="margin-top:auto; padding:0.45rem; background:rgba(212,175,55,0.15); border:1px solid var(--border-gold); color:var(--gold-light); text-align:center; border-radius:6px; font-weight:800; font-size:0.75rem; text-decoration:none; text-transform:uppercase;">View Player Dossier &rarr;</a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.filterAvailablePool = () => { renderAvailablePool(); };
+
+        initLiveCenter();
+    </script>
+</body>
+</html>
