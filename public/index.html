@@ -973,7 +973,8 @@
             let day = parseInt(partValue('day'));
             let hour = parseInt(partValue('hour'));
             if (hour === 24) hour = 0;
-            if (hour < 10) {
+            // Roll over to today's slate starting at 9:00 AM EST (before 9 AM shows yesterday)
+            if (hour < 9) {
                 const estDate = new Date(Date.UTC(parseInt(partValue('year')), month - 1, day));
                 estDate.setUTCDate(estDate.getUTCDate() - 1);
                 month = estDate.getUTCMonth() + 1; 
