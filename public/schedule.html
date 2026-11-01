@@ -491,6 +491,30 @@
             return new Date(dateStr).getTime() || 0;
         }
 
+                function formatSlateDate(dateStr, full = false) {
+            if (!dateStr) return '';
+            const parts = dateStr.trim().split('/');
+            if (parts.length >= 2) {
+                const m = parseInt(parts[0], 10) - 1;
+                const d = parseInt(parts[1], 10);
+                let y = new Date().getFullYear();
+                if (parts.length === 3) {
+                    y = parseInt(parts[2], 10);
+                    if (y < 100) y += 2000;
+                } else {
+                    const sNum = parseInt(currentSeason || '7', 10);
+                    const baseYear = 2019 + (isNaN(sNum) ? 7 : sNum);
+                    y = (m < 7) ? baseYear + 1 : baseYear;
+                }
+                const dateObj = new Date(y, m, d);
+                if (!isNaN(dateObj.getTime())) {
+                    const dayName = new Intl.DateTimeFormat('en-US', { weekday: full ? 'long' : 'short' }).format(dateObj);
+                    return `${dayName}, ${dateStr}`;
+                }
+            }
+            return dateStr;
+        }
+
         function getTodayDateEST() {
             const now = new Date();
             const options = { timeZone: "America/New_York", month: 'numeric', day: 'numeric' };
@@ -1053,7 +1077,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--border-subtle); padding-bottom:0.75rem;">
                     <div>
                         <div style="font-size:1.1rem; font-weight:800; color:#fff;">${g.team1} vs ${g.team2}</div>
-                        <div style="font-size:0.72rem; color:var(--text-muted);">${g.date} &bull; ${g.explicitRound || g.playoffRound || g.type}</div>
+                        <div style="font-size:0.72rem; color:var(--text-muted);">${formatSlateDate(g.date, true)} &bull; ${g.explicitRound || g.playoffRound || g.type}</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:1.1rem; font-weight:900; color:var(--gold-mid);">${g.s1Series} - ${g.s2Series}</div>
@@ -1109,7 +1133,7 @@
                             ${sportsBadgesHtml}
                         </div>
                         <div class="slate-meta">
-                            ${slate.date} &bull; ${completedCount}/${totalCount} Final
+                            ${formatSlateDate(slate.date)} &bull; ${completedCount}/${totalCount} Final
                         </div>
                     </div>
                     <div class="matchup-grid">

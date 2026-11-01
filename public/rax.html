@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RDA Rax Rewards & Betting Board</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles/global-v2.css">
+    <style>
+        .rax-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1rem 1rem 4rem 1rem;
+            box-sizing: border-box;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .rax-hero-card {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid var(--border-gold);
+            border-top: 3px solid var(--gold-mid);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .rax-title h2 {
+            margin: 0;
+            color: var(--gold-light);
+            font-size: 1.6rem;
+            font-family: 'Didot', serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .rax-title p {
+            margin: 0.3rem 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        .rax-pool-badge {
+            background: rgba(212, 175, 55, 0.12);
+            border: 1px solid var(--border-gold);
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            text-align: right;
+        }
+        .pool-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+        .pool-val {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--gold-mid);
+            font-family: 'Didot', serif;
+        }
+
+        /* Award Race Section */
+        .award-race-section {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1.75rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        }
+
+        .award-race-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .award-race-title {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            font-family: 'Didot', serif;
+            text-transform: uppercase;
+            letter-spacing: 0.75px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .award-race-payout {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--gold-mid);
+        }
+
+        .award-race-desc {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            margin: 0 0 1rem 0;
+            line-height: 1.3;
+        }
+
+        /* Top 5 Contenders Odds Table */
+        .odds-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+
+        .odds-table th {
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--gold-mid);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            padding: 0.6rem 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .odds-table td {
+            padding: 0.65rem 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+        }
+
+        .odds-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .rank-num {
+            font-weight: 800;
+            width: 45px;
+            text-align: center;
+        }
+        .rank-num.rank-1 { color: #facc15; font-size: 0.95rem; }
+        .rank-num.rank-2 { color: #cbd5e1; }
+        .rank-num.rank-3 { color: #b45309; }
+
+        .contender-name {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .odds-badge {
+            font-size: 0.82rem;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            font-family: monospace;
+            text-align: right;
+            min-width: 65px;
+        }
+        .odds-badge.fav {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.35);
+        }
+        .odds-badge.underdog {
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .prob-bar-container {
+            width: 100px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .prob-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-mid), var(--gold-light));
+            border-radius: 3px;
+        }
+
+        /* Ledger Table */
+        .section-headline {
+            border-bottom: 2px solid var(--border-gold);
+            padding-bottom: 0.4rem;
+            margin: 2rem 0 1rem 0;
+            color: #fff;
+            font-size: 1.15rem;
+            font-family: 'Didot', serif;
+            text-transform: uppercase;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(15, 23, 42, 0.6);
+            margin-bottom: 2rem;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .data-table th, .data-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .data-table th {
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--gold-mid);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-align: left;
+        }
+
+        .status-pill {
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .status-paid { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); }
+        .status-pending { background: rgba(250, 204, 21, 0.15); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.3); }
+    </style>
+</head>
+<body>
+    <h1>RDA Rax Rewards</h1>
+
+    <div class="rax-container">
+        <!-- Hero Overview -->
+        <div class="rax-hero-card">
+            <div class="rax-title">
+                <h2>Season 7 Rax Rewards & Live Betting Odds</h2>
+                <p>Live adjusted betting odds and probabilities updated after every gameday slate</p>
+            </div>
+            <div class="rax-pool-badge">
+                <div class="pool-label">Total Season Pool</div>
+                <div class="pool-val">🪙 24,000 Rax</div>
+            </div>
+        </div>
+
+        <!-- Championship Overview Banner -->
+        <div class="award-race-section" style="border-color: var(--border-gold);">
+            <div class="award-race-header">
+                <h3 class="award-race-title">🏆 RDA Season 7 Championship</h3>
+                <span class="award-race-payout">🪙 1,000 Rax / Player (10,000 Total Team Pool)</span>
+            </div>
+            <p class="award-race-desc">Awarded to all 10 rostered players on the franchise that captures the RDA Season 7 championship in the Finals.</p>
+            <div style="font-size: 0.82rem; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 0.6rem 0.85rem; border-radius: 6px;">
+                <span><strong>Playoff Stage:</strong> 8-team postseason tournament begins following Game 21</span>
+                <span style="color: var(--gold-mid); font-weight: 800;">Championship Matchup Pending</span>
+            </div>
+        </div>
+
+        <!-- TOP 5 CONTENDERS: LEAGUE MVP -->
+        <div class="award-race-section">
+            <div class="award-race-header">
+                <h3 class="award-race-title">⭐ League MVP Contenders (Top 5)</h3>
+                <span class="award-race-payout">🪙 5,000 Rax</span>
+            </div>
+            <p class="award-race-desc">Calculated strictly from <strong>Season 7 Starter Points</strong>. Live odds adjust dynamically after every game based on current output, pacing, and games remaining.</p>
+            <div style="overflow-x: auto;">
+                <table class="odds-table">
+                    <thead>
+                        <tr>
+                            <th class="rank-num">#</th>
+                            <th style="text-align: left;">Player</th>
+                            <th style="text-align: left;">Franchise</th>
+                            <th style="text-align: right;">S7 Starter Pts</th>
+                            <th style="text-align: right;">GP</th>
+                            <th style="text-align: right;">Pacing (Proj)</th>
+                            <th style="text-align: right;">Win Prob</th>
+                            <th style="text-align: right;">Live Odds</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mvp-odds-tbody">
+                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Calculating Season 7 MVP odds...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TOP 5 CONTENDERS: SCORING CHAMPION -->
+        <div class="award-race-section">
+            <div class="award-race-header">
+                <h3 class="award-race-title">🔥 Scoring Champion Contenders (Top 5)</h3>
+                <span class="award-race-payout">🪙 2,500 Rax</span>
+            </div>
+            <p class="award-race-desc">Awarded to the player with the highest average starter points per game in Season 7 (min. 10 games played). Odds factor in sample size and scoring stability.</p>
+            <div style="overflow-x: auto;">
+                <table class="odds-table">
+                    <thead>
+                        <tr>
+                            <th class="rank-num">#</th>
+                            <th style="text-align: left;">Player</th>
+                            <th style="text-align: left;">Franchise</th>
+                            <th style="text-align: right;">Current PPG</th>
+                            <th style="text-align: right;">GP</th>
+                            <th style="text-align: right;">Total S7 Pts</th>
+                            <th style="text-align: right;">Win Prob</th>
+                            <th style="text-align: right;">Live Odds</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ppg-odds-tbody">
+                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Calculating Season 7 Scoring Champion odds...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TOP 5 CONTENDERS: ROOKIE OF THE YEAR -->
+        <div class="award-race-section">
+            <div class="award-race-header">
+                <h3 class="award-race-title">🎯 Rookie of the Year Contenders (Top 5)</h3>
+                <span class="award-race-payout">🪙 2,000 Rax</span>
+            </div>
+            <p class="award-race-desc">Awarded to the highest scoring rookie of Season 7 by total starter volume. Odds reflect race positioning among all first-year assets.</p>
+            <div style="overflow-x: auto;">
+                <table class="odds-table">
+                    <thead>
+                        <tr>
+                            <th class="rank-num">#</th>
+                            <th style="text-align: left;">Rookie Player</th>
+                            <th style="text-align: left;">Franchise</th>
+                            <th style="text-align: right;">S7 Starter Pts</th>
+                            <th style="text-align: right;">GP</th>
+                            <th style="text-align: right;">PPG</th>
+                            <th style="text-align: right;">Win Prob</th>
+                            <th style="text-align: right;">Live Odds</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roty-odds-tbody">
+                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Calculating Rookie of the Year odds...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4-WEEK LEDGER: WEEKLY TOP SCORER -->
+        <div class="section-headline">Weekly High Scorer Payout Log (4 Weeks)</div>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timeframe / Week</th>
+                        <th>Award Name</th>
+                        <th>Winner / Contender</th>
+                        <th>Franchise</th>
+                        <th>Combined Score</th>
+                        <th>Payout</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="rax-ledger-tbody">
+                    <tr>
+                        <td>Week 1 (Games 1–5)</td>
+                        <td>Weekly High Scorer (Combined Slates)</td>
+                        <td style="font-weight:700; color:#fff;" id="w1-winner">TBD</td>
+                        <td id="w1-team">--</td>
+                        <td id="w1-score">--</td>
+                        <td style="color:var(--gold-mid); font-weight:800;">🪙 500 Rax</td>
+                        <td><span class="status-pill status-pending">In Progress</span></td>
+                    </tr>
+                    <tr>
+                        <td>Week 2 (Games 6–10)</td>
+                        <td>Weekly High Scorer (Combined Slates)</td>
+                        <td style="font-weight:700; color:#fff;">TBD</td>
+                        <td>--</td>
+                        <td>--</td>
+                        <td style="color:var(--gold-mid); font-weight:800;">🪙 500 Rax</td>
+                        <td><span class="status-pill status-pending">Upcoming</span></td>
+                    </tr>
+                    <tr>
+                        <td>Week 3 (Games 11–16)</td>
+                        <td>Weekly High Scorer (Combined Slates)</td>
+                        <td style="font-weight:700; color:#fff;">TBD</td>
+                        <td>--</td>
+                        <td>--</td>
+                        <td style="color:var(--gold-mid); font-weight:800;">🪙 500 Rax</td>
+                        <td><span class="status-pill status-pending">Upcoming</span></td>
+                    </tr>
+                    <tr>
+                        <td>Week 4 (Games 17–21)</td>
+                        <td>Weekly High Scorer (Combined Slates)</td>
+                        <td style="font-weight:700; color:#fff;">TBD</td>
+                        <td>--</td>
+                        <td>--</td>
+                        <td style="color:var(--gold-mid); font-weight:800;">🪙 500 Rax</td>
+                        <td><span class="status-pill status-pending">Upcoming</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initNav, currentSeason, parseCsvToObject, HISTORICAL_CSVS } from './js/app.js?v=7';
+        initNav();
+
+        const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
+        
+        // Master Roster Sheet (contains all 120 rostered players & official 'Rookie' designations)
+        const ROSTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv';
+        // Season 7 Log Sheet (accumulates Game 1 through Game 21 actual scores)
+        const S7_PLAYERS_CSV_URL = HISTORICAL_CSVS?.['7']?.players || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv';
+        // Career Baseline Sheet (used for pre-season baseline projections before Game 1)
+        const SUMMARY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=2033320026&single=true&output=csv';
+
+        const TOTAL_SEASON_GAMES = 21;
+
+        function cleanHandle(u) {
+            if (!u) return '';
+            return String(u).replace(/^@/, '').trim().toLowerCase();
+        }
+
+        function parseCsvLocal(csvText) {
+            if (!csvText || csvText.trim().startsWith('<')) return [];
+            const rows = csvText.trim().split(/\r?\n/);
+            if (rows.length < 2) return [];
+            const delimiter = rows[0].includes('\t') ? '\t' : ',';
+            const headers = rows[0].split(delimiter).map(h => 
+                h.replace(/^[\uFEFF\u200B]+/, '').replace(/"/g, '').trim().toLowerCase()
+            );
+            return rows.slice(1).map(row => {
+                let inQuotes = false; let currentVal = ''; const values = [];
+                for (let i = 0; i < row.length; i++) {
+                    const char = row[i];
+                    if (char === '"' && (i === 0 || row[i-1] !== '\\')) inQuotes = !inQuotes;
+                    else if (char === delimiter && !inQuotes) { values.push(currentVal.trim()); currentVal = ''; }
+                    else currentVal += char;
+                }
+                values.push(currentVal.trim());
+                const obj = {};
+                headers.forEach((h, i) => {
+                    let val = values[i] !== undefined ? values[i] : '';
+                    obj[h] = val.replace(/^"|"$/g, '').trim();
+                });
+                return obj;
+            });
+        }
+
+        function probToAmericanOdds(prob) {
+            const p = Math.max(0.01, Math.min(0.99, prob));
+            if (p >= 0.5) {
+                const odds = -Math.round((p / (1 - p)) * 100);
+                return `${odds}`;
+            } else {
+                const odds = Math.round(((1 - p) / p) * 100);
+                return `+${odds}`;
+            }
+        }
+
+        function calculateSoftmaxProbabilities(contenders, scoreKey, temperature = 1.0) {
+            if (!contenders || contenders.length === 0) return [];
+            const scores = contenders.map(c => c[scoreKey]);
+            const maxScore = Math.max(...scores);
+            const exps = scores.map(s => Math.exp((s - maxScore) / temperature));
+            const sumExps = exps.reduce((a, b) => a + b, 0);
+            return exps.map(e => e / (sumExps || 1));
+        }
+
+        async function loadSeasonAwards() {
+            try {
+                // Fetch Master Roster, S7 Player Log, and Career Summary concurrently
+                const [rosterRes, s7LogRes, summaryRes] = await Promise.all([
+                    fetch(`${workerProxy}?url=${encodeURIComponent(ROSTER_CSV_URL)}`).catch(() => null),
+                    fetch(`${workerProxy}?url=${encodeURIComponent(S7_PLAYERS_CSV_URL)}`).catch(() => null),
+                    fetch(`${workerProxy}?url=${encodeURIComponent(SUMMARY_CSV_URL)}`).catch(() => null)
+                ]);
+
+                const rosterRows = rosterRes && rosterRes.ok ? parseCsvLocal(await rosterRes.text()) : [];
+                const s7LogRows = s7LogRes && s7LogRes.ok ? parseCsvLocal(await s7LogRes.text()) : [];
+                const summaryRows = summaryRes && summaryRes.ok ? parseCsvLocal(await summaryRes.text()) : [];
+
+                // 1. Build Career Summary Lookup for baseline PPG (pre-season baseline)
+                const careerMap = {};
+                summaryRows.forEach(r => {
+                    const u = cleanHandle(r.username || r.player || r.user);
+                    if (u) {
+                        careerMap[u] = {
+                            ppg: parseFloat(r.career_ppg || r.ppg || 0) || 0,
+                            games: parseInt(r.career_games || r.games || 0, 10) || 0
+                        };
+                    }
+                });
+
+                // 2. Build Base Player Registry from Active Roster Sheet (handles all Rookies!)
+                const playerMap = {};
+                rosterRows.forEach(r => {
+                    const uName = r.username || r.player || '';
+                    if (!uName) return;
+                    const clean = cleanHandle(uName);
+                    const team = r.team || r.franchise || 'Free Agent';
+                    if (team.toLowerCase().includes('free agent') || team.toLowerCase() === 'fa') return;
+
+                    // Inspect Rookie column across schema variations
+                    const rookieVal = String(r.rookie || r.isrookie || r['is rookie'] || '').trim().toLowerCase();
+                    const isRookie = rookieVal === 'yes' || rookieVal === 'true' || rookieVal === '1';
+
+                    const baseline = careerMap[clean] || { ppg: (isRookie ? 34.0 : 25.0), games: 0 };
+
+                    playerMap[clean] = {
+                        username: uName.startsWith('@') ? uName : '@' + uName,
+                        team: team,
+                        isRookie: isRookie,
+                        starterPoints: 0,
+                        benchPoints: 0,
+                        s7Games: 0,
+                        baselinePpg: baseline.ppg > 0 ? baseline.ppg : (isRookie ? 34.0 : 25.0),
+                        activeDates: new Set()
+                    };
+                });
+
+                // 3. Accumulate Actual Season 7 Stats from Log Sheet (if any games logged)
+                s7LogRows.forEach(r => {
+                    const uName = r.username || r.player || r.user || '';
+                    if (!uName) return;
+                    const clean = cleanHandle(uName);
+                    if (!playerMap[clean]) return;
+
+                    const score = parseFloat(r.score || r.points || 0) || 0;
+                    const benchVal = String(r.bench || r.isbench || r.is_bench || '').trim().toLowerCase();
+                    const isBench = benchVal === 'true' || benchVal === 'yes' || benchVal === '1';
+                    const date = r.date || r.day || '';
+
+                    if (!isBench) {
+                        playerMap[clean].starterPoints += score;
+                        if (date) playerMap[clean].activeDates.add(String(date).trim());
+                    } else {
+                        playerMap[clean].benchPoints += score;
+                    }
+                });
+
+                // 4. Calculate Pacing, PPG, and Projections
+                const allSeason7Players = Object.values(playerMap).map(p => {
+                    const games = p.activeDates.size;
+                    const s7Ppg = games > 0 ? (p.starterPoints / games) : 0;
+                    
+                    // Effective PPG: uses S7 PPG if games played, else uses pre-season baseline
+                    const effectivePpg = games > 0 ? s7Ppg : p.baselinePpg;
+                    const gamesRemaining = Math.max(0, TOTAL_SEASON_GAMES - games);
+                    const projectedFinalPoints = p.starterPoints + (effectivePpg * gamesRemaining);
+
+                    return {
+                        username: p.username,
+                        team: p.team,
+                        isRookie: p.isRookie,
+                        starterPoints: p.starterPoints,
+                        games: games,
+                        ppg: effectivePpg,
+                        projectedFinalPoints: projectedFinalPoints
+                    };
+                });
+
+                // ==========================================================
+                // 1. LEAGUE MVP (TOP 5)
+                // ==========================================================
+                const mvpContenders = [...allSeason7Players]
+                    .sort((a, b) => b.projectedFinalPoints - a.projectedFinalPoints)
+                    .slice(0, 5);
+
+                const mvpProbs = calculateSoftmaxProbabilities(mvpContenders, 'projectedFinalPoints', 12.0);
+                mvpContenders.forEach((c, idx) => {
+                    c.winProb = mvpProbs[idx];
+                    c.odds = probToAmericanOdds(c.winProb);
+                });
+
+                renderOddsTable('mvp-odds-tbody', mvpContenders, (c) => `
+                    <td style="text-align: right; font-weight: 800; color: #fff;">${c.starterPoints.toFixed(2)}</td>
+                    <td style="text-align: right;">${c.games}</td>
+                    <td style="text-align: right; color: var(--gold-light); font-weight: 700;">${c.projectedFinalPoints.toFixed(1)}</td>
+                `);
+
+                // ==========================================================
+                // 2. SCORING CHAMPION (TOP 5)
+                // ==========================================================
+                const ppgContenders = [...allSeason7Players]
+                    .sort((a, b) => b.ppg - a.ppg)
+                    .slice(0, 5);
+
+                const ppgProbs = calculateSoftmaxProbabilities(ppgContenders, 'ppg', 2.5);
+                ppgContenders.forEach((c, idx) => {
+                    c.winProb = ppgProbs[idx];
+                    c.odds = probToAmericanOdds(c.winProb);
+                });
+
+                renderOddsTable('ppg-odds-tbody', ppgContenders, (c) => `
+                    <td style="text-align: right; font-weight: 900; color: #fff;">${c.ppg.toFixed(2)}</td>
+                    <td style="text-align: right;">${c.games}</td>
+                    <td style="text-align: right; color: #cbd5e1;">${c.starterPoints.toFixed(1)}</td>
+                `);
+
+                // ==========================================================
+                // 3. ROOKIE OF THE YEAR (TOP 5)
+                // ==========================================================
+                const rotyContenders = [...allSeason7Players]
+                    .filter(p => p.isRookie)
+                    .sort((a, b) => b.projectedFinalPoints - a.projectedFinalPoints)
+                    .slice(0, 5);
+
+                if (rotyContenders.length > 0) {
+                    const rotyProbs = calculateSoftmaxProbabilities(rotyContenders, 'projectedFinalPoints', 8.0);
+                    rotyContenders.forEach((c, idx) => {
+                        c.winProb = rotyProbs[idx];
+                        c.odds = probToAmericanOdds(c.winProb);
+                    });
+
+                    renderOddsTable('roty-odds-tbody', rotyContenders, (c) => `
+                        <td style="text-align: right; font-weight: 800; color: #fff;">${c.starterPoints.toFixed(2)}</td>
+                        <td style="text-align: right;">${c.games}</td>
+                        <td style="text-align: right; color: var(--gold-light); font-weight: 700;">${c.ppg.toFixed(2)}</td>
+                    `);
+                } else {
+                    document.getElementById('roty-odds-tbody').innerHTML = `
+                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No rookie assets designated yet in Season 7.</td></tr>
+                    `;
+                }
+
+            } catch (err) {
+                console.error("Awards calculation error:", err);
+            }
+        }
+
+        function renderOddsTable(tbodyId, contenders, customColsFn) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody || contenders.length === 0) return;
+
+            tbody.innerHTML = contenders.map((c, idx) => {
+                const rankClass = idx === 0 ? 'rank-1' : (idx === 1 ? 'rank-2' : (idx === 2 ? 'rank-3' : ''));
+                const oddsClass = c.odds.startsWith('-') ? 'fav' : 'underdog';
+                const pct = Math.round(c.winProb * 100);
+
+                return `
+                    <tr>
+                        <td class="rank-num ${rankClass}">${idx === 0 ? '👑' : '#' + (idx + 1)}</td>
+                        <td class="contender-name">${c.username}</td>
+                        <td>${c.team}</td>
+                        ${customColsFn(c)}
+                        <td style="text-align: right;">
+                            <div class="prob-bar-container"><div class="prob-bar-fill" style="width: ${pct}%;"></div></div>
+                            <span style="font-weight: 800; font-size: 0.75rem; color: #fff;">${pct}%</span>
+                        </td>
+                        <td style="text-align: right;">
+                            <span class="odds-badge ${oddsClass}">${c.odds}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        loadSeasonAwards();
+    </script>
+</body>
+</html>

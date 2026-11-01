@@ -69,7 +69,7 @@
         .search-input-box:focus { border-color: var(--gold-light); }
 
         /* =========================================================
-           4-COLUMN LEADERS BOARD (CONTAINED & FULLY RESPONSIVE)
+           4-COLUMN LEADERS BOARD
            ========================================================= */
         .sref-leaders-wrapper {
             background: rgba(15, 23, 42, 0.85);
@@ -203,7 +203,7 @@
         }
 
         /* =========================================================
-           PLAYER DOSSIER (B-REF STYLE HEADER & SABERMETRIC SPLITS)
+           PLAYER DOSSIER HEADER & TABLES
            ========================================================= */
         .sref-header-card {
             background: linear-gradient(180deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
@@ -430,7 +430,6 @@
             font-weight: 800;
         }
 
-        /* Responsive Breakpoints */
         @media (max-width: 1024px) {
             .sref-leaders-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -469,7 +468,7 @@
     </div>
 
     <script type="module">
-        import { initNav, currentSeason, getTeamLogoPath } from './js/app.js?v=7';
+        import { initNav, currentSeason, HISTORICAL_CSVS } from './js/app.js?v=7';
 
         initNav();
 
@@ -566,15 +565,9 @@
         };
 
         const KNOWN_ALIASES = {
-            'alp_unc': 'alp',
-            'mehhssi': 'r0dmanx',
-            'mke': 'thegreekfreak31',
-            'thegreekfreak31': 'mke',
-            'pcaisthegoat': 'christianbraunenthusiast',
-            'christianbraunenthusiast': 'pcaisthegoat',
-            'purdy013': 'purdyfaithful',
-            'alvarez': 'hayes23',
-            'to_11': 'to'
+            'alp_unc': 'alp', 'mehhssi': 'r0dmanx', 'mke': 'thegreekfreak31', 'thegreekfreak31': 'mke',
+            'pcaisthegoat': 'christianbraunenthusiast', 'christianbraunenthusiast': 'pcaisthegoat',
+            'purdy013': 'purdyfaithful', 'alvarez': 'hayes23', 'to_11': 'to'
         };
 
         async function initHub() {
@@ -721,7 +714,6 @@
                     </div>`;
             };
 
-            // Column 1: Career Volume & Longevity
             const col1 = [
                 formatRow('Career Points', getLeader(p => p.careerPoints), 1),
                 formatRow('Starter Points', getLeader(p => p.starterPoints), 1),
@@ -734,7 +726,6 @@
                 formatRow('Slates / Season', getLeader(p => p.seasons > 0 ? (p.games / p.seasons) : 0), 1)
             ];
 
-            // Column 2: Value & Advanced Metrics
             const col2 = [
                 formatRow('Wins Above Replacement', getLeader(p => p.war), 2),
                 formatRow('Points Per Game', getLeader(p => p.ppg, 10), 2),
@@ -747,7 +738,6 @@
                 formatRow('Peak / PPG Ratio', getLeader(p => p.ppg > 0 ? (p.peakSlate / p.ppg) : 0, 10), 2)
             ];
 
-            // Column 3: Sport Specialists
             const getSportLeader = (s) => getLeader(p => p.sports[s] || 0);
             const col3 = [
                 formatRow('NBA Career Pts', getSportLeader('NBA'), 1),
@@ -765,7 +755,6 @@
                 }, 10), 1, '%')
             ];
 
-            // Column 4: Hardware & Accolades
             const col4 = [
                 makeStaticHonorsRow('League MVP (Reigning)', '@r0dmanx', 'Reapers', 'S6'),
                 makeStaticHonorsRow('Finals MVP (Reigning)', '@r0dmanx', 'Reapers', 'S6'),
@@ -813,21 +802,73 @@
             `;
         }
 
-        function renderProfile(p) {
+        async function renderProfile(p) {
             const container = document.getElementById('profile-content');
             document.getElementById('btn-show-leaders').classList.remove('active');
             document.getElementById('btn-back-profile').style.display = 'inline-flex';
 
             const initials = p.cleanHandle.slice(0, 2).toUpperCase();
 
-            // Find top sport
+            // Fetch season-by-season breakdowns from historical CSVs
+            const seasonStats = [];
+            for (let seasonNum = 1; seasonNum <= 7; seasonNum++) {
+                const seasonKey = String(seasonNum);
+                const csvUrl = HISTORICAL_CSVS[seasonKey]?.players;
+                if (!csvUrl) continue;
+
+                try {
+                    const res = await fetch(`${workerProxy}?url=${encodeURIComponent(csvUrl)}`);
+                    if (!res.ok) continue;
+                    const text = await res.text();
+                    const rows = parseCsvLocal(text);
+
+                    let sPoints = 0;
+                    let sTeam = p.team;
+                    const activeDates = new Set();
+                    const aliases = new Set([p.cleanHandle, p.username.replace(/^@/, '').toLowerCase()]);
+                    if (KNOWN_ALIASES[p.cleanHandle]) aliases.add(KNOWN_ALIASES[p.cleanHandle]);
+
+                    rows.forEach(r => {
+                        const rUser = r.username || r.player || r.user || '';
+                        const rId = r.user_id || r.userid || r.id || '';
+                        const cleanR = cleanHandle(rUser);
+
+                        if (aliases.has(cleanR) || rId === p.userId || rId === p.id) {
+                            const sc = parseFloat(r.score || r.points || r.total || 0);
+                            const benchVal = r.bench || r.isbench || r.is_bench || '';
+                            const isBench = String(benchVal).toLowerCase() === 'true' || String(benchVal).toLowerCase() === 'yes' || String(benchVal).toLowerCase() === '1';
+                            
+                            if (!isBench) {
+                                sPoints += sc;
+                                const dateVal = r.date || r.day || '';
+                                if (dateVal) activeDates.add(String(dateVal).trim());
+                            }
+                            if (r.team || r.franchise) sTeam = r.team || r.franchise;
+                        }
+                    });
+
+                    const sGames = activeDates.size > 0 ? activeDates.size : 0;
+
+                    if (sGames > 0 || sPoints > 0) {
+                        seasonStats.push({
+                            season: seasonNum,
+                            team: sTeam,
+                            games: sGames,
+                            points: sPoints,
+                            ppg: sGames > 0 ? (sPoints / sGames) : 0
+                        });
+                    }
+                } catch(err) {
+                    // Ignore missing season errors
+                }
+            }
+
             let topSport = 'NBA';
             let maxSportPts = 0;
             Object.entries(p.sports).forEach(([sp, pts]) => {
                 if (pts > maxSportPts) { maxSportPts = pts; topSport = sp; }
             });
 
-            // Gather known handles for award verification
             const handle = p.cleanHandle;
             const namesToCheck = new Set([handle, p.username.replace(/^@/, '').toLowerCase()]);
             if (KNOWN_ALIASES[handle]) namesToCheck.add(KNOWN_ALIASES[handle]);
@@ -858,7 +899,6 @@
             const allStarSeasons = Object.keys(MASTER_HONORS_DB.allStarsBySeason).filter(s => MASTER_HONORS_DB.allStarsBySeason[s].some(hasAward));
             const champSeasons = Object.keys(MASTER_HONORS_DB.champions).filter(s => MASTER_HONORS_DB.champions[s].some(hasAward));
 
-            // Generate Sports Reference Awards Badges
             const awardsList = [];
             if (mvpSeasons.length > 0) awardsList.push({ label: `${mvpSeasons.length}x League MVP`, type: 'gold' });
             if (fmvpSeasons.length > 0) awardsList.push({ label: `${fmvpSeasons.length}x Finals MVP`, type: 'gold' });
@@ -914,7 +954,7 @@
                             </div>
                         </div>
 
-                        <!-- Honors Stack (Awards Badges) -->
+                        <!-- Honors Stack -->
                         <div class="sref-awards-container">
                             <div class="sref-awards-grid">
                                 ${badgesGridHtml}
@@ -956,6 +996,38 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <div class="section-header">
+                    <h2>Season-by-Season Statistics</h2>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Season</th>
+                                <th>Franchise</th>
+                                <th style="text-align:right;">Gameday Slates (GP)</th>
+                                <th style="text-align:right;">Total Points</th>
+                                <th style="text-align:right;">PPG</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${seasonStats.length > 0 ? seasonStats.map(s => `
+                                <tr>
+                                    <td style="font-weight:800; color:var(--gold-light);">Season ${s.season}</td>
+                                    <td>${s.team}</td>
+                                    <td style="text-align:right;">${s.games}</td>
+                                    <td style="text-align:right; font-weight:800; color:#fff;">${s.points.toFixed(2)}</td>
+                                    <td style="text-align:right; color:#cbd5e1;">${s.ppg.toFixed(2)}</td>
+                                </tr>
+                            `).join('') : `
+                                <tr>
+                                    <td colspan="5" style="text-align:center; color:var(--text-muted); font-style:italic; padding:1.5rem;">Season breakdown compiled from active registry.</td>
+                                </tr>
+                            `}
+                        </tbody>
+                    </table>
                 </div>
 
                 <div class="section-header">

@@ -120,24 +120,36 @@ export function parseCsvToObject(csvText) {
     });
 }
 
+
+// --- EXPORT MULTI-SEASON DRAFT CSV SOURCES ---
+export const DRAFT_CSVS = {
+    '5': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=0&single=true&output=csv',
+    '6': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=1179989426&single=true&output=csv',
+    '7': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=1962401407&single=true&output=csv'
+};
+
 // ============================================================================
 // --- UNIFIED 3-PILLAR NAVIGATION & QUICK-INSPECT DRAWER ENGINE ---
 // ============================================================================
 export function initNav() {
+    // Main navigation: clean 3-pillar layout
     const primaryNavItems = [
         { id: 'nav-live', label: '⚡ Live', href: `index.html?season=${currentSeason}` },
-        { id: 'nav-draft', label: '🔴 Draft', href: `draft.html` },
         { id: 'nav-standings', label: 'Standings', href: `standings.html?season=${currentSeason}` },
         { id: 'nav-players', label: 'Players', href: `players.html?season=${currentSeason}` }
     ];
 
+    // Sidebar "More ▾" dropdown: includes Drafts archive alongside Franchises and Schedule
     const moreNavItems = [
         { id: 'nav-schedule', label: 'Schedule', href: `schedule.html?season=${currentSeason}` },
         { id: 'nav-teams', label: 'Franchises', href: `teams.html?season=${currentSeason}` },
         { id: 'nav-records', label: 'Records & Case', href: `records.html?season=${currentSeason}` },
+        { id: 'nav-drafts', label: 'Drafts', href: `draft.html?season=${currentSeason}` },
         { id: 'nav-gms', label: 'GM Portal', href: `gms.html` },
         { id: 'nav-admin', label: 'Admin Console', href: `admin.html` }
     ];
+
+    // ... rest of initNav() unchanged
 
     const oldStyles = document.getElementById('v2-nav-styles');
     if (oldStyles) oldStyles.remove();

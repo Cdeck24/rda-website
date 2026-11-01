@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -890,7 +891,12 @@
 
             <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.85rem; margin-bottom: 1.5rem;">
                 <h3 id="available-players-header" style="color: #fff; margin: 0; text-transform: uppercase; font-size: 1rem; letter-spacing: 0.75px;">Available Players</h3>
-                <input type="text" id="draft-search" class="search-bar" placeholder="Search available players..." oninput="filterDraftGrid()">
+                <div style="display: flex; gap: 0.75rem; width: 100%; max-width: 520px; flex-wrap: wrap; justify-content: center;">
+                    <select id="draft-sport-filter" class="top-filter-dropdown" style="flex: 1; min-width: 180px; margin: 0;" onchange="renderDraftPool()">
+                        <option value="ALL">All Sports (Overall Power)</option>
+                    </select>
+                    <input type="text" id="draft-search" class="search-bar" style="flex: 1.5; min-width: 200px; margin: 0;" placeholder="Search player name..." oninput="filterDraftGrid()">
+                </div>
             </div>
             
             <div id="draft-queue-section" style="display: none; margin-bottom: 2rem; background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border-gold); padding: 1.25rem; border-radius: 10px;">
@@ -1256,9 +1262,10 @@
             }
         }
 
-        async function loadDraftOrder() {
+                async function loadDraftOrder() {
             try {
-                const text = await fetchCSVRobust(draftOrderUrl);
+                const freshUrl = draftOrderUrl + (draftOrderUrl.includes('?') ? '&' : '?') + '_nocache=' + Date.now();
+                const text = await fetchCSVRobust(freshUrl);
                 const rows = parseCsvLocal(text);
                 
                 if (rows.length > 0) {
@@ -1270,18 +1277,24 @@
                         const teamKey = keys.find(k => k === 'team' || k.includes('franchise') || k.includes('team'));
                         const teamRaw = teamKey && r[teamKey] ? r[teamKey].trim() : '';
 
-                        if (teamRaw && teamRaw.toLowerCase() !== 'team') {
+                        if (teamRaw && teamRaw.toLowerCase() !== 'team' && teamRaw.toLowerCase() !== 'franchise') {
                             const roundKey = keys.find(k => k === 'round' || k.includes('rd'));
                             const pickKey = keys.find(k => k === 'pick');
 
-                            let roundVal = roundKey && r[roundKey] ? parseInt(r[roundKey].replace(/\D/g, ''), 10) : Math.ceil(runningOverall / 12);
-                            let pickVal = pickKey && r[pickKey] ? parseInt(r[pickKey].replace(/\D/g, ''), 10) : ((runningOverall - 1) % 12 + 1);
+                            const rawRoundStr = roundKey && r[roundKey] ? String(r[roundKey]).trim().toLowerCase() : '';
+                            let roundVal;
 
-                            if (isNaN(roundVal)) roundVal = Math.ceil(runningOverall / 12);
-                            if (isNaN(pickVal)) pickVal = (runningOverall - 1) % 12 + 1;
+                            if (rawRoundStr.includes('comp') || rawRoundStr.includes('supplemental')) {
+                                roundVal = 4;
+                            } else {
+                                roundVal = parseInt(rawRoundStr.replace(/\D/g, ''), 10);
+                                if (isNaN(roundVal)) roundVal = Math.ceil(runningOverall / 12);
+                            }
+
+                            let pickVal = pickKey && r[pickKey] ? parseInt(String(r[pickKey]).replace(/\D/g, ''), 10) : ((runningOverall - 1) % 12 + 1);
+                            if (isNaN(pickVal)) pickVal = ((runningOverall - 1) % 12 + 1);
 
                             const canonicalTeam = teamRaw.charAt(0).toUpperCase() + teamRaw.slice(1).toLowerCase();
-
                             formattedPicks.push({
                                 overall: runningOverall,
                                 round: roundVal,
@@ -1294,6 +1307,7 @@
 
                     DRAFT_METADATA = formattedPicks;
                     DRAFT_ORDER = formattedPicks.map(p => p.team);
+                    console.log(`[DraftOrder] Loaded ${DRAFT_ORDER.length} total picks.`);
                 }
             } catch(e) { console.warn("Failed to load Season 7 Draft Order CSV", e); }
         }
@@ -1833,13 +1847,23 @@
         };
 
         function updateFilterDropdown() {
-            const dropdown = document.getElementById('top-sport-filter'); const currentVal = dropdown.value;
+            const dropdown = document.getElementById('top-sport-filter');
+            const draftDropdown = document.getElementById('draft-sport-filter');
+            const currentVal = dropdown ? dropdown.value : 'ALL';
+            const currentDraftVal = draftDropdown ? draftDropdown.value : 'ALL';
+
             let html = `<option value="ALL">All Sports</option>`;
-            Array.from(globalDiscoveredSports).sort().forEach(sport => { html += `<option value="${sport}">${sport}</option>`; });
-            dropdown.innerHTML = html; dropdown.value = currentVal; 
+            let draftHtml = `<option value="ALL">All Sports (Overall Power)</option>`;
+            Array.from(globalDiscoveredSports).sort().forEach(sport => { 
+                html += `<option value="${sport}">${sport}</option>`; 
+                draftHtml += `<option value="${sport}">${sport} (Rank by ${sport})</option>`;
+            });
+
+            if (dropdown) { dropdown.innerHTML = html; dropdown.value = currentVal; }
+            if (draftDropdown) { draftDropdown.innerHTML = draftHtml; draftDropdown.value = currentDraftVal; }
         }
 
-        function createPlayerCardHTML(uid, name, statsObj, mode = 'fa', inQueue = false) {
+        function createPlayerCardHTML(uid, name, statsObj, mode = 'fa', inQueue = false, selectedSport = 'ALL') {
             let keys = Object.keys(statsObj).sort();
             const safeName = name.replace(/'/g, "\\'");
 
@@ -1886,10 +1910,13 @@
             let optionsHtml = ''; let viewsHtml = '';
             const targetStats = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 10"];
             
-            keys.forEach((key, index) => {
+            const activeKey = (selectedSport && selectedSport !== 'ALL' && statsObj[selectedSport]) ? selectedSport : (keys[0] || 'ALL_SPORTS');
+
+            keys.forEach((key) => {
                 const details = statsObj[key]; const displayKey = key === "ALL_SPORTS" ? "All Sports" : key.replace('-', ' ');
                 let headerScore = '-'; if (details["Highest Score"] !== undefined) headerScore = details["Highest Score"];
-                optionsHtml += `<option value="${key}">${displayKey}</option>`;
+                const isSelected = key === activeKey ? 'selected' : '';
+                optionsHtml += `<option value="${key}" ${isSelected}>${displayKey}</option>`;
 
                 let gridHtml = '';
                 targetStats.forEach(targetLabel => {
@@ -1897,7 +1924,7 @@
                     if (val !== undefined) gridHtml += `<div class="stat-box"><span class="stat-label">${targetLabel}</span><span class="stat-value">${val}</span></div>`;
                 });
 
-                const activeClass = index === 0 ? 'active' : '';
+                const activeClass = key === activeKey ? 'active' : '';
                 viewsHtml += `<div class="sport-stats-view ${activeClass}" data-sport="${key}"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; color:var(--gold-mid); font-size:0.8rem; font-weight:800; text-transform:uppercase;"><span>Highest Score</span><span>${headerScore}</span></div><div class="stats-grid-row">${gridHtml}</div></div>`;
             });
 
@@ -2253,56 +2280,49 @@
          */
         function getNextPickDeadline(startDate) {
             const start = startDate ? new Date(startDate) : new Date();
-            const estString = start.toLocaleString("en-US", { timeZone: "America/New_York" });
-            let current = new Date(estString);
             
-            let dayOfWeek = current.getDay(); // 0=Sun, ..., 6=Sat
-            let durationMinutes = (dayOfWeek === 6) ? 30 : 60;
+            // Format into Eastern Time components safely without string-reparsing
+            const formatter = new Intl.DateTimeFormat("en-US", {
+                timeZone: "America/New_York",
+                weekday: "short",
+                hour: "numeric",
+                minute: "numeric",
+                hour12: false
+            });
+            const parts = {};
+            formatter.formatToParts(start).forEach(p => { parts[p.type] = p.value; });
             
-            if (dayOfWeek === 6) {
-                const satStart = new Date(current);
-                satStart.setHours(12, 0, 0, 0);
-                if (current < satStart) current = satStart;
-            } else {
-                const dayStart = new Date(current);
-                dayStart.setHours(15, 0, 0, 0);
-                const dayEnd = new Date(current);
-                dayEnd.setHours(23, 0, 0, 0);
-                
-                if (current < dayStart) {
-                    current = dayStart;
-                } else if (current >= dayEnd) {
-                    current.setDate(current.getDate() + 1);
-                    dayOfWeek = current.getDay();
-                    durationMinutes = (dayOfWeek === 6) ? 30 : 60;
-                    current.setHours((dayOfWeek === 6) ? 12 : 15, 0, 0, 0);
+            const isSat = parts.weekday === "Sat";
+            const currentHour = parseInt(parts.hour === "24" ? "0" : parts.hour, 10);
+            const currentMin = parseInt(parts.minute, 10);
+            const durationMins = isSat ? 30 : 60;
+
+            // Saturday window (12:00 PM EST to finish)
+            if (isSat) {
+                if (currentHour < 12) {
+                    const diffMins = ((12 - currentHour) * 60) - currentMin;
+                    return new Date(start.getTime() + (diffMins + durationMins) * 60 * 1000);
                 }
+                return new Date(start.getTime() + durationMins * 60 * 1000);
             }
 
-            // Saturday runs straight through to finish
-            if (dayOfWeek === 6) {
-                return new Date(current.getTime() + (durationMinutes * 60 * 1000));
+            // Weekdays (3:00 PM - 11:00 PM EST)
+            // 1. Before 3:00 PM EST -> starts at 3:00 PM
+            if (currentHour < 15) {
+                const diffMins = ((15 - currentHour) * 60) - currentMin;
+                return new Date(start.getTime() + (diffMins + durationMins) * 60 * 1000);
             }
 
-            // Weekday 11:00 PM cutoff check
-            const cutoffToday = new Date(current);
-            cutoffToday.setHours(23, 0, 0, 0);
-            
-            const minutesUntilCutoff = (cutoffToday.getTime() - current.getTime()) / (1000 * 60);
-
-            if (minutesUntilCutoff >= durationMinutes) {
-                return new Date(current.getTime() + (durationMinutes * 60 * 1000));
-            } else {
-                const leftoverMinutes = durationMinutes - minutesUntilCutoff;
-                const nextDay = new Date(current);
-                nextDay.setDate(nextDay.getDate() + 1);
-                
-                const nextDayOfWeek = nextDay.getDay();
-                const nextDayStartHour = (nextDayOfWeek === 6) ? 12 : 15;
-                
-                nextDay.setHours(nextDayStartHour, Math.round(leftoverMinutes), 0, 0);
-                return nextDay;
+            // 2. Fits before 11:00 PM EST tonight
+            const minsTo11PM = ((23 - currentHour) * 60) - currentMin;
+            if (minsTo11PM >= durationMins) {
+                return new Date(start.getTime() + durationMins * 60 * 1000);
             }
+
+            // 3. Spans overnight freeze (11 PM - 3 PM next day)
+            // Remaining minutes carry over starting at 3:00 PM tomorrow (16 hours freeze = 960 mins)
+            const freezeDurationMins = (16 * 60); 
+            return new Date(start.getTime() + (durationMins + freezeDurationMins) * 60 * 1000);
         }
 
         function isDraftActiveHours(date) {
@@ -2524,6 +2544,7 @@
 
         window.renderDraftPool = function() {
             const term = (document.getElementById('draft-search')?.value || '').toLowerCase();
+            const sportFilter = document.getElementById('draft-sport-filter')?.value || 'ALL';
             const poolContainer = document.getElementById('draft-board-grid');
             const queueContainer = document.getElementById('draft-queue-grid');
             const queueSection = document.getElementById('draft-queue-section');
@@ -2534,15 +2555,32 @@
             const draftedPlayers = (draftState.picks || []).map(p => p.player);
             let availableFAs = allFaData.filter(p => p.username && !draftedPlayers.includes(p.username));
 
+            // Rank players by selected sport (or Overall Power)
             availableFAs.sort((a, b) => {
                 const statsA = faRealStatsCache[a.username];
                 const statsB = faRealStatsCache[b.username];
-                const powerA = statsA ? calculateOverallPower(statsA) : -1;
-                const powerB = statsB ? calculateOverallPower(statsB) : -1;
+                let powerA = -1;
+                let powerB = -1;
+
+                if (sportFilter === 'ALL') {
+                    powerA = statsA ? calculateOverallPower(statsA) : -1;
+                    powerB = statsB ? calculateOverallPower(statsB) : -1;
+                } else {
+                    powerA = (statsA && statsA[sportFilter]) ? calculateSingleSportPower(statsA[sportFilter]) : -1;
+                    powerB = (statsB && statsB[sportFilter]) ? calculateSingleSportPower(statsB[sportFilter]) : -1;
+                }
                 return powerB - powerA;
             });
 
-            if (myTeam !== 'ADMIN' && !term && queueSection && queueContainer) {
+            // Filter out players who have zero activity in that sport when a specific sport is selected
+            if (sportFilter !== 'ALL') {
+                availableFAs = availableFAs.filter(p => {
+                    const stats = faRealStatsCache[p.username];
+                    return stats && stats[sportFilter] && calculateSingleSportPower(stats[sportFilter]) > 0;
+                });
+            }
+
+            if (myTeam !== 'ADMIN' && !term && sportFilter === 'ALL' && queueSection && queueContainer) {
                 queueSection.style.display = 'block';
                 if (availableHeader) availableHeader.style.display = 'block';
 
@@ -2563,7 +2601,7 @@
                         const card = document.createElement('div');
                         card.className = 'draft-player-card';
                         card.style.borderColor = '#3b82f6';
-                        card.innerHTML = createPlayerCardHTML(uid, row.username, faRealStatsCache[row.username] || {}, 'draft', true);
+                        card.innerHTML = createPlayerCardHTML(uid, row.username, faRealStatsCache[row.username] || {}, 'draft', true, sportFilter);
                         queueContainer.appendChild(card);
                     });
                 }
@@ -2575,7 +2613,7 @@
             if (term) availableFAs = availableFAs.filter(p => p.username.toLowerCase().includes(term));
 
             if (availableFAs.length === 0) {
-                poolContainer.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 2rem;">No available players matching criteria.</div>';
+                poolContainer.innerHTML = `<div style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding: 2rem;">No available players found for ${sportFilter}.</div>`;
                 return;
             }
 
@@ -2588,7 +2626,7 @@
                 const aggregatedStats = faRealStatsCache[name] || {};
                 const card = document.createElement('div');
                 card.className = 'draft-player-card';
-                card.innerHTML = createPlayerCardHTML(uid, name, aggregatedStats, 'draft', false);
+                card.innerHTML = createPlayerCardHTML(uid, name, aggregatedStats, 'draft', false, sportFilter);
                 poolContainer.appendChild(card);
             });
         };
@@ -2599,14 +2637,13 @@
             if (isProcessingPick) return;
             isProcessingPick = true;
 
-            // Normalize all already drafted players (strip @ and lowercase)
             const draftedSet = new Set(
                 (draftState.picks || []).map(p => cleanName(p.player))
             );
             let playerToPick = null;
 
             try {
-                // 1. PRIORITIZE GM'S QUEUE FIRST
+                // 1. Check Team's Personal Queue First
                 const latestQueue = await fetchTeamQueue(forTeam);
                 for (let u of latestQueue) {
                     const cleanU = cleanName(u);
@@ -2618,12 +2655,14 @@
                     }
                 }
 
-                // 2. FALLBACK TO BEST AVAILABLE ONLY IF QUEUE IS EMPTY OR EXHAUSTED
+                // 2. Fallback to Available FA Pool
                 if (!playerToPick) {
                     let availableFAs = allFaData.filter(p => {
                         const cleanU = cleanName(p.username);
                         return cleanU && !draftedSet.has(cleanU);
                     });
+
+                    // Sort by pre-calculated power or score if available
                     availableFAs.sort((a, b) => {
                         const statsA = faRealStatsCache[a.username];
                         const statsB = faRealStatsCache[b.username];
@@ -2631,12 +2670,20 @@
                         const powerB = statsB ? calculateOverallPower(statsB) : -1;
                         return powerB - powerA;
                     });
+
                     if (availableFAs.length > 0) {
                         playerToPick = availableFAs[0].username;
-                        console.log(`[AutoPick] Queue empty. Selected best available FA for ${forTeam}: ${playerToPick}`);
+                        console.log(`[AutoPick] Queue empty. Selected best FA for ${forTeam}: ${playerToPick}`);
                     }
                 }
 
+                // 3. Absolute Emergency Fallback (ensures pick ALWAYS happens)
+                if (!playerToPick && allFaData.length > 0) {
+                    const fallback = allFaData.find(p => !draftedSet.has(cleanName(p.username)));
+                    if (fallback) playerToPick = fallback.username;
+                }
+
+                // 4. Commit Pick to Firestore and Google Sheets
                 if (playerToPick) {
                     const pickNumber = draftState.currentPickIdx + 1;
                     const nextDeadline = getNextPickDeadline(new Date()).getTime();
@@ -2650,13 +2697,20 @@
                     
                     fetch(APPS_SCRIPT_URL, {
                         method: 'POST', mode: 'no-cors',
-                        body: JSON.stringify({ action: 'draft_pick', team: forTeam, player: playerToPick, pickIdx: pickNumber, autopicked: 'Yes' })
+                        body: JSON.stringify({ 
+                            action: 'draft_pick', 
+                            team: forTeam, 
+                            player: playerToPick, 
+                            pickIdx: pickNumber, 
+                            autopicked: 'Yes' 
+                        })
                     }).catch(() => console.log("Sheet log failed"));
                 }
             } catch (e) {
-                console.error("Autopick failed", e);
+                console.error("Autopick failed:", e);
             } finally {
-                isProcessingPick = false;
+                // Release lock after a brief debounce to allow snapshot propagation
+                setTimeout(() => { isProcessingPick = false; }, 2000);
             }
         }
 
