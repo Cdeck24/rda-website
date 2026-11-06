@@ -330,6 +330,7 @@
                         <label for="gameType">Game Type</label>
                         <select id="gameType">
                             <option value="regular">Regular Season</option>
+                            <option value="preseason">Preseason Game</option>
                             <option value="playoff">Playoff Game</option>
                         </select>
                     </div>
@@ -473,7 +474,24 @@
         const APPS_SCRIPT_URL_SCORES = 'https://script.google.com/macros/s/AKfycbyY4rz_46uk2JnqO4y7Os-0LHSU4TL43jPrtG-GXYUC61XU2o1QXoK0qMpdTdwzmenG/exec';
         const APPS_SCRIPT_URL_ROSTERS = 'https://script.google.com/macros/s/AKfycbxCThTL5b8sgFBlEuebH0yPt4w6ESR4fh16v22obah9toHXPTtLmYOG1iuoE_AD9s5qiQ/exec';
         const workerProxy = 'https://rda-worker.coledecker04.workers.dev/';
-        const REAL_AUTH_TOKEN = 'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f'; 
+        
+        // Multi-Token Rotation & Auth Pacing (Matches Live Scoring Speed)
+        const REAL_AUTH_TOKENS = [
+            'xnr5VpW3!ApZk8L2E!4fe6e26f-949f-4936-ae3e-16384878932f',
+            'xnrGVlRJ!GYZ9e1oA!f1725a9c-9931-4b39-b59e-99fdba54b583'
+        ];
+        const disabledTokens = new Set();
+        let currentTokenIdx = 0;
+
+        function getNextAuthToken() {
+            const active = REAL_AUTH_TOKENS.filter(t => t && !t.includes('PASTE_YOUR') && !disabledTokens.has(t));
+            if (!active.length) return REAL_AUTH_TOKENS[0];
+            const t = active[currentTokenIdx % active.length];
+            currentTokenIdx++;
+            return t;
+        }
+
+        const REAL_AUTH_TOKEN = REAL_AUTH_TOKENS[0];
         const REAL_VERSION = '27';
         const ADMIN_EMAILS = ["coledecker04@gmail.com"];
 
@@ -817,6 +835,17 @@
             return false;
         };
 
+        function canonicalSport(val) {
+            if (!val) return '';
+            const s = String(val).trim().toUpperCase();
+            if (s === 'SOCCER' || s === 'EPL' || s === 'MLS' || s === 'UCL') return 'FC';
+            if (s === 'NCAAF' || s === 'CFB') return 'CFB';
+            if (s === 'NCAAB' || s === 'NCAAM' || s === 'CBB') return 'CBB';
+            if (s === 'BASKETBALL') return 'NBA';
+            if (s === 'HOCKEY') return 'NHL';
+            return s;
+        }
+
         window.loadScheduleDates = async function() {
             const season = seasonSelect.value;
             const config = seasonConfigs[season] || seasonConfigs['7'];
@@ -846,6 +875,8 @@
                         const rowStr = r.map(c => String(c || '').toLowerCase()).join(' ');
                         if (rowStr.includes('playoff') || rowStr.includes('postseason') || rowStr.includes('wild card') || rowStr.includes('semi') || rowStr.includes('finals')) {
                             window.scheduleDateTypes[d] = 'playoff';
+                        } else if (rowStr.includes('preseason') || rowStr.includes('pre-season')) {
+                            window.scheduleDateTypes[d] = 'preseason';
                         } else {
                             if (!window.scheduleDateTypes[d]) window.scheduleDateTypes[d] = 'regular';
                         }
@@ -873,7 +904,8 @@
                 sortedDates.forEach(d => {
                     const opt = document.createElement('option');
                     opt.value = d;
-                    opt.textContent = d + (window.scheduleDateTypes[d] === 'playoff' ? ' (Playoffs)' : '');
+                    const typeLabel = window.scheduleDateTypes[d] === 'playoff' ? ' (Playoffs)' : (window.scheduleDateTypes[d] === 'preseason' ? ' (Preseason)' : '');
+                    opt.textContent = d + typeLabel;
                     dateSelect.appendChild(opt);
                 });
 
@@ -911,13 +943,15 @@
             const selectedDate = dateSelect.value.trim();
             const season = seasonSelect.value;
             const config = seasonConfigs[season] || seasonConfigs['7'];
-            const isPlayoff = gameTypeSelect.value === 'playoff';
+            const gameType = gameTypeSelect.value;
+            const isPlayoff = gameType === 'playoff';
+            const isPreseason = gameType === 'preseason' || (window.scheduleDateTypes && window.scheduleDateTypes[selectedDate] === 'preseason');
 
             if (!selectedDate) { output.textContent = 'Error: Please select a date.'; return; }
             
             terminalStatus.textContent = 'Running';
             terminalStatus.style.color = '#fb923c';
-            output.textContent = `Initializing fetch for Season ${season} on ${selectedDate}...\n`;
+            output.textContent = `Initializing fetch for Season ${season} (${gameType.toUpperCase()}) on ${selectedDate}...\n`;
 
             try {
                 const [playersRes, scheduleRes] = await Promise.all([
@@ -946,9 +980,8 @@
                         r.forEach(cell => {
                             if (!cell) return;
                             String(cell).split(/[,/]/).forEach(item => {
-                                const clean = item.trim().toUpperCase();
-                                if (KNOWN_SPORTS.has(clean)) {
-                                    const norm = clean === 'SOCCER' ? 'FC' : clean;
+                                const norm = canonicalSport(item);
+                                if (KNOWN_SPORTS.has(norm)) {
                                     rowSports.add(norm);
                                     daySports.add(norm);
                                 }
@@ -988,9 +1021,10 @@
 
                 const sportIdIndices = {};
                 pHeaders.forEach((h, i) => {
-                    const m = h.match(/^([a-z]+) id$/);
-                    if (m && h !== 'user id' && h !== 'draft id') {
-                        const sportCode = m[1].toUpperCase() === 'SOCCER' ? 'FC' : m[1].toUpperCase();
+                    const cleanHeader = h.trim().toLowerCase();
+                    const m = cleanHeader.match(/^([a-z0-9]+)\s*id$/);
+                    if (m && cleanHeader !== 'user id' && cleanHeader !== 'draft id') {
+                        const sportCode = canonicalSport(m[1]);
                         sportIdIndices[sportCode] = i;
                     }
                 });
@@ -1040,65 +1074,122 @@
                     }
                 });
 
-                output.textContent += `\nQueueing ${fetchUrls.length} stat requests to Real API...\n`;
+                output.textContent += `\nQueueing ${fetchUrls.length} stat requests to Real API (4 Concurrent Workers, Live Pacing)...\n`;
+
+                const uniqueUrlsMap = new Map();
+                fetchUrls.forEach(req => uniqueUrlsMap.set(req.url, req));
+                const queue = Array.from(uniqueUrlsMap.values());
 
                 let loaded = 0;
-                for (let i = 0; i < fetchUrls.length; i++) {
-                    const req = fetchUrls[i];
+                const total = queue.length;
+                let globalQueueLock = Promise.resolve();
+                let nextRequestTime = Date.now();
+                let currentPacing = 120;
+                let pauseUntil = 0;
+
+                const updateProg = () => {
+                    loaded++;
+                    if (loaded % 5 === 0 || loaded === total) {
+                        output.textContent = `Fetched ${loaded}/${total}...\n`;
+                    }
+                };
+
+                const parseScoreStr = (str) => parseFloat(String(str).replace(/,/g, '')) || 0;
+
+                const processSuccess = (req, data) => {
                     const pData = allPlayerDataForDay[req.userId];
-                    
-                    try {
-                        const token = generateRequestToken();
-                        const proxyUrl = `${workerProxy}?url=${encodeURIComponent(req.url)}&auth=${encodeURIComponent(REAL_AUTH_TOKEN)}&uuid=${crypto.randomUUID()}&token=${token}`;
-                        
-                        const res = await fetch(proxyUrl);
-                        
-                        if (res.status === 429 && req.retries < 3) {
-                            req.retries++;
-                            fetchUrls.push(req);
-                            await sleep(3000);
+                    if (!pData) return;
+
+                    let scoreDisplay = '0';
+                    if (data.info?.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
+                    else if (data.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
+                    else if (data.scoreDisplay) scoreDisplay = data.scoreDisplay;
+                    else if (data.info?.score !== undefined) scoreDisplay = data.info.score;
+                    else if (data.score !== undefined) scoreDisplay = data.score;
+
+                    const finalScore = parseScoreStr(scoreDisplay);
+                    pData.scoresBySport[req.sport] = finalScore;
+                    if (!pData.rawScoresBySport) pData.rawScoresBySport = {};
+                    pData.rawScoresBySport[req.sport] = finalScore;
+
+                    let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
+                    if (!Array.isArray(extractedLineup)) {
+                        if (extractedLineup.players) extractedLineup = extractedLineup.players;
+                        else if (extractedLineup.items) extractedLineup = extractedLineup.items;
+                        else extractedLineup = [];
+                    }
+                    pData.lineupsBySport[req.sport] = extractedLineup;
+
+                    if (data.info?.user?.userName || data.user?.userName) {
+                        pData.username = data.info?.user?.userName || data.user?.userName;
+                    }
+
+                    updateProg();
+                };
+
+                const handleFail = (req, errCode) => {
+                    const pData = allPlayerDataForDay[req.userId];
+                    if (pData) pData.scoresBySport[req.sport] = 0;
+                    updateProg();
+                };
+
+                async function processQueueWorker() {
+                    while (queue.length > 0) {
+                        const now = Date.now();
+                        if (now < pauseUntil) {
+                            const waitMs = pauseUntil - now;
+                            await new Promise(r => setTimeout(r, Math.min(waitMs, 1000)));
                             continue;
                         }
 
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                        
-                        const data = await res.json();
-                        
-                        let scoreDisplay = '0';
-                        if (data.info?.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
-                        else if (data.rankDisplayInfos?.length > 0) scoreDisplay = data.info.rankDisplayInfos[0].scoreDisplay || '0';
-                        else if (data.scoreDisplay) scoreDisplay = data.scoreDisplay;
-                        else if (data.info?.score !== undefined) scoreDisplay = data.info.score;
-                        else if (data.score !== undefined) scoreDisplay = data.score;
-                        
-                        const finalScore = parseFloat(String(scoreDisplay).replace(/,/g, '')) || 0;
-                        pData.scoresBySport[req.sport] = finalScore;
-                        if (!pData.rawScoresBySport) pData.rawScoresBySport = {};
-                        pData.rawScoresBySport[req.sport] = finalScore;
+                        let reqData = null;
+                        await (globalQueueLock = globalQueueLock.then(async () => {
+                            reqData = queue.shift();
+                            if (!reqData) return;
+                            const cur = Date.now();
+                            if (nextRequestTime > cur) {
+                                const w = nextRequestTime - cur;
+                                nextRequestTime += currentPacing;
+                                await new Promise(r => setTimeout(r, w));
+                            } else {
+                                nextRequestTime = cur + currentPacing;
+                            }
+                        }));
 
-                        let extractedLineup = data.lineup || data.playerLineups || data.contestPlayerLineup || data.lineups || [];
-                        if (!Array.isArray(extractedLineup)) {
-                            if (extractedLineup.players) extractedLineup = extractedLineup.players;
-                            else if (extractedLineup.items) extractedLineup = extractedLineup.items;
-                            else extractedLineup = [];
+                        if (!reqData) break;
+
+                        try {
+                            const token = generateRequestToken();
+                            const uuid = crypto.randomUUID();
+                            const authToken = getNextAuthToken();
+                            const proxyUrl = `${workerProxy}?url=${encodeURIComponent(reqData.url)}&auth=${encodeURIComponent(authToken)}&uuid=${uuid}&token=${token}`;
+
+                            const res = await fetch(proxyUrl);
+                            if (res.status === 401) {
+                                disabledTokens.add(authToken);
+                                queue.push(reqData);
+                                continue;
+                            } else if (res.status === 429) {
+                                pauseUntil = Date.now() + 3000;
+                                currentPacing = Math.min(currentPacing + 50, 400);
+                                reqData.retries = (reqData.retries || 0) + 1;
+                                if (reqData.retries <= 3) queue.push(reqData);
+                                else handleFail(reqData, 429);
+                            } else if (res.ok) {
+                                const data = await res.json();
+                                processSuccess(reqData, data);
+                            } else {
+                                handleFail(reqData, res.status);
+                            }
+                        } catch (e) {
+                            handleFail(reqData, "Network Error");
                         }
-                        pData.lineupsBySport[req.sport] = extractedLineup;
-
-                        if (data.info?.user?.userName || data.user?.userName) {
-                            pData.username = data.info?.user?.userName || data.user?.userName;
-                        }
-
-                        loaded++;
-                        if (loaded % 5 === 0 || loaded === fetchUrls.length) output.textContent = `Fetched ${loaded}/${fetchUrls.length}...\n`;
-
-                    } catch (e) {
-                        pData.scoresBySport[req.sport] = 'Error';
-                        loaded++;
-                        output.textContent = `Fetched ${loaded}/${fetchUrls.length} (Failed ${pData.username})...\n`;
                     }
-                    
-                    await sleep(350);
                 }
+
+                const workers = [];
+                for (let w = 0; w < 4; w++) workers.push(processQueueWorker());
+                await Promise.all(workers);
 
                 output.textContent += "\nApplying duplicate rules...\n";
                 const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn']);
@@ -1197,7 +1288,7 @@
 
                 Object.values(allPlayerDataForDay).forEach(player => {
                     for (const sport in player.scoresBySport) {
-                        const normSport = sport.toUpperCase() === 'SOCCER' ? 'FC' : sport.toUpperCase();
+                        const normSport = canonicalSport(sport);
                         if (daySports.size > 0 && !daySports.has(normSport)) continue;
 
                         const score = player.scoresBySport[sport];
@@ -1207,9 +1298,11 @@
                                 userId: player.userId, 
                                 team: player.team, 
                                 score: score, 
-                                sport: normSport,
+                                sport: normSport, 
                                 isBench: !player.isPlaying,
-                                isPlayoff: isPlayoff
+                                isPlayoff: isPlayoff,
+                                isPreseason: isPreseason,
+                                gameType: gameType
                             });
                         }
                     }
@@ -1230,7 +1323,7 @@
                             : Array.from(new Set([...p1, ...p2].flatMap(p => Object.keys(p.scoresBySport)))));
 
                     sportsToEvaluate.forEach(sport => {
-                        const normSport = sport.toUpperCase() === 'SOCCER' ? 'FC' : sport.toUpperCase();
+                        const normSport = canonicalSport(sport);
 
                         const s1 = p1.filter(p => p.isPlaying).reduce((sum, p) => {
                             const sc = p.scoresBySport[normSport] ?? p.scoresBySport[sport];
@@ -1257,8 +1350,10 @@
                         team2score: parseFloat(t2Score.toFixed(2)), 
                         winner: winner, 
                         team1SeriesWins: t1SeriesWins, 
-                        team2SeriesWins: t2SeriesWins,
-                        isPlayoff: isPlayoff
+                        team2SeriesWins: t2SeriesWins, 
+                        isPlayoff: isPlayoff,
+                        isPreseason: isPreseason,
+                        gameType: gameType
                     });
                 });
 
@@ -1270,8 +1365,10 @@
                     action: 'log_games',
                     date: selectedDate,
                     season: season,
+                    gameType: gameType,
                     isPlayoff: isPlayoff,
-                    round: isPlayoff ? (document.getElementById('playoffSeries').value || 'Playoffs') : '',
+                    isPreseason: isPreseason,
+                    round: isPlayoff ? (document.getElementById('playoffSeries').value || 'Playoffs') : (isPreseason ? 'Preseason' : 'Regular'),
                     games: gamesToLog,
                     playerStats: playerStatsToLog
                 };
@@ -1308,7 +1405,9 @@
         async function performUndo(skipConfirm = false) {
             const selectedDate = dateSelect.value.trim();
             const season = seasonSelect.value;
-            const isPlayoff = gameTypeSelect.value === 'playoff';
+            const gameType = gameTypeSelect.value;
+            const isPlayoff = gameType === 'playoff';
+            const isPreseason = gameType === 'preseason' || (window.scheduleDateTypes && window.scheduleDateTypes[selectedDate] === 'preseason');
 
             if (!selectedDate) { output.textContent = 'Error: Please select a date to undo.'; return false; }
             if (!skipConfirm && !confirm(`WARNING: Are you sure you want to UNDO all Google Sheet writes for ${selectedDate} in Season ${season}?`)) return false;
@@ -1321,7 +1420,9 @@
                 const payload = {
                     action: 'undo_games',
                     season: season,
+                    gameType: gameType,
                     isPlayoff: isPlayoff,
+                    isPreseason: isPreseason,
                     date: selectedDate
                 };
 
@@ -1370,7 +1471,9 @@
 
             let gamesToReport = [];
             let playersToReport = [];
-            let isPlayoffDate = gameTypeSelect.value === 'playoff';
+            const gameType = gameTypeSelect.value;
+            let isPlayoffDate = gameType === 'playoff';
+            let isPreseasonDate = gameType === 'preseason';
 
             if (window.lastLoggedGames && window.lastLoggedGames.length > 0 && window.lastLoggedDate === selectedDate) {
                 gamesToReport = window.lastLoggedGames;
@@ -1448,7 +1551,8 @@
                 return;
             }
 
-            let report = `🏆 **RDA ${isPlayoffDate ? 'PLAYOFF' : 'DAILY'} RECAP - ${selectedDate}** 🏆\n\n`;
+            const recapHeaderTitle = isPlayoffDate ? 'PLAYOFF' : (isPreseasonDate ? 'PRESEASON' : 'DAILY');
+            let report = `🏆 **RDA ${recapHeaderTitle} RECAP - ${selectedDate}** 🏆\n\n`;
             
             gamesToReport.forEach(g => {
                 const isT1Winner = (g.winner || '').toLowerCase() === (g.team1 || '').toLowerCase();
@@ -1489,23 +1593,21 @@
                 const t1 = (g.team1 || '').toLowerCase();
                 const t2 = (g.team2 || '').toLowerCase();
                 const gamePlayers = playersToReport.filter(p => p.team && (p.team.toLowerCase() === t1 || p.team.toLowerCase() === t2));
-                const sports = [...new Set(gamePlayers.map(p => p.sport).filter(s => s && s !== 'Unknown'))].sort();
+                const sports = [...new Set(gamePlayers.map(p => canonicalSport(p.sport)).filter(s => s && s !== 'Unknown'))].sort();
 
                 if (sports.length > 0) {
                     sports.forEach(sport => {
-                        const t1SportScore = gamePlayers.filter(p => p.team.toLowerCase() === t1 && p.sport.toUpperCase() === sport.toUpperCase()).reduce((sum, p) => sum + p.score, 0);
-                        const t2SportScore = gamePlayers.filter(p => p.team.toLowerCase() === t2 && p.sport.toUpperCase() === sport.toUpperCase()).reduce((sum, p) => sum + p.score, 0);
+                        const t1SportScore = gamePlayers.filter(p => p.team.toLowerCase() === t1 && canonicalSport(p.sport) === sport).reduce((sum, p) => sum + p.score, 0);
+                        const t2SportScore = gamePlayers.filter(p => p.team.toLowerCase() === t2 && canonicalSport(p.sport) === sport).reduce((sum, p) => sum + p.score, 0);
                         
-                        if (t1SportScore > 0 || t2SportScore > 0) {
-                            let sportWinner = t1SportScore > t2SportScore ? g.team1 : (t2SportScore > t1SportScore ? g.team2 : 'TIE');
-                            let sportWinnerScore = t1SportScore > t2SportScore ? t1SportScore : t2SportScore;
-                            let sportLoserScore = t1SportScore > t2SportScore ? t2SportScore : t1SportScore;
-                            
-                            if (sportWinner === 'TIE') {
-                                 report += `> ${sport}: TIE (${t1SportScore.toFixed(2)} - ${t2SportScore.toFixed(2)})\n`;
-                            } else {
-                                 report += `> ${sport}: **${sportWinner}** ${sportWinnerScore.toFixed(2)} - ${sportLoserScore.toFixed(2)}\n`;
-                            }
+                        let sportWinner = t1SportScore > t2SportScore ? g.team1 : (t2SportScore > t1SportScore ? g.team2 : 'TIE');
+                        let sportWinnerScore = t1SportScore > t2SportScore ? t1SportScore : t2SportScore;
+                        let sportLoserScore = t1SportScore > t2SportScore ? t2SportScore : t1SportScore;
+                        
+                        if (sportWinner === 'TIE') {
+                            report += `> ${sport}: TIE (${t1SportScore.toFixed(2)} - ${t2SportScore.toFixed(2)})\n`;
+                        } else {
+                            report += `> ${sport}: **${sportWinner}** ${sportWinnerScore.toFixed(2)} - ${sportLoserScore.toFixed(2)}\n`;
                         }
                     });
                 }
@@ -1523,7 +1625,8 @@
                     }
                     playerTotals[p.username] += p.score;
                     if (p.sport) {
-                        playerSports[p.username][p.sport] = (playerSports[p.username][p.sport] || 0) + p.score;
+                        const normSp = canonicalSport(p.sport);
+                        playerSports[p.username][normSp] = (playerSports[p.username][normSp] || 0) + p.score;
                     }
                 });
                 
@@ -1552,8 +1655,9 @@
                 
                 playersToReport.forEach(p => {
                     if (p.sport && p.score > 0) {
-                        if (!sportLeaders[p.sport]) sportLeaders[p.sport] = [];
-                        sportLeaders[p.sport].push({ username: p.username, score: p.score, team: p.team });
+                        const normSp = canonicalSport(p.sport);
+                        if (!sportLeaders[normSp]) sportLeaders[normSp] = [];
+                        sportLeaders[normSp].push({ username: p.username, score: p.score, team: p.team });
                     }
                 });
                 
