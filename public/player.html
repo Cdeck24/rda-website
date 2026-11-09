@@ -829,6 +829,11 @@
                     if (KNOWN_ALIASES[p.cleanHandle]) aliases.add(KNOWN_ALIASES[p.cleanHandle]);
 
                     rows.forEach(r => {
+                        // Skip preseason rows from official season-by-season totals
+                        const preVal = r.ispreseason || r.is_preseason || r.preseason || r.gametype || r.game_type || r.type || '';
+                        const isPreseason = String(preVal).toLowerCase() === 'true' || String(preVal).toLowerCase() === 'yes' || String(preVal).toLowerCase() === '1' || String(preVal).toLowerCase() === 'preseason';
+                        if (isPreseason) return;
+
                         const rUser = r.username || r.player || r.user || '';
                         const rId = r.user_id || r.userid || r.id || '';
                         const cleanR = cleanHandle(rUser);

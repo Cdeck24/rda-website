@@ -430,6 +430,7 @@
         <button class="sub-nav-btn active" id="tab-conference" onclick="switchView('conference')">Conference</button>
         <button class="sub-nav-btn" id="tab-division" onclick="switchView('division')">Division</button>
         <button class="sub-nav-btn" id="tab-bracket" onclick="switchView('bracket')">Playoff Bracket</button>
+        <button class="sub-nav-btn" id="tab-preseason" onclick="switchView('preseason')">Preseason</button>
     </div>
 
     <div class="standings-content" id="standings-container">
@@ -510,8 +511,27 @@
         };
 
         let globalTeams = [];
+        let preseasonTeams = [];
         let playoffGames = [];
         let currentView = 'conference';
+
+        function isPreseasonGame(g) {
+            if (!g) return false;
+            const checkFields = [
+                g.isPreseason, g.ispreseason, g.is_preseason,
+                g.gameType, g.gametype, g.type,
+                g['is preseason'], g['is_preseason']
+            ];
+            for (const f of checkFields) {
+                if (f !== undefined && f !== null) {
+                    const s = String(f).trim().toLowerCase();
+                    if (s === 'true' || s === 'yes' || s === '1' || s === 'preseason' || s === 'pre-season') return true;
+                }
+            }
+            const roundStr = String(g.round || '').trim().toLowerCase();
+            if (roundStr.includes('preseason') || roundStr.includes('pre-season')) return true;
+            return false;
+        }
 
         const sortTeams = (a, b) => {
             if (b.pct !== a.pct) return b.pct - a.pct;
@@ -523,7 +543,8 @@
         window.switchView = (view) => {
             currentView = view;
             document.querySelectorAll('.sub-nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`tab-${view}`).classList.add('active');
+            const tabBtn = document.getElementById(`tab-${view}`);
+            if (tabBtn) tabBtn.classList.add('active');
             render();
         };
 
@@ -537,6 +558,7 @@
             playoffGames = pGamesRaw || [];
             const config = seasonConfigs[currentSeason] || seasonConfigs['7'];
 
+            // 1. Calculate Regular Season Standings (Strictly ignore games flagged as preseason)
             let calculatedTeams = teamsRaw;
             if (!calculatedTeams || !calculatedTeams.length) {
                 const calculated = {};
@@ -546,6 +568,9 @@
 
                 if (gamesRaw && gamesRaw.length) {
                     gamesRaw.forEach(g => {
+                        // IGNORE PRESEASON IN REGULAR SEASON RECORDS
+                        if (isPreseasonGame(g)) return;
+
                         const t1 = g.team1 || g['team 1'], t2 = g.team2 || g['team 2'];
                         const s1 = parseFloat(g.team1score) || 0;
                         const s2 = parseFloat(g.team2score) || 0;
@@ -569,6 +594,51 @@
             }
 
             globalTeams = calculatedTeams.filter(t => t && t.name && t.name !== 'TIE' && !t.name.toLowerCase().includes('free agent')).map(t => {
+                const wins = parseInt(t.wins) || 0;
+                const losses = parseInt(t.losses) || 0;
+                const pf = parseFloat(t.pointsFor) || 0;
+                const pa = parseFloat(t.pointsAgainst) || 0;
+                const gp = wins + losses;
+                return {
+                    name: t.name,
+                    wins, losses, gp,
+                    pointsFor: pf, pointsAgainst: pa,
+                    pct: gp > 0 ? wins / gp : 0,
+                    diff: pf - pa
+                };
+            });
+
+            // 2. Calculate Preseason Standings (Strictly exhibition games)
+            const preCalculated = {};
+            Object.keys(config).forEach(t => {
+                preCalculated[t] = { name: t, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0 };
+            });
+
+            if (gamesRaw && gamesRaw.length) {
+                gamesRaw.forEach(g => {
+                    if (!isPreseasonGame(g)) return;
+
+                    const t1 = g.team1 || g['team 1'], t2 = g.team2 || g['team 2'];
+                    const s1 = parseFloat(g.team1score) || 0;
+                    const s2 = parseFloat(g.team2score) || 0;
+                    const winner = g.winner;
+
+                    if (preCalculated[t1]) {
+                        preCalculated[t1].pointsFor += s1;
+                        preCalculated[t1].pointsAgainst += s2;
+                        if (winner === t1) preCalculated[t1].wins++;
+                        else if (winner === t2) preCalculated[t1].losses++;
+                    }
+                    if (preCalculated[t2]) {
+                        preCalculated[t2].pointsFor += s2;
+                        preCalculated[t2].pointsAgainst += s1;
+                        if (winner === t2) preCalculated[t2].wins++;
+                        else if (winner === t1) preCalculated[t2].losses++;
+                    }
+                });
+            }
+
+            preseasonTeams = Object.values(preCalculated).filter(t => t && t.name && t.name !== 'TIE' && !t.name.toLowerCase().includes('free agent')).map(t => {
                 const wins = parseInt(t.wins) || 0;
                 const losses = parseInt(t.losses) || 0;
                 const pf = parseFloat(t.pointsFor) || 0;
@@ -679,6 +749,32 @@
                 });
             } else if (currentView === 'bracket') {
                 html = renderPlayoffBracketView(structure);
+            } else if (currentView === 'preseason') {
+                const sortedPreTeams = [...preseasonTeams].sort(sortTeams);
+                html += `
+                    <div class="conf-header">
+                        <span>Preseason Standings</span>
+                        <span style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-family:sans-serif; font-weight:700;">Exhibition Play</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="seed-cell">#</th>
+                                    <th>Franchise</th>
+                                    <th class="stat-val">W</th>
+                                    <th class="stat-val">L</th>
+                                    <th class="stat-val">Pct</th>
+                                    <th class="stat-val col-hide-mobile">PF</th>
+                                    <th class="stat-val col-hide-mobile">PA</th>
+                                    <th class="stat-val">Diff</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedPreTeams.map((t, idx) => createRow(t, idx + 1, false)).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
             }
 
             container.innerHTML = html;

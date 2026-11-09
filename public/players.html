@@ -246,8 +246,9 @@
     <div class="player-content">
         <!-- Filter and Search Controls -->
         <div class="controls-card">
-            <select class="filter-select" id="season-type" onchange="load(this.value === 'playoffs')">
+            <select class="filter-select" id="season-type" onchange="handleSeasonTypeChange(this.value)">
                 <option value="regular">Regular Season</option>
+                <option value="preseason">Preseason</option>
                 <option value="playoffs">Playoffs</option>
             </select>
             <input type="text" class="search-input" id="search" placeholder="Search player or team..." oninput="filter()">
@@ -428,7 +429,18 @@
             });
         }
 
-        window.load = async function(isPlayoff = false) {
+        function isPreseasonRow(d) {
+            if (!d) return false;
+            const raw = getCleanValue(d, ['isPreseason', 'ispreseason', 'is_preseason', 'gameType', 'gametype', 'type']).toLowerCase();
+            return raw === 'true' || raw === 'yes' || raw === '1' || raw === 'preseason' || raw === 'pre-season';
+        }
+
+        window.handleSeasonTypeChange = function(type) {
+            window.load(type);
+        };
+
+        window.load = async function(seasonType = 'regular') {
+            const isPlayoff = (seasonType === 'playoffs');
             const collectionName = isPlayoff ? 'playoff-players' : 'players';
             document.getElementById('player-table-body').innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--gold-mid); padding:3rem; font-style:italic;">Loading players...</td></tr>';
             
@@ -482,6 +494,10 @@
             const discoveredSports = new Set();
 
             allRawData.forEach(d => {
+                const isPre = isPreseasonRow(d);
+                if (seasonType === 'regular' && isPre) return;
+                if (seasonType === 'preseason' && !isPre) return;
+
                 const s = getCleanValue(d, ['sport', 'sportName']).toUpperCase();
                 const sc = parseFloat(getCleanValue(d, ['score', 'points', 'pts'])) || 0;
                 const rawBench = getCleanValue(d, ['isBench', 'isbench', 'bench', 'is_bench']).toLowerCase();
@@ -513,6 +529,7 @@
         };
 
         window.filter = () => {
+            const currentSeasonType = document.getElementById('season-type')?.value || 'regular';
             const term = document.getElementById('search').value.toLowerCase();
             const sportFilter = document.getElementById('sport-filter')?.value || 'ALL';
             const rookieFilter = document.getElementById('rookie-filter').value;
@@ -522,6 +539,10 @@
             globalPlayerMap = {};
 
             allRawData.forEach(d => {
+                const isPre = isPreseasonRow(d);
+                if (currentSeasonType === 'regular' && isPre) return;
+                if (currentSeasonType === 'preseason' && !isPre) return;
+
                 const rawUserId = getCleanValue(d, ['userId', 'userid', 'user id', 'user_id', 'uid', 'id']);
                 const rawUsername = getCleanValue(d, ['username', 'userName', 'user name', 'name', 'user']).replace(/^@/, '');
                 const cleanUsername = rawUsername.toLowerCase();
@@ -790,10 +811,10 @@
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const isPlayoff = document.getElementById('season-type')?.value === 'playoffs';
+            const currentSeasonType = document.getElementById('season-type')?.value || 'regular';
             const dateStr = new Date().toISOString().split('T')[0];
             a.href = url;
-            a.download = `RDA_Season_${currentSeason}_${isPlayoff ? 'Playoffs' : 'Regular'}_Player_Stats_${dateStr}.csv`;
+            a.download = `RDA_Season_${currentSeason}_${currentSeasonType.toUpperCase()}_Player_Stats_${dateStr}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

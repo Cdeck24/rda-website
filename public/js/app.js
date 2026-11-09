@@ -146,7 +146,8 @@ export function initNav() {
         { id: 'nav-records', label: 'Records & Case', href: `records.html?season=${currentSeason}` },
         { id: 'nav-drafts', label: 'Drafts', href: `draft.html?season=${currentSeason}` },
         { id: 'nav-gms', label: 'GM Portal', href: `gms.html` },
-        { id: 'nav-admin', label: 'Admin Console', href: `admin.html` }
+        { id: 'nav-admin', label: 'Admin Console', href: `admin.html` },
+        { id: 'nav-rax', label: 'Rax Awards', href: `rax.html` }
     ];
 
     // ... rest of initNav() unchanged

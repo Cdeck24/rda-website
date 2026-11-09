@@ -495,6 +495,34 @@
         const REAL_VERSION = '27';
         const ADMIN_EMAILS = ["coledecker04@gmail.com"];
 
+        // EXACT DUPLICATE TARGETS FROM INDEX.HTML
+        const DUPLICATE_TARGETS = {
+            'qnBMqr63': { username: 'piggyontop', sports: ['NFL'] },
+            'PJPExX9v': { username: 'fbb77', sports: ['WNBA'] },
+            'xnr4myPv': { username: '@mercy', sports: ['CFB'] },
+            'k3Lgg4Yv': { username: '@nhl', sports: ['NHL'] },
+            'wJ2RVYmJ': { username: 'thathuey5', sports: ['MLB', 'NBA'] },
+            'lnEw4avw': { username: 'tocki', sports: ['ALL'] },
+            'jvbb41pv': { username: 'alp', sports: ['NFL', 'CFB', 'FC'] },
+            '9JmXRKDn': { username: 'upvotefarmer', sports: [] },
+            'gv8D5Q0v': { username: 'chuiso', sports: ['ALL'] },
+            'xnrGDpRJ': { username: 'croze', sports: ['ALL'] },
+            'xnrGVlRJ': { username: 'aayan.t', sports: ['MLB', 'NBA', 'FC'] },
+            'Y3ONOqxv': { username: 'neemiasqueta', sports: ['ALL'] },
+            'BJ098Z6v': { username: 'dr1fter', sports: ['FC'] },
+            'eJ9xa5Qn': { username: 'itcd', sports: ['ALL'] },
+            'Gv1DK9aJ': { username: 'chefcurryy', sports: ['ALL'] },
+            'R3XMepln': { username: 'rayce', sports: ['WNBA'] },
+            '7Jkwd1PJ': { username: 'noahmulford', sports: ['NBA', 'CBB'] },
+            'DJ4NQOm3': { username: 'braeden42', sports: ['NHL'] },
+            'R37MQYyJ': { username: 'pigskin', sports: ['ALL'] },
+            'wJ29Yd9n': { username: 'money', sports: ['ALL'] },
+            'lnEqV6Mn': { username: 'marner', sports: ['NHL'] },
+            'Gv1YrA6v': { username: 'greektime', sports: ['ALL'] }
+        };
+
+        const draftUserIds = new Set(Object.keys(DUPLICATE_TARGETS));
+
         const seasonConfigs = {
             '4': {
                 players: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=0&single=true&output=csv',
@@ -542,6 +570,24 @@
             return false;
         }
 
+        function canonicalSport(val) {
+            if (!val) return '';
+            const s = String(val).trim().toUpperCase();
+            if (s === 'SOCCER' || s === 'EPL' || s === 'MLS' || s === 'UCL' || s === 'LALIGA' || s === 'SERIEA') return 'FC';
+            if (s === 'NCAAF' || s === 'CFB') return 'CFB';
+            if (s === 'NCAAB' || s === 'NCAAM' || s === 'CBB') return 'CBB';
+            if (s === 'BASKETBALL') return 'NBA';
+            if (s === 'HOCKEY') return 'NHL';
+            return s;
+        }
+
+        function isSportTargetMatch(targetSports, sport) {
+            if (!targetSports || targetSports.length === 0) return false;
+            if (targetSports.includes('ALL')) return true;
+            const norm = canonicalSport(sport);
+            return targetSports.some(sp => canonicalSport(sp) === norm);
+        }
+
         const overrideModal = document.getElementById('override-modal');
         const btnOverrideOpen = document.getElementById('btn-override-open');
         const btnCloseOverride = document.getElementById('btn-close-override');
@@ -584,7 +630,7 @@
 
         btnApplyOverride.addEventListener('click', async () => {
             const rawUser = document.getElementById('override-username').value.trim();
-            const sport = document.getElementById('override-sport').value;
+            const sport = canonicalSport(document.getElementById('override-sport').value);
             const mode = overrideModeSelect.value;
             const customVal = parseFloat(document.getElementById('override-custom-val').value);
 
@@ -835,17 +881,6 @@
             return false;
         };
 
-        function canonicalSport(val) {
-            if (!val) return '';
-            const s = String(val).trim().toUpperCase();
-            if (s === 'SOCCER' || s === 'EPL' || s === 'MLS' || s === 'UCL') return 'FC';
-            if (s === 'NCAAF' || s === 'CFB') return 'CFB';
-            if (s === 'NCAAB' || s === 'NCAAM' || s === 'CBB') return 'CBB';
-            if (s === 'BASKETBALL') return 'NBA';
-            if (s === 'HOCKEY') return 'NHL';
-            return s;
-        }
-
         window.loadScheduleDates = async function() {
             const season = seasonSelect.value;
             const config = seasonConfigs[season] || seasonConfigs['7'];
@@ -951,7 +986,8 @@
             
             terminalStatus.textContent = 'Running';
             terminalStatus.style.color = '#fb923c';
-            output.textContent = `Initializing fetch for Season ${season} (${gameType.toUpperCase()}) on ${selectedDate}...\n`;
+            output.textContent = `Initializing fetch for Season ${season} (${isPreseason ? 'PRESEASON' : (isPlayoff ? 'PLAYOFF' : 'REGULAR')}) on ${selectedDate}...\n`;
+            output.textContent += `[Preseason Flag: ${isPreseason ? 'TRUE' : 'FALSE'}]\n`;
 
             try {
                 const [playersRes, scheduleRes] = await Promise.all([
@@ -969,7 +1005,6 @@
                 const t2Idx = schedHeaders.findIndex(h => h.includes('team2') || h.includes('team 2') || h.includes('home'));
 
                 const todayGames = [];
-                const daySports = new Set();
 
                 scheduleRows.slice(1).forEach(r => {
                     if (isSameDate(r[dIdx], selectedDate)) {
@@ -983,7 +1018,6 @@
                                 const norm = canonicalSport(item);
                                 if (KNOWN_SPORTS.has(norm)) {
                                     rowSports.add(norm);
-                                    daySports.add(norm);
                                 }
                             });
                         });
@@ -1058,11 +1092,8 @@
                             };
                         }
 
+                        // Queues EVERY sport that has an ID entered in the sheet
                         for (const sport in sportIdIndices) {
-                            if (daySports.size > 0 && !daySports.has(sport)) {
-                                continue;
-                            }
-
                             const draftId = row[sportIdIndices[sport]]?.trim();
                             if (draftId) {
                                 fetchUrls.push({
@@ -1074,7 +1105,9 @@
                     }
                 });
 
-                output.textContent += `\nQueueing ${fetchUrls.length} stat requests to Real API (4 Concurrent Workers, Live Pacing)...\n`;
+                const detectedSportsSet = new Set(fetchUrls.map(u => u.sport));
+                output.textContent += `Detected Sports with IDs: ${Array.from(detectedSportsSet).join(', ')}\n`;
+                output.textContent += `Queueing ${fetchUrls.length} stat requests across all ${detectedSportsSet.size} sports (4 Concurrent Workers, Live Pacing)...\n`;
 
                 const uniqueUrlsMap = new Map();
                 fetchUrls.forEach(req => uniqueUrlsMap.set(req.url, req));
@@ -1191,22 +1224,24 @@
                 for (let w = 0; w < 4; w++) workers.push(processQueueWorker());
                 await Promise.all(workers);
 
-                output.textContent += "\nApplying duplicate rules...\n";
-                const draftUserIds = new Set(['jvbb41pv', 'kvMbxE63', 'gv8D5Q0v', 'xnrGDpRJ', 'gv8dYyPv', 'lnEw4avw', 'WJqLyqAn']);
+                // ====================================================================
+                // DUPLICATE RULES (EVALUATING STARTERS & BENCH PLAYERS)
+                // ====================================================================
+                output.textContent += "\nApplying duplicate rules (Starters & Bench)...\n";
                 const hashes = new Map();
 
                 const isUserOverridden = (uName, uId, s) => {
                     const cleanU = (uName || '').replace(/^@/, '').toLowerCase().trim();
                     const cleanId = (uId || '').toLowerCase().trim();
-                    const cleanS = (s || '').toUpperCase().trim();
+                    const cleanS = canonicalSport(s);
                     return window.manualOverrides.find(o => 
                         (o.username === cleanU || o.username === cleanId) &&
-                        (o.sport === 'ALL' || o.sport === cleanS)
+                        (o.sport === 'ALL' || canonicalSport(o.sport) === cleanS)
                     );
                 };
 
+                // Hash EVERY rostered player's lineup (order-specific)
                 Object.values(allPlayerDataForDay).forEach(p => {
-                    if (!p.isPlaying) return;
                     for (const s in p.lineupsBySport) {
                         const l = p.lineupsBySport[s];
                         if (!Array.isArray(l) || !l.length) continue;
@@ -1218,9 +1253,14 @@
 
                         if (!athleteNames.length) continue;
 
-                        const h = `${s.toUpperCase()}:${athleteNames.join('->')}`;
+                        const h = `${canonicalSport(s)}:${athleteNames.join('->')}`;
                         if (!hashes.has(h)) hashes.set(h, []);
-                        hashes.get(h).push({ player: p, sport: s.toUpperCase(), score: p.scoresBySport[s] || 0 });
+                        hashes.get(h).push({ 
+                            player: p, 
+                            sport: canonicalSport(s), 
+                            score: p.scoresBySport[s] || 0,
+                            isPlaying: p.isPlaying
+                        });
                     }
                 });
 
@@ -1235,9 +1275,15 @@
                         teamGroups[e.player.team].push(e);
                     });
 
+                    // 1. Same-Team Duplicate Checker
                     Object.values(teamGroups).forEach(teamEntries => {
                         if (teamEntries.length > 1) {
-                            teamEntries.sort((a, b) => b.score - a.score);
+                            // Starters prioritized over bench, higher scores over lower scores
+                            teamEntries.sort((a, b) => {
+                                if (a.isPlaying !== b.isPlaying) return a.isPlaying ? -1 : 1;
+                                return b.score - a.score;
+                            });
+
                             for (let j = 1; j < teamEntries.length; j++) {
                                 const targetEntry = teamEntries[j];
                                 if (isUserOverridden(targetEntry.player.username, targetEntry.player.userId, targetEntry.sport)) {
@@ -1246,32 +1292,37 @@
                                 }
                                 if (targetEntry.player.scoresBySport[targetEntry.sport] > 0) {
                                     targetEntry.player.scoresBySport[targetEntry.sport] = 0;
-                                    output.textContent += `Voided: ${targetEntry.player.username} (${targetEntry.sport}) - Same Team Dup\n`;
+                                    output.textContent += `Voided: ${targetEntry.player.username} (${targetEntry.sport}) [${targetEntry.isPlaying ? 'Starter' : 'Bench'}] - Same Team Dup\n`;
                                 }
                             }
                         }
                     });
 
+                    // 2. Monitored Target Account Checker (All 22 Accounts)
                     if (draftAccounts.length > 0) {
                         entries.forEach(e => {
                             if (!draftUserIds.has(e.player.userId)) {
                                 if (isUserOverridden(e.player.username, e.player.userId, e.sport)) {
-                                    output.textContent += `[Override Active] Preserved: ${e.player.username} (${e.sport}) - Skipped Draft Account Dup\n`;
+                                    output.textContent += `[Override Active] Preserved: ${e.player.username} (${e.sport}) - Skipped Monitored Account Dup\n`;
                                     return;
                                 }
                                 let voided = false;
                                 draftAccounts.forEach(da => {
-                                    if (da.player.userId !== 'WJqLyqAn' || e.sport === 'NHL') voided = true;
+                                    const cfg = DUPLICATE_TARGETS[da.player.userId];
+                                    if (cfg && isSportTargetMatch(cfg.sports, e.sport)) {
+                                        voided = true;
+                                    }
                                 });
                                 if (voided && e.player.scoresBySport[e.sport] > 0) {
                                     e.player.scoresBySport[e.sport] = 0;
-                                    output.textContent += `Voided: ${e.player.username} (${e.sport}) - Draft Account Dup\n`;
+                                    output.textContent += `Voided: ${e.player.username} (${e.sport}) [${e.isPlaying ? 'Starter' : 'Bench'}] - Monitored Account Dup\n`;
                                 }
                             }
                         });
                     }
                 }
 
+                // Apply manual custom score overrides
                 Object.values(allPlayerDataForDay).forEach(p => {
                     for (const s in p.scoresBySport) {
                         const override = isUserOverridden(p.username, p.userId, s);
@@ -1282,15 +1333,75 @@
                     }
                 });
 
+                // ====================================================================
+                // EMERGENCY AUTO-SUB EVALUATION (SEASON 7)
+                // ====================================================================
+                output.textContent += "\nEvaluating Emergency Auto-Subs...\n";
+
+                // 1. Calculate player totalScore across all sports
+                Object.values(allPlayerDataForDay).forEach(p => {
+                    p.totalScore = Object.values(p.scoresBySport).reduce((sum, sc) => sum + (typeof sc === 'number' ? sc : 0), 0);
+                    p.isOriginalPlaying = (p.isOriginalPlaying !== undefined) ? p.isOriginalPlaying : p.isPlaying;
+                    p.isPlaying = p.isOriginalPlaying;
+                    p.isAutoSub = false;
+                    p.isAutoBenched = false;
+                });
+
+                // 2. Group by team and evaluate starters vs bench
+                const teamRosters = {};
+                Object.values(allPlayerDataForDay).forEach(p => {
+                    if (!p.team || p.team.toLowerCase().includes('free agent')) return;
+                    if (!teamRosters[p.team]) teamRosters[p.team] = [];
+                    teamRosters[p.team].push(p);
+                });
+
+                Object.keys(teamRosters).forEach(teamName => {
+                    const roster = teamRosters[teamName];
+                    const starters = roster.filter(p => p.isOriginalPlaying);
+                    const bench = roster.filter(p => !p.isOriginalPlaying);
+
+                    // Check if player missed the full slate (0 total score AND no lineups submitted)
+                    const isFullSlateMiss = (p) => {
+                        const hasZeroScore = (p.totalScore || 0) === 0;
+                        const sportsWithLineups = Object.keys(p.lineupsBySport || {}).filter(s => {
+                            const l = p.lineupsBySport[s];
+                            return Array.isArray(l) && l.length > 0;
+                        });
+                        return hasZeroScore && sportsWithLineups.length === 0;
+                    };
+
+                    const missedStarters = starters.filter(p => isFullSlateMiss(p));
+
+                    // ONLY trigger if EXACTLY 1 starter missed the full slate
+                    if (missedStarters.length === 1) {
+                        const missedStarter = missedStarters[0];
+                        const eligibleBench = bench
+                            .filter(p => (p.totalScore || 0) > 0)
+                            .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
+
+                        if (eligibleBench.length > 0) {
+                            const bestBench = eligibleBench[0];
+
+                            // Promote bench player & demote missed starter
+                            bestBench.isPlaying = true;
+                            bestBench.isAutoSub = true;
+
+                            missedStarter.isPlaying = false;
+                            missedStarter.isAutoBenched = true;
+
+                            output.textContent += `[Emergency Auto-Sub Activated] ${teamName}: ${bestBench.username} (${bestBench.totalScore.toFixed(2)} pts) promoted for missed starter ${missedStarter.username}\n`;
+                        }
+                    }
+                });
+
                 output.textContent += `\nPreparing to write to Google Sheets...\n`;
                 const gamesToLog = [];
                 const playerStatsToLog = [];
 
+                // Logs all scored sports without dropping non-schedule sports
                 Object.values(allPlayerDataForDay).forEach(player => {
                     for (const sport in player.scoresBySport) {
                         const normSport = canonicalSport(sport);
-                        if (daySports.size > 0 && !daySports.has(normSport)) continue;
-
                         const score = player.scoresBySport[sport];
                         if (typeof score === 'number') {
                             playerStatsToLog.push({
@@ -1316,22 +1427,17 @@
                     const p1 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t1.toLowerCase());
                     const p2 = Object.values(allPlayerDataForDay).filter(p => p.team.toLowerCase() === t2.toLowerCase());
 
-                    const sportsToEvaluate = (game.scheduledSports && game.scheduledSports.length > 0)
-                        ? game.scheduledSports
-                        : (daySports.size > 0 
-                            ? Array.from(daySports) 
-                            : Array.from(new Set([...p1, ...p2].flatMap(p => Object.keys(p.scoresBySport)))));
+                    // Evaluates all sports with active scores on either roster
+                    const sportsToEvaluate = Array.from(new Set([...p1, ...p2].flatMap(p => Object.keys(p.scoresBySport).map(s => canonicalSport(s)))));
 
                     sportsToEvaluate.forEach(sport => {
-                        const normSport = canonicalSport(sport);
-
                         const s1 = p1.filter(p => p.isPlaying).reduce((sum, p) => {
-                            const sc = p.scoresBySport[normSport] ?? p.scoresBySport[sport];
+                            const sc = p.scoresBySport[sport] ?? p.scoresBySport[sport.toLowerCase()];
                             return sum + (typeof sc === 'number' ? sc : 0);
                         }, 0);
 
                         const s2 = p2.filter(p => p.isPlaying).reduce((sum, p) => {
-                            const sc = p.scoresBySport[normSport] ?? p.scoresBySport[sport];
+                            const sc = p.scoresBySport[sport] ?? p.scoresBySport[sport.toLowerCase()];
                             return sum + (typeof sc === 'number' ? sc : 0);
                         }, 0);
                         
@@ -1473,7 +1579,7 @@
             let playersToReport = [];
             const gameType = gameTypeSelect.value;
             let isPlayoffDate = gameType === 'playoff';
-            let isPreseasonDate = gameType === 'preseason';
+            let isPreseasonDate = gameType === 'preseason' || (window.scheduleDateTypes && window.scheduleDateTypes[selectedDate] === 'preseason');
 
             if (window.lastLoggedGames && window.lastLoggedGames.length > 0 && window.lastLoggedDate === selectedDate) {
                 gamesToReport = window.lastLoggedGames;
