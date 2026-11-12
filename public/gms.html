@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -131,6 +130,32 @@
             border-bottom-color: var(--gold-mid);
         }
 
+        /* Lineups Nested Sub-Tabs */
+        .lineup-subnav {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .lineup-subnav-btn {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            border-radius: 6px;
+            padding: 0.4rem 0.9rem;
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+        .lineup-subnav-btn.active {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--border-gold);
+            color: var(--gold-light);
+        }
+
         .team-select {
             display: block;
             width: 100%;
@@ -237,9 +262,44 @@
             margin-bottom: 0.45rem;
             border-radius: 8px;
             transition: background 0.15s ease;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
         .player-row:hover { background: rgba(255, 255, 255, 0.03); }
         .player-row.locked { opacity: 0.75; }
+
+        .roster-quick-pills {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .quick-stat-pill {
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            font-variant-numeric: tabular-nums;
+        }
+        .quick-stat-pill.slate-match {
+            background: rgba(74, 222, 128, 0.12);
+            border-color: rgba(74, 222, 128, 0.35);
+            color: #4ade80;
+        }
+        .quick-stat-pill.slate-miss {
+            background: rgba(248, 113, 113, 0.08);
+            border-color: rgba(248, 113, 113, 0.25);
+            color: #f87171;
+        }
+        .quick-stat-pill.rda-gold {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.3);
+            color: var(--gold-light);
+        }
         
         .toggle-switch { position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
@@ -252,6 +312,20 @@
         .status-label { font-size: 0.75rem; font-weight: 800; margin-right: 12px; text-transform: uppercase; width: 55px; display: inline-block; }
         .starter-label { color: #4ade80; }
         .bench-label { color: #f87171; }
+
+        .rookie-badge {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold-mid);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            font-size: 0.58rem;
+            font-weight: 800;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-left: 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            vertical-align: middle;
+        }
 
         .save-btn {
             display: block;
@@ -274,10 +348,10 @@
         .save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .save-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; border: 1px solid #475569; transform: none; box-shadow: none; }
 
-        /* Free Agency & Draft Grid */
-        .fa-grid, .draft-grid {
+        /* Free Agency, Team Intel & Draft Grid */
+        .fa-grid, .draft-grid, .team-intel-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
             gap: 1rem;
         }
         .fa-card, .draft-player-card {
@@ -316,10 +390,34 @@
             border: 1px solid rgba(212, 175, 55, 0.25);
             padding: 0.45rem 0.65rem;
             border-radius: 6px;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.65rem;
             font-size: 0.72rem;
             color: var(--gold-light);
             font-weight: 700;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .rda-sport-breakdown {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 0.75rem;
+        }
+        .rda-sport-chip {
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            color: #38bdf8;
+            font-size: 0.64rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+        .rda-sport-chip.tonight-chip {
+            background: rgba(74, 222, 128, 0.14);
+            border-color: rgba(74, 222, 128, 0.45);
+            color: #4ade80;
         }
 
         .sport-dropdown {
@@ -696,7 +794,7 @@
             .dashboard-container { padding: 0.5rem 0.5rem 3rem 0.5rem; }
             .dashboard-title-block h2 { font-size: 1.4rem; }
             .trade-machine-grid { grid-template-columns: 1fr; }
-            .fa-grid, .draft-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.5rem; }
+            .fa-grid, .draft-grid, .team-intel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.5rem; }
             .fa-card, .draft-player-card { padding: 0.6rem; }
             .fa-id { display: none; }
             .fa-name { font-size: 0.88rem; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -727,7 +825,7 @@
         <div class="dashboard-header">
             <div class="dashboard-title-block">
                 <h2>GM Dashboard</h2>
-                <p>Lineup submissions, waiver claims, trades, and draft room</p>
+                <p>Lineup submissions, slate intelligence, waiver claims, trades, and draft room</p>
             </div>
             <button onclick="handleLogout()" class="logout-btn">Sign Out</button>
         </div>
@@ -741,9 +839,15 @@
 
         <!-- LINEUPS SECTION -->
         <div id="lineups-section" class="dashboard-section">
-            <select id="team-select" class="team-select" onchange="loadRoster()">
+            <select id="team-select" class="team-select" onchange="loadRoster(); renderTeamIntel();">
                 <option value="">Select Team...</option>
             </select>
+
+            <!-- LINEUPS SUB-NAVIGATION -->
+            <div class="lineup-subnav">
+                <button type="button" class="lineup-subnav-btn active" id="subtab-set-lineup" onclick="switchLineupSubTab('set', this)">⚔️ Set Starters</button>
+                <button type="button" class="lineup-subnav-btn" id="subtab-team-intel" onclick="switchLineupSubTab('intel', this)">📊 Slate Stats & Intel</button>
+            </div>
             
             <div class="lineup-date-container" id="date-navigator" style="display: none;">
                 <button onclick="changeDate(-1)" class="nav-arrow">&lt;</button>
@@ -754,13 +858,33 @@
                 </div>
                 <button onclick="changeDate(1)" class="nav-arrow">&gt;</button>
             </div>
-            
-            <div id="lineup-counter" class="counter-box" style="display: none;">
-                Starters: <span id="starter-count">0</span>/8 | Bench: <span id="bench-count">0</span>/2
+
+            <!-- VIEW 1: SET STARTERS -->
+            <div id="lineup-set-view">
+                <div id="lineup-counter" class="counter-box" style="display: none;">
+                    Starters: <span id="starter-count">0</span>/8 | Bench: <span id="bench-count">0</span>/2
+                </div>
+
+                <div id="roster-container"></div>
+                <button class="save-btn" onclick="saveLineup()" style="display: none;" id="save-btn">Save Lineup</button>
             </div>
 
-            <div id="roster-container"></div>
-            <button class="save-btn" onclick="saveLineup()" style="display: none;" id="save-btn">Save Lineup</button>
+            <!-- VIEW 2: SLATE STATS & INTEL -->
+            <div id="lineup-intel-view" style="display: none;">
+                <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid var(--border-gold); padding: 1rem 1.25rem; border-radius: 10px; margin-bottom: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <h3 style="margin: 0; color: var(--gold-mid); font-size: 1rem; text-transform: uppercase; letter-spacing: 0.75px;">Slate Starter Intelligence</h3>
+                            <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: var(--text-muted);">RDA sport-by-sport averages & RealApp contest profiles tailored to the active gameday slate</p>
+                        </div>
+                        <div id="intel-slate-badges" style="display: flex; gap: 4px; flex-wrap: wrap;"></div>
+                    </div>
+                </div>
+
+                <div id="team-intel-grid" class="team-intel-grid">
+                    <div style="color: var(--text-muted); padding: 2rem; grid-column: 1/-1; text-align: center;">Select a team to inspect slate stats...</div>
+                </div>
+            </div>
         </div>
 
         <!-- FREE AGENCY SECTION -->
@@ -940,7 +1064,13 @@
 
     <script type="module">
         import { auth, db } from './js/firebase-config.js';
-        import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
+        import { 
+            signInWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged, 
+            setPersistence, 
+            browserLocalPersistence 
+        } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
         import { doc, updateDoc, arrayUnion, onSnapshot, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js';
         import { initNav, currentSeason, HISTORICAL_CSVS, PLAYER_MAPPINGS_CSV, parseCsvToObject } from './js/app.js?v=7';
 
@@ -999,6 +1129,8 @@
         const playersCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?output=csv';
         const faCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=334253637&single=true&output=csv';
         const waiverOrderCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR7pZmpj4lJiBMkcjcgzJ77n2xmFIRlmuD-0Zuakz8lZekYobXkmTjfaEwhJYdNuM5F9VKlDm-FPaw8/pub?gid=160021912&single=true&output=csv';
+        const SUMMARY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT7Kbt8LtTPbJp3GtxDD1vdWOrSyhvaawyPluCBewFw7umrl07YfKPa91qhokbHUitAK1YqaIPFqaHW/pub?gid=2033320026&single=true&output=csv';
+        const S7_LOG_CSV_URL = HISTORICAL_CSVS?.['7']?.players || playersCsvUrl;
         
         // Season 7 Official Draft Order CSV
         const draftOrderUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ3XNwzDwaXxFCYF0X9_vaz7NDu6RF2XZuZ0UdKd_3JMS2qI-pKN9BzcH_Kseck8w-iYGXyHAbOhx_U/pub?gid=1962401407&single=true&output=csv';
@@ -1010,6 +1142,19 @@
         function showError(msg) {
             document.getElementById('error-modal-msg').innerText = msg;
             document.getElementById('error-modal').style.display = 'flex';
+        }
+
+        function canonicalSport(val) {
+            if (!val) return '';
+            const s = String(val).trim().toUpperCase();
+            if (s === 'NCAAF' || s === 'CFB' || s === 'COLLEGE FOOTBALL') return 'CFB';
+            if (s === 'NCAAM' || s === 'CBB' || s === 'COLLEGE BASKETBALL' || s === 'NCAAB' || s === 'NCAABB' || s === 'CWS') return 'CBB';
+            if (s === 'SOCCER' || s === 'FC' || s === 'EPL' || s === 'MLS' || s === 'UCL' || s === 'LALIGA' || s === 'SERIEA') return 'FC';
+            if (s === 'BASKETBALL' || s === 'NBA') return 'NBA';
+            if (s === 'FOOTBALL' || s === 'NFL') return 'NFL';
+            if (s === 'HOCKEY' || s === 'NHL') return 'NHL';
+            if (s === 'BASEBALL' || s === 'MLB') return 'MLB';
+            return s;
         }
 
         // ====================================================================
@@ -1060,21 +1205,32 @@
             return n + (s[(v - 20) % 10] || s[v] || s[0]);
         }
 
+        // Enforce local storage persistence so page refreshes or tab switches never drop sessions
+        setPersistence(auth, browserLocalPersistence).catch(console.error);
+
         onAuthStateChanged(auth, async (user) => {
+            const errorEl = document.getElementById('login-error');
             if (user) {
-                const email = user.email.toLowerCase();
+                const email = (user.email || '').trim().toLowerCase();
                 
-                if (ADMIN_EMAILS.includes(email)) myTeam = 'ADMIN';
-                else myTeam = GM_MAP[email] || null;
+                if (ADMIN_EMAILS.includes(email)) {
+                    myTeam = 'ADMIN';
+                } else if (GM_MAP[email]) {
+                    myTeam = GM_MAP[email];
+                } else {
+                    const foundKey = Object.keys(GM_MAP).find(k => email.includes(k.split('@')[0]));
+                    myTeam = foundKey ? GM_MAP[foundKey] : (localStorage.getItem('rda_gm_team') || null);
+                }
                 
                 if (!myTeam) {
-                    await signOut(auth);
-                    document.getElementById('login-error').innerText = "Access Denied: Account not mapped to an active team.";
+                    if (errorEl) errorEl.innerText = "Access Denied: Account not mapped to an active team.";
                     document.getElementById('login-screen').style.display = 'block';
                     document.getElementById('dashboard-screen').style.display = 'none';
                     return;
                 }
 
+                localStorage.setItem('rda_gm_team', myTeam);
+                if (errorEl) errorEl.innerText = "";
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('dashboard-screen').style.display = 'block';
 
@@ -1083,6 +1239,7 @@
 
                 await initDashboard();
             } else {
+                localStorage.removeItem('rda_gm_team');
                 document.getElementById('login-screen').style.display = 'block';
                 document.getElementById('dashboard-screen').style.display = 'none';
             }
@@ -1100,6 +1257,7 @@
         window.handleLogout = async () => {
             await signOut(auth);
             myTeam = null; allPlayersData = []; allFaData = []; playerStatsCache = {}; faRealStatsCache = {};
+            localStorage.removeItem('rda_gm_team');
             document.getElementById('email').value = ""; document.getElementById('password').value = "";
         };
 
@@ -1156,17 +1314,75 @@
             try {
                 const scheduleUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=2117362389&single=true&output=csv';
 
-                const [res, faRes, schedRes, s8DraftText] = await Promise.all([
+                const [res, faRes, schedRes, s8DraftText, summaryRes, s7LogRes] = await Promise.all([
                     fetch(workerProxy + '?url=' + encodeURIComponent(playersCsvUrl)),
                     fetch(workerProxy + '?url=' + encodeURIComponent(faCsvUrl)),
                     fetch(workerProxy + '?url=' + encodeURIComponent(scheduleUrl)),
-                    fetch(workerProxy + '?url=' + encodeURIComponent(S8_DRAFT_URL))
+                    fetch(workerProxy + '?url=' + encodeURIComponent(S8_DRAFT_URL)),
+                    fetch(workerProxy + '?url=' + encodeURIComponent(SUMMARY_CSV_URL)).catch(() => null),
+                    fetch(workerProxy + '?url=' + encodeURIComponent(S7_LOG_CSV_URL)).catch(() => null)
                 ]);
                 
                 allPlayersData = parseCsvLocal(await res.text());
                 allFaData = parseCsvLocal(await faRes.text());
                 const schedData = parseCsvLocal(await schedRes.text());
                 allS8DraftPicks = parseCsvToObject(await s8DraftText.text());
+
+                // Build RDA Career & Per-Sport Stats Cache
+                if (summaryRes && summaryRes.ok) {
+                    const summaryRows = parseCsvLocal(await summaryRes.text());
+                    summaryRows.forEach(r => {
+                        const u = cleanName(r.username || r.player || r.user || '');
+                        if (u) {
+                            const games = parseInt(r.career_games || r.games || r.gp || 0, 10);
+                            const total = parseFloat(r.starter_points || r.career_points || r.points || 0);
+                            const ppg = parseFloat(r.career_ppg || r.ppg || (games > 0 ? total / games : 0));
+                            playerStatsCache[u] = {
+                                games: games,
+                                total: total,
+                                ppg: ppg,
+                                careerSports: {
+                                    NBA: parseFloat(r.nba_pts || r.nba || 0),
+                                    NFL: parseFloat(r.nfl_pts || r.nfl || 0),
+                                    MLB: parseFloat(r.mlb_pts || r.mlb || 0),
+                                    NHL: parseFloat(r.nhl_pts || r.nhl || 0),
+                                    CFB: parseFloat(r.cfb_pts || r.cfb || 0),
+                                    CBB: parseFloat(r.cbb_pts || r.cbb || 0),
+                                    FC: parseFloat(r.fc_pts || r.fc || r.soccer || 0),
+                                    WNBA: parseFloat(r.wnba_pts || r.wnba || 0)
+                                },
+                                s7Sports: {}
+                            };
+                        }
+                    });
+                }
+
+                // Enrich playerStatsCache with Season 7 per-sport averages & game counts
+                if (s7LogRes && s7LogRes.ok) {
+                    const s7Rows = parseCsvLocal(await s7LogRes.text());
+                    s7Rows.forEach(r => {
+                        const preVal = String(r.ispreseason || r.is_preseason || r.gametype || '').trim().toLowerCase();
+                        if (['true', 'yes', '1', 'preseason'].includes(preVal)) return;
+
+                        const u = cleanName(r.username || r.player || r.user || '');
+                        if (!u) return;
+                        const benchVal = String(r.bench || r.isbench || r.is_bench || '').trim().toLowerCase();
+                        if (['true', 'yes', '1'].includes(benchVal)) return;
+
+                        const sport = canonicalSport(r.sport || r.sportname || '');
+                        const sc = parseFloat(r.score || r.points || 0) || 0;
+                        if (!sport || sc <= 0) return;
+
+                        if (!playerStatsCache[u]) {
+                            playerStatsCache[u] = { games: 0, total: 0, ppg: 0, careerSports: {}, s7Sports: {} };
+                        }
+                        if (!playerStatsCache[u].s7Sports[sport]) {
+                            playerStatsCache[u].s7Sports[sport] = { pts: 0, gp: 0 };
+                        }
+                        playerStatsCache[u].s7Sports[sport].pts += sc;
+                        playerStatsCache[u].s7Sports[sport].gp += 1;
+                    });
+                }
 
                 if (schedData.length > 0) {
                     const uniqueDates = new Set();
@@ -1186,7 +1402,7 @@
                         if (!window.gamedaySports[cleanDate]) window.gamedaySports[cleanDate] = new Set();
                         sportCols.forEach(col => {
                             const val = row[col];
-                            if (val && val.trim() !== '') window.gamedaySports[cleanDate].add(val.trim());
+                            if (val && val.trim() !== '') window.gamedaySports[cleanDate].add(canonicalSport(val.trim()));
                         });
 
                         if (!window.gamedayLocks[cleanDate]) {
@@ -1262,7 +1478,7 @@
             }
         }
 
-                async function loadDraftOrder() {
+        async function loadDraftOrder() {
             try {
                 const freshUrl = draftOrderUrl + (draftOrderUrl.includes('?') ? '&' : '?') + '_nocache=' + Date.now();
                 const text = await fetchCSVRobust(freshUrl);
@@ -1307,7 +1523,6 @@
 
                     DRAFT_METADATA = formattedPicks;
                     DRAFT_ORDER = formattedPicks.map(p => p.team);
-                    console.log(`[DraftOrder] Loaded ${DRAFT_ORDER.length} total picks.`);
                 }
             } catch(e) { console.warn("Failed to load Season 7 Draft Order CSV", e); }
         }
@@ -1383,6 +1598,24 @@
             document.getElementById('display-sports').innerHTML = sports.map(s => `<span class="sport-badge">${s}</span>`).join('');
             
             window.loadRoster();
+            window.renderTeamIntel();
+        };
+
+        window.switchLineupSubTab = (subTab, btn) => {
+            document.querySelectorAll('#lineups-section .lineup-subnav-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const setView = document.getElementById('lineup-set-view');
+            const intelView = document.getElementById('lineup-intel-view');
+
+            if (subTab === 'intel') {
+                if (setView) setView.style.display = 'none';
+                if (intelView) intelView.style.display = 'block';
+                window.renderTeamIntel();
+            } else {
+                if (setView) setView.style.display = 'block';
+                if (intelView) intelView.style.display = 'none';
+            }
         };
 
         window.updateCounter = () => {
@@ -1425,6 +1658,93 @@
             });
         };
 
+        function isPlayerStarterForDate(p, dateStr) {
+            if (!p) return false;
+            const normalizeMD = (d) => {
+                if (!d) return "";
+                const parts = String(d).split('/');
+                if (parts.length >= 2) return parseInt(parts[0], 10) + "/" + parseInt(parts[1], 10);
+                return String(d).trim().toLowerCase();
+            };
+            const targetMD = normalizeMD(dateStr);
+            let playVal = '';
+            if (targetMD) {
+                for (let key in p) {
+                    if (normalizeMD(key) === targetMD && p[key] !== undefined && p[key].trim() !== '') {
+                        playVal = p[key];
+                        break;
+                    }
+                    const parsed = new Date(key);
+                    if (!isNaN(parsed.getTime()) && key.includes('/')) {
+                        if ((parsed.getMonth() + 1) + "/" + parsed.getDate() === targetMD && p[key] !== undefined && p[key].trim() !== '') {
+                            playVal = p[key];
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!playVal) playVal = p['playing?'] || p['playing'] || '';
+            const cleanVal = playVal.toString().toUpperCase().trim();
+            return cleanVal === 'TRUE' || cleanVal === 'YES' || cleanVal === '1';
+        }
+
+        function buildRdaStatsHtml(username, slateSports = [], isRookie = false) {
+            const cKey = cleanName(username);
+            const cStats = playerStatsCache[cKey];
+
+            let summaryRow = '';
+            if (cStats && cStats.games > 0) {
+                const ppg = cStats.ppg > 0 ? cStats.ppg : (cStats.total / cStats.games);
+                summaryRow = `
+                    <div class="rda-stats-row">
+                        <span>RDA CAREER:</span>
+                        <span>${cStats.games} GP</span>
+                        <span>${cStats.total.toFixed(1)} PTS</span>
+                        <span style="color:#fff;">${ppg.toFixed(1)} PPG</span>
+                    </div>`;
+            } else if (isRookie) {
+                summaryRow = `
+                    <div class="rda-stats-row">
+                        <span>RDA STATUS:</span>
+                        <span style="color:#fff;">SEASON 7 ROOKIE</span>
+                    </div>`;
+            }
+
+            if (!cStats && !isRookie) return '';
+
+            const s7Entries = Object.entries(cStats?.s7Sports || {});
+            const careerEntries = Object.entries(cStats?.careerSports || {}).filter(([_, pts]) => pts > 0);
+            let chipsHtml = '';
+
+            if (s7Entries.length > 0) {
+                s7Entries.sort((a, b) => {
+                    const aToday = slateSports.includes(a[0]) ? 1 : 0;
+                    const bToday = slateSports.includes(b[0]) ? 1 : 0;
+                    if (aToday !== bToday) return bToday - aToday;
+                    return (b[1].pts / b[1].gp) - (a[1].pts / a[1].gp);
+                });
+
+                chipsHtml = s7Entries.map(([sp, data]) => {
+                    const avg = (data.pts / data.gp).toFixed(1);
+                    const isTonight = slateSports.includes(sp);
+                    return `<span class="rda-sport-chip ${isTonight ? 'tonight-chip' : ''}" title="Season 7 ${sp}: ${data.pts.toFixed(1)} pts in ${data.gp} games">${isTonight ? '🔥 ' : ''}${sp}: ${avg} PPG (${data.gp}G)</span>`;
+                }).join('');
+            } else if (careerEntries.length > 0) {
+                careerEntries.sort((a, b) => {
+                    const aToday = slateSports.includes(a[0]) ? 1 : 0;
+                    const bToday = slateSports.includes(b[0]) ? 1 : 0;
+                    if (aToday !== bToday) return bToday - aToday;
+                    return b[1] - a[1];
+                });
+                chipsHtml = careerEntries.slice(0, 4).map(([sp, pts]) => {
+                    const isTonight = slateSports.includes(sp);
+                    return `<span class="rda-sport-chip ${isTonight ? 'tonight-chip' : ''}">${isTonight ? '🔥 ' : ''}${sp}: ${pts.toFixed(0)} Career Pts</span>`;
+                }).join('');
+            }
+
+            return `${summaryRow}${chipsHtml ? `<div class="rda-sport-breakdown">${chipsHtml}</div>` : ''}`;
+        }
+
         window.loadRoster = () => {
             const team = document.getElementById('team-select').value;
             const container = document.getElementById('roster-container');
@@ -1441,54 +1761,68 @@
             document.getElementById('date-navigator').style.display = 'flex';
             const dateStr = window.gamedays[window.currentDateIndex];
             const isLocked = dateStr ? isLineupLocked(dateStr) : false;
+            const slateSports = Array.from(window.gamedaySports[dateStr] || []).map(s => canonicalSport(s));
 
-            const roster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === team.trim().toLowerCase());
+            // Deduplicate roster by username
+            const rawRoster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === team.trim().toLowerCase());
+            const seen = new Set();
+            const roster = rawRoster.filter(p => {
+                const u = cleanName(p.username);
+                if (!u || seen.has(u)) return false;
+                seen.add(u);
+                return true;
+            });
+
             let html = '';
             dropSelect.innerHTML = '<option value="">Select player to drop...</option>';
 
-            const normalizeMD = (d) => {
-                if (!d) return "";
-                const parts = String(d).split('/');
-                if (parts.length >= 2) return parseInt(parts[0], 10) + "/" + parseInt(parts[1], 10);
-                return String(d).trim().toLowerCase();
-            };
-
-            const targetMD = normalizeMD(dateStr);
-
             roster.forEach(p => {
-                let playVal = '';
-                let targetKey = null;
+                const isPlaying = isPlayerStarterForDate(p, dateStr);
+                const rookieVal = String(p.rookie || p.isrookie || p['is rookie'] || '').trim().toLowerCase();
+                const isRookie = rookieVal === 'yes' || rookieVal === 'true' || rookieVal === '1';
+                const rookieBadgeHtml = isRookie ? `<span class="rookie-badge">Rookie</span>` : '';
 
-                if (targetMD) {
-                    for (let key in p) {
-                        if (normalizeMD(key) === targetMD) {
-                            targetKey = key;
-                            break;
+                const cKey = cleanName(p.username);
+                const cStats = playerStatsCache[cKey];
+                const realStats = faRealStatsCache[p.username];
+
+                // Build quick inline slate pills right inside the Set Starters row
+                let quickPills = '';
+                if (cStats && cStats.games > 0) {
+                    const ppg = cStats.ppg > 0 ? cStats.ppg : (cStats.total / cStats.games);
+                    quickPills += `<span class="quick-stat-pill rda-gold">Career: ${ppg.toFixed(1)} PPG</span>`;
+                } else if (isRookie) {
+                    quickPills += `<span class="quick-stat-pill rda-gold">S7 Rookie</span>`;
+                }
+
+                if (slateSports.length > 0) {
+                    const matchingSlateStats = [];
+                    slateSports.forEach(sp => {
+                        const s7Sp = cStats?.s7Sports?.[sp];
+                        const realSp = realStats?.[sp];
+                        if (s7Sp && s7Sp.gp > 0) {
+                            matchingSlateStats.push(`${sp}: ${(s7Sp.pts / s7Sp.gp).toFixed(1)} PPG`);
+                        } else if (realSp && realSp["All Drafts"] > 0) {
+                            matchingSlateStats.push(`${sp}: ${realSp["Top 10%"]} Top10%`);
                         }
-                        const parsed = new Date(key);
-                        if (!isNaN(parsed.getTime()) && key.includes('/')) {
-                            if ((parsed.getMonth() + 1) + "/" + parsed.getDate() === targetMD) {
-                                targetKey = key;
-                                break;
-                            }
-                        }
+                    });
+
+                    if (matchingSlateStats.length > 0) {
+                        quickPills += matchingSlateStats.map(txt => `<span class="quick-stat-pill slate-match">🔥 ${txt}</span>`).join('');
+                    } else if (realStats && Object.keys(realStats).length > 0) {
+                        quickPills += `<span class="quick-stat-pill slate-miss">⚠️ No ${slateSports.join('/')} history</span>`;
                     }
                 }
                 
-                if (targetKey && p[targetKey] !== undefined && p[targetKey].trim() !== '') {
-                    playVal = p[targetKey];
-                } else {
-                    playVal = p['playing?'] || p['playing'] || '';
-                }
-                
-                playVal = playVal.toString().toUpperCase().trim();
-                const isPlaying = playVal === 'TRUE' || playVal === 'YES' || playVal === '1';
-                
                 html += `
                     <div class="player-row ${isLocked ? 'locked' : ''}" data-user="${p.username}">
-                        <div style="display:flex; align-items:center;">
-                            <span class="status-label ${isPlaying ? 'starter-label' : 'bench-label'}">${isPlaying ? 'Starter' : 'Bench'}</span>
-                            <strong style="color: #fff; font-size: 0.95rem;">${p.username}</strong>
+                        <div style="display:flex; flex-direction:column; flex:1; min-width:180px;">
+                            <div style="display:flex; align-items:center;">
+                                <span class="status-label ${isPlaying ? 'starter-label' : 'bench-label'}">${isPlaying ? 'Starter' : 'Bench'}</span>
+                                <strong style="color: #fff; font-size: 0.95rem;">${p.username}</strong>
+                                ${rookieBadgeHtml}
+                            </div>
+                            ${quickPills ? `<div class="roster-quick-pills" style="padding-left:67px;">${quickPills}</div>` : ''}
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" class="playing-toggle" onchange="updateCounter()" ${isPlaying ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
@@ -1502,6 +1836,283 @@
             container.innerHTML = html;
             document.getElementById('lineup-counter').style.display = 'block';
             window.updateCounter();
+        };
+
+        let teamIntelRenderRunId = 0;
+
+        function calculateSlateProjectedPPG(p, sportsForDate, statsObj) {
+            if (!sportsForDate || sportsForDate.length === 0) return 0;
+
+            const SPORT_BASELINES = {
+                NBA: 36.0, CBB: 40.0, CFB: 42.0, NFL: 33.0,
+                NHL: 26.0, MLB: 30.0, FC: 24.0, WNBA: 34.0, GOLF: 28.0
+            };
+
+            const cKey = cleanName(p.username);
+            const cStats = playerStatsCache[cKey];
+            let totalProj = 0;
+
+            sportsForDate.forEach(rawSp => {
+                const sp = canonicalSport(rawSp);
+                const s7Sp = cStats?.s7Sports?.[sp];
+                const realSp = statsObj?.[sp];
+
+                const hasS7 = s7Sp && s7Sp.gp > 0;
+                const drafts = realSp ? (parseFloat(realSp["All Drafts"]) || 0) : 0;
+                const hasReal = drafts > 0;
+
+                // Skip sports where the player has zero contest history
+                if (!hasS7 && !hasReal) return;
+
+                // 1. Estimate expected PPG from RealApp contest finish rates
+                let realEstPpg = SPORT_BASELINES[sp] || 30.0;
+                if (hasReal) {
+                    const parsePct = (str) => {
+                        const m = String(str || '').match(/\((\d+)%\)/);
+                        return m ? parseFloat(m[1]) / 100 : 0;
+                    };
+                    const p10 = parsePct(realSp["Top 10%"]);
+                    const p20 = parsePct(realSp["Top 20%"]);
+                    const p50 = parsePct(realSp["Top 50%"]);
+                    const high = parseFloat(realSp["Highest Score"]) || realEstPpg;
+
+                    const base = SPORT_BASELINES[sp] || 30.0;
+                    realEstPpg = base * (0.75 + (p50 * 0.35) + (p20 * 0.45) + (p10 * 0.65)) + (high * 0.04);
+                }
+
+                // 2. Blend Season 7 RDA per-sport PPG with RealApp contest projection
+                if (hasS7) {
+                    const s7Avg = s7Sp.pts / s7Sp.gp;
+                    const s7Weight = Math.min(0.85, s7Sp.gp / (s7Sp.gp + 2));
+                    totalProj += hasReal
+                        ? (s7Avg * s7Weight) + (realEstPpg * (1 - s7Weight))
+                        : s7Avg;
+                } else {
+                    totalProj += realEstPpg;
+                }
+            });
+
+            return totalProj;
+        }
+
+        window.renderTeamIntel = async () => {
+            const team = document.getElementById('team-select')?.value;
+            const container = document.getElementById('team-intel-grid');
+            const slateBadgesEl = document.getElementById('intel-slate-badges');
+            if (!team || !container) return;
+
+            const currentRunId = ++teamIntelRenderRunId;
+            const dateStr = window.gamedays[window.currentDateIndex] || '';
+            const sportsForDate = Array.from(window.gamedaySports[dateStr] || []).map(s => canonicalSport(s));
+
+            if (slateBadgesEl) {
+                slateBadgesEl.innerHTML = sportsForDate.length
+                    ? `<span style="font-size:0.75rem; color:#fff; font-weight:700;">Slate (${dateStr}):</span> ` + sportsForDate.map(s => `<span class="sport-badge">${s}</span>`).join('')
+                    : `<span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">No date active</span>`;
+            }
+
+            const rawRoster = allPlayersData.filter(p => p.team && p.team.trim().toLowerCase() === team.trim().toLowerCase());
+            const seenUsers = new Set();
+            const roster = rawRoster.filter(p => {
+                const u = cleanName(p.username);
+                if (!u || seenUsers.has(u)) return false;
+                seenUsers.add(u);
+                return true;
+            });
+
+            if (!roster.length) {
+                container.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1; text-align:center;">No roster members found.</div>';
+                return;
+            }
+
+            // Initial sort: Starters first while loading
+            roster.sort((a, b) => {
+                const aStart = isPlayerStarterForDate(a, dateStr) ? 1 : 0;
+                const bStart = isPlayerStarterForDate(b, dateStr) ? 1 : 0;
+                return bStart - aStart;
+            });
+
+            container.innerHTML = '';
+
+            for (let p of roster) {
+                if (currentRunId !== teamIntelRenderRunId) return;
+
+                const uid = p['user id'] || p['userid'] || p['id'] || '';
+                const cardId = `intel-card-${uid || p.username.replace(/[^a-zA-Z0-9]/g, '')}`;
+                const isStarter = isPlayerStarterForDate(p, dateStr);
+                const rookieVal = String(p.rookie || p.isrookie || p['is rookie'] || '').trim().toLowerCase();
+                const isRookie = rookieVal === 'yes' || rookieVal === 'true' || rookieVal === '1';
+                const rookieBadgeHtml = isRookie ? `<span class="rookie-badge">Rookie</span>` : '';
+
+                const cardEl = document.createElement('div');
+                cardEl.className = 'fa-card';
+                cardEl.id = cardId;
+                cardEl.dataset.projPpg = '-1';
+                cardEl.innerHTML = `
+                    <div class="fa-header">
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span class="status-label ${isStarter ? 'starter-label' : 'bench-label'}" style="width:auto; padding:2px 6px; border-radius:3px; background:${isStarter ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)'}; font-size:0.65rem;">
+                                ${isStarter ? 'STARTER' : 'BENCH'}
+                            </span>
+                            <span class="fa-name">${p.username}</span>
+                            ${rookieBadgeHtml}
+                        </div>
+                        <span class="fa-id">${uid || ''}</span>
+                    </div>
+                    <div class="stats-loading" style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">Loading Intel...</div>
+                `;
+                container.appendChild(cardEl);
+
+                let statsObj = faRealStatsCache[p.username];
+                if (!statsObj && uid) {
+                    try {
+                        const data = await fetchRealStats(uid);
+                        const normalizedStats = {};
+                        (data.stats || []).forEach(s => {
+                            const key = `${s.sport}-${s.season}`;
+                            normalizedStats[key] = {};
+                            s.displayStats.forEach(ds => { normalizedStats[key][ds.label] = ds.display; });
+                        });
+                        statsObj = aggregateStatsBySport(normalizedStats);
+                        faRealStatsCache[p.username] = statsObj;
+                    } catch (e) {
+                        statsObj = {};
+                    }
+                }
+
+                if (currentRunId !== teamIntelRenderRunId) return;
+
+                const projSlatePpg = calculateSlateProjectedPPG(p, sportsForDate, statsObj);
+                cardEl.dataset.projPpg = String(projSlatePpg);
+
+                const projBadgeColor = projSlatePpg >= 115 ? '#4ade80' : (projSlatePpg >= 80 ? 'var(--gold-light)' : '#94a3b8');
+                const projSlateBanner = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(90deg, rgba(212,175,55,0.14), rgba(15,23,42,0.6)); border:1px solid var(--border-gold); border-radius:6px; padding:6px 10px; margin-bottom:0.65rem;">
+                        <span style="font-size:0.68rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Total Slate Proj PPG</span>
+                        <span style="font-size:1.05rem; font-weight:900; color:${projBadgeColor}; font-variant-numeric:tabular-nums;">${projSlatePpg.toFixed(1)} PPG</span>
+                    </div>
+                `;
+
+                let tonightSportsHtml = '';
+                let defaultSportKey = 'ALL_SPORTS';
+
+                if (statsObj && sportsForDate.length > 0) {
+                    const activeTonightSports = sportsForDate
+                        .map(sp => canonicalSport(sp))
+                        .filter(sp => statsObj[sp] && statsObj[sp]["All Drafts"]);
+                    
+                    if (activeTonightSports.length > 0) {
+                        defaultSportKey = activeTonightSports[0];
+                        let statCards = activeTonightSports.map(sp => {
+                            const spData = statsObj[sp];
+                            const cKey = cleanName(p.username);
+                            const s7Sp = playerStatsCache[cKey]?.s7Sports?.[sp];
+                            const rdaSportBadge = s7Sp && s7Sp.gp > 0 
+                                ? `<span style="font-size:0.7rem; color:var(--gold-light); font-weight:800;">RDA: ${(s7Sp.pts / s7Sp.gp).toFixed(1)} PPG (${s7Sp.gp}G)</span>` 
+                                : '';
+
+                            return `
+                                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(74,222,128,0.25); border-radius:6px; padding:6px 8px; margin-bottom:4px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+                                        <span class="sport-badge" style="background:rgba(74,222,128,0.15); color:#4ade80; border-color:rgba(74,222,128,0.4);">${sp} (Slate)</span>
+                                        ${rdaSportBadge}
+                                        <span style="font-size:0.75rem; font-weight:800; color:#fff;">High: ${spData["Highest Score"] || '-'}</span>
+                                    </div>
+                                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; text-align:center; font-size:0.68rem;">
+                                        <div style="background:rgba(0,0,0,0.3); padding:3px; border-radius:4px;">
+                                            <span style="display:block; color:var(--text-muted); font-size:0.55rem; text-transform:uppercase;">Top 10%</span>
+                                            <strong style="color:var(--gold-light);">${spData["Top 10%"] || '0%'}</strong>
+                                        </div>
+                                        <div style="background:rgba(0,0,0,0.3); padding:3px; border-radius:4px;">
+                                            <span style="display:block; color:var(--text-muted); font-size:0.55rem; text-transform:uppercase;">Top 20%</span>
+                                            <strong style="color:#38bdf8;">${spData["Top 20%"] || '0%'}</strong>
+                                        </div>
+                                        <div style="background:rgba(0,0,0,0.3); padding:3px; border-radius:4px;">
+                                            <span style="display:block; color:var(--text-muted); font-size:0.55rem; text-transform:uppercase;">Drafts</span>
+                                            <strong style="color:#cbd5e1;">${spData["All Drafts"] || '0'}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        tonightSportsHtml = `
+                            <div style="margin-bottom:0.6rem;">
+                                <div style="font-size:0.68rem; font-weight:800; color:#4ade80; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; display:flex; align-items:center; gap:4px;">
+                                    <span>🔥 Active on Slate: ${activeTonightSports.join(', ')}</span>
+                                </div>
+                                ${statCards}
+                            </div>
+                        `;
+                    } else {
+                        tonightSportsHtml = `
+                            <div style="background:rgba(239, 68, 68, 0.08); border:1px dashed rgba(239, 68, 68, 0.25); color:#f87171; padding:5px 8px; border-radius:6px; font-size:0.7rem; font-weight:700; margin-bottom:0.6rem; text-align:center;">
+                                ⚠️ No activity in slate sports (${sportsForDate.join(', ')})
+                            </div>
+                        `;
+                    }
+                }
+
+                const rdaHtml = buildRdaStatsHtml(p.username, sportsForDate, isRookie);
+
+                let keys = statsObj ? Object.keys(statsObj).sort() : [];
+                const allIndex = keys.indexOf("ALL_SPORTS");
+                if (allIndex > -1) { keys.splice(allIndex, 1); keys.unshift("ALL_SPORTS"); }
+
+                let optionsHtml = '';
+                let viewsHtml = '';
+                const targetStats = ["All Drafts", "Top 50%", "Top 20%", "Top 10%", "Top 100", "Top 10"];
+                const activeKey = (statsObj && statsObj[defaultSportKey]) ? defaultSportKey : (keys[0] || 'ALL_SPORTS');
+
+                keys.forEach(key => {
+                    const details = statsObj[key];
+                    const displayKey = key === "ALL_SPORTS" ? "All Sports (RealApp)" : key.replace('-', ' ');
+                    const isSelected = (key === activeKey) ? 'selected' : '';
+                    optionsHtml += `<option value="${key}" ${isSelected}>${displayKey}</option>`;
+
+                    let gridHtml = '';
+                    targetStats.forEach(targetLabel => {
+                        let val = details[targetLabel];
+                        if (val !== undefined) gridHtml += `<div class="stat-box"><span class="stat-label">${targetLabel}</span><span class="stat-value">${val}</span></div>`;
+                    });
+
+                    const activeClass = (key === activeKey) ? 'active' : '';
+                    viewsHtml += `
+                        <div class="sport-stats-view ${activeClass}" data-sport="${key}">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; color:var(--gold-mid); font-size:0.8rem; font-weight:800; text-transform:uppercase;">
+                                <span>Highest Score</span><span>${details["Highest Score"] || '-'}</span>
+                            </div>
+                            <div class="stats-grid-row">${gridHtml}</div>
+                        </div>
+                    `;
+                });
+
+                cardEl.innerHTML = `
+                    <div class="fa-header">
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span class="status-label ${isStarter ? 'starter-label' : 'bench-label'}" style="width:auto; padding:2px 6px; border-radius:3px; background:${isStarter ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)'}; font-size:0.65rem;">
+                                ${isStarter ? 'STARTER' : 'BENCH'}
+                            </span>
+                            <span class="fa-name">${p.username}</span>
+                            ${rookieBadgeHtml}
+                        </div>
+                        <span class="fa-id">${uid || ''}</span>
+                    </div>
+                    ${projSlateBanner}
+                    ${tonightSportsHtml}
+                    ${rdaHtml}
+                    ${keys.length ? `<select class="sport-dropdown" onchange="switchSport(this)">${optionsHtml}</select><div class="stats-container" style="flex-grow: 1;">${viewsHtml}</div>` : `<div style="color:#888; font-style:italic; font-size:0.8rem; padding:1rem; text-align:center;">No RealApp contest records found.</div>`}
+                `;
+            }
+
+            // Sort loaded cards descending by Total Slate Proj PPG
+            if (currentRunId === teamIntelRenderRunId) {
+                const cards = Array.from(container.querySelectorAll('.fa-card'));
+                cards.sort((a, b) => parseFloat(b.dataset.projPpg || '-1') - parseFloat(a.dataset.projPpg || '-1'));
+                cards.forEach(card => container.appendChild(card));
+            }
+
+            window.loadRoster();
         };
 
         window.saveLineup = async () => {
@@ -1548,6 +2159,7 @@
                 });
 
                 showToast(`Lineup Saved for ${lineupDate}!`);
+                window.renderTeamIntel();
             } catch (e) {
                 alert(`Failed to save: ${e.message}`);
             }
@@ -1716,7 +2328,8 @@
             Object.entries(statsObj).forEach(([key, stats]) => {
                 hasStats = true;
                 const lastDashIndex = key.lastIndexOf('-');
-                const sport = (lastDashIndex > -1 ? key.substring(0, lastDashIndex) : key).toUpperCase();
+                const rawSport = (lastDashIndex > -1 ? key.substring(0, lastDashIndex) : key);
+                const sport = canonicalSport(rawSport);
                 
                 if (!aggregated[sport]) aggregated[sport] = {};
                 if (!aggregated["ALL_SPORTS"]) aggregated["ALL_SPORTS"] = {};
@@ -1867,15 +2480,9 @@
             let keys = Object.keys(statsObj).sort();
             const safeName = name.replace(/'/g, "\\'");
 
-            const cKey = cleanName(name);
-            const cStats = playerStatsCache[cKey] || { total: 0, games: 0 };
-            const rdaHtml = cStats.games > 0 ? `
-                <div class="rda-stats-row">
-                    <span>RDA CAREER:</span>
-                    <span>${cStats.games} GP</span>
-                    <span>${cStats.total.toFixed(1)} PTS</span>
-                    <span style="color:#fff;">${(cStats.total/cStats.games).toFixed(1)} PPG</span>
-                </div>` : '';
+            const dateStr = window.gamedays[window.currentDateIndex] || '';
+            const slateSports = Array.from(window.gamedaySports[dateStr] || []).map(s => canonicalSport(s));
+            const rdaHtml = buildRdaStatsHtml(name, slateSports);
 
             let actionHtml = '';
             if (mode === 'draft') {
@@ -2170,6 +2777,41 @@
             submitBtn.disabled = !(mySendList.length > 0 && partnerSendList.length > 0);
         }
 
+        window.submitTradeProposal = async () => {
+            const partner = document.getElementById('trade-partner-select').value;
+            const offeredAssets = [...mySelectedTradeAssets.players, ...mySelectedTradeAssets.picks];
+            const requestedAssets = [...partnerSelectedTradeAssets.players, ...partnerSelectedTradeAssets.picks];
+            if (!partner || !offeredAssets.length || !requestedAssets.length) return;
+
+            const btn = document.getElementById('btn-send-trade');
+            btn.disabled = true;
+            btn.innerText = "Sending...";
+
+            try {
+                const res = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'propose_trade',
+                        proposer: myTeam,
+                        receiver: partner,
+                        offeredAssets: offeredAssets,
+                        requestedAssets: requestedAssets
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'error') throw new Error(data.message);
+                showToast("Trade Proposal Sent!");
+                initTradePortal();
+                window.loadTradePartnerAssets();
+            } catch (e) {
+                showError("Failed to submit trade: " + e.message);
+            } finally {
+                btn.innerText = "Send Trade Proposal";
+            }
+        };
+
         window.loadActiveTrades = async () => {
             const container = document.getElementById('active-trades-container');
             if (!container) return;
@@ -2272,16 +2914,9 @@
         // ====================================================================
         const DRAFT_DOC_ID = `draftState_s${currentSeason || '7'}`;
 
-        /**
-         * Calculates pick deadline timestamp based on your rules:
-         * - Weekdays: 3:00 PM - 11:00 PM EST (60 mins per pick)
-         * - Overnight pause: 11:00 PM rolls over remaining time to 3:00 PM next day
-         * - Saturday: 12:00 PM EST - finish (30 mins per pick, no evening freeze)
-         */
         function getNextPickDeadline(startDate) {
             const start = startDate ? new Date(startDate) : new Date();
             
-            // Format into Eastern Time components safely without string-reparsing
             const formatter = new Intl.DateTimeFormat("en-US", {
                 timeZone: "America/New_York",
                 weekday: "short",
@@ -2297,7 +2932,6 @@
             const currentMin = parseInt(parts.minute, 10);
             const durationMins = isSat ? 30 : 60;
 
-            // Saturday window (12:00 PM EST to finish)
             if (isSat) {
                 if (currentHour < 12) {
                     const diffMins = ((12 - currentHour) * 60) - currentMin;
@@ -2306,21 +2940,16 @@
                 return new Date(start.getTime() + durationMins * 60 * 1000);
             }
 
-            // Weekdays (3:00 PM - 11:00 PM EST)
-            // 1. Before 3:00 PM EST -> starts at 3:00 PM
             if (currentHour < 15) {
                 const diffMins = ((15 - currentHour) * 60) - currentMin;
                 return new Date(start.getTime() + (diffMins + durationMins) * 60 * 1000);
             }
 
-            // 2. Fits before 11:00 PM EST tonight
             const minsTo11PM = ((23 - currentHour) * 60) - currentMin;
             if (minsTo11PM >= durationMins) {
                 return new Date(start.getTime() + durationMins * 60 * 1000);
             }
 
-            // 3. Spans overnight freeze (11 PM - 3 PM next day)
-            // Remaining minutes carry over starting at 3:00 PM tomorrow (16 hours freeze = 960 mins)
             const freezeDurationMins = (16 * 60); 
             return new Date(start.getTime() + (durationMins + freezeDurationMins) * 60 * 1000);
         }
@@ -2332,9 +2961,9 @@
             const h = current.getHours();
 
             if (dayOfWeek === 6) {
-                return h >= 12; // Saturday: 12:00 PM EST onwards
+                return h >= 12;
             } else {
-                return h >= 15 && h < 23; // Weekdays: 3:00 PM - 11:00 PM EST
+                return h >= 15 && h < 23;
             }
         }
 
@@ -2555,7 +3184,6 @@
             const draftedPlayers = (draftState.picks || []).map(p => p.player);
             let availableFAs = allFaData.filter(p => p.username && !draftedPlayers.includes(p.username));
 
-            // Rank players by selected sport (or Overall Power)
             availableFAs.sort((a, b) => {
                 const statsA = faRealStatsCache[a.username];
                 const statsB = faRealStatsCache[b.username];
@@ -2572,7 +3200,6 @@
                 return powerB - powerA;
             });
 
-            // Filter out players who have zero activity in that sport when a specific sport is selected
             if (sportFilter !== 'ALL') {
                 availableFAs = availableFAs.filter(p => {
                     const stats = faRealStatsCache[p.username];
@@ -2643,26 +3270,22 @@
             let playerToPick = null;
 
             try {
-                // 1. Check Team's Personal Queue First
                 const latestQueue = await fetchTeamQueue(forTeam);
                 for (let u of latestQueue) {
                     const cleanU = cleanName(u);
                     if (cleanU && !draftedSet.has(cleanU)) {
                         const foundFa = allFaData.find(p => cleanName(p.username) === cleanU);
                         playerToPick = foundFa ? foundFa.username : (u.startsWith('@') ? u : `@${u}`);
-                        console.log(`[AutoPick] Selected queued player for ${forTeam}: ${playerToPick}`);
                         break;
                     }
                 }
 
-                // 2. Fallback to Available FA Pool
                 if (!playerToPick) {
                     let availableFAs = allFaData.filter(p => {
                         const cleanU = cleanName(p.username);
                         return cleanU && !draftedSet.has(cleanU);
                     });
 
-                    // Sort by pre-calculated power or score if available
                     availableFAs.sort((a, b) => {
                         const statsA = faRealStatsCache[a.username];
                         const statsB = faRealStatsCache[b.username];
@@ -2673,17 +3296,14 @@
 
                     if (availableFAs.length > 0) {
                         playerToPick = availableFAs[0].username;
-                        console.log(`[AutoPick] Queue empty. Selected best FA for ${forTeam}: ${playerToPick}`);
                     }
                 }
 
-                // 3. Absolute Emergency Fallback (ensures pick ALWAYS happens)
                 if (!playerToPick && allFaData.length > 0) {
                     const fallback = allFaData.find(p => !draftedSet.has(cleanName(p.username)));
                     if (fallback) playerToPick = fallback.username;
                 }
 
-                // 4. Commit Pick to Firestore and Google Sheets
                 if (playerToPick) {
                     const pickNumber = draftState.currentPickIdx + 1;
                     const nextDeadline = getNextPickDeadline(new Date()).getTime();
@@ -2709,7 +3329,6 @@
             } catch (e) {
                 console.error("Autopick failed:", e);
             } finally {
-                // Release lock after a brief debounce to allow snapshot propagation
                 setTimeout(() => { isProcessingPick = false; }, 2000);
             }
         }
@@ -2717,7 +3336,6 @@
         function listenToDraft() {
             const draftRef = doc(db, 'system', DRAFT_DOC_ID);
             
-            // Auto-initialize Season 7 draft document if not yet created in Firestore
             getDoc(draftRef).then(snap => {
                 if (!snap.exists()) {
                     setDoc(draftRef, {
@@ -2763,7 +3381,6 @@
                     document.getElementById('draft-round-display').innerText = "Season 7 Draft Complete";
                 }
 
-                // --- NARRATION HOOKS ---
                 if (newPicks.length > prevPicks.length && lastNarratedPickCount !== -1) {
                     const latestPick = newPicks[newPicks.length - 1];
                     const pickNum = newPicks.length;
@@ -2819,7 +3436,6 @@
                 }
             });
 
-            // Schedule-Aware Timer Interval
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 const timerEl = document.getElementById('draft-timer');
@@ -2841,7 +3457,6 @@
                 const active = isDraftActiveHours(new Date(now));
                 const diff = draftState.timerEndsAt - now;
 
-                // Handle outside active window
                 if (!active) {
                     const estNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
                     const day = estNow.getDay();
@@ -2858,7 +3473,6 @@
                     return;
                 }
 
-                // Active hours countdown
                 if (diff <= 0) {
                     timerEl.innerText = "00:00";
                     timerEl.className = "draft-timer danger";
