@@ -484,6 +484,8 @@
             color: var(--text-muted);
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             box-sizing: border-box;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
         .cache-sync-btn {
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.1));
@@ -504,6 +506,54 @@
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.35), rgba(212, 175, 55, 0.2));
             color: #fff;
             transform: translateY(-1px);
+        }
+
+        .cache-actions-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .copy-breakdown-wrap {
+            position: relative;
+            display: inline-block;
+        }
+        .copy-dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background: var(--bg-navy);
+            border: 1px solid var(--border-gold);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            z-index: 1000;
+            min-width: 225px;
+            overflow: hidden;
+        }
+        .copy-dropdown-menu.open {
+            display: block;
+        }
+        .copy-option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            color: #fff;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .copy-option-btn:last-child {
+            border-bottom: none;
+        }
+        .copy-option-btn:hover {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold-light);
         }
 
         .dropdown-content { display: none; padding: 0; background: rgba(0, 0, 0, 0.25); border-top: 1px solid var(--border-subtle); }
@@ -652,7 +702,16 @@
 
     <div class="cache-status-bar" id="universal-cache-bar" style="display: none;">
         <div>⚡ <span id="cache-status-label">Universal Cache</span>: <strong id="cache-time-text" style="color: #fff;">--</strong></div>
-        <button class="cache-sync-btn" id="cache-refresh-all-btn" onclick="triggerUniversalSync()">↻ Sync Fresh Scores</button>
+        <div class="cache-actions-group">
+            <div class="copy-breakdown-wrap">
+                <button class="cache-sync-btn" id="copy-breakdown-toggle" onclick="toggleCopyMenu(event)">📋 Copy Breakdown ▾</button>
+                <div class="copy-dropdown-menu" id="copy-dropdown-menu">
+                    <button class="copy-option-btn" onclick="copyMatchupBreakdown('pregame')">1. Pregame Slate (With Records)</button>
+                    <button class="copy-option-btn" onclick="copyMatchupBreakdown('live')">2. Live Series Update (With Scores)</button>
+                </div>
+            </div>
+            <button class="cache-sync-btn" id="cache-refresh-all-btn" onclick="triggerUniversalSync()">↻ Sync Fresh Scores</button>
+        </div>
     </div>
 
     <div id="loading" style="display: none;">
@@ -707,6 +766,8 @@
         window.dailyMatchups = [];
         window.sessionCache = {};
         window.realLifeSchedules = {};
+        window.teamRecordsMap = {};
+        window.currentGameLabel = '';
 
         const cleanId = (id) => id ? String(id).trim() : null;
 
@@ -1489,7 +1550,7 @@
                     const statusDot = sa.status === 'Live' ? '🔴' : (sa.status === 'Final' ? '🏁' : '⏰');
                     swingNote = `
                         <div class="impact-athlete-callout">
-                            ⚡ <strong>Key Impact:</strong> ${sa.name} (${sa.sport}) &bull; ${statusDot} <strong>+${sa.netMultDiff}x</strong> (+${sa.actualPointSwing} pts edge for${sa.advantagedTeam})
+                            ⚡ <strong>Key Impact:</strong> ${sa.name} (${sa.sport}) &bull; ${statusDot} <strong>+${sa.netMultDiff}x</strong> (+${sa.actualPointSwing} pts edge for ${sa.advantagedTeam})
                         </div>`;
                 }
 
@@ -1498,13 +1559,13 @@
                     bannerEl.innerHTML = `
                         <div>
                             <div class="wp-header-row">
-                                <span>${team1.toUpperCase()}${wpData.wp1}%</span>
-                                <span class="wp-label">Win Probability (Proj: ${wpData.projScore1} -${wpData.projScore2})</span>
-                                <span>${wpData.wp2}\%${team2.toUpperCase()}</span>
+                                <span>${team1.toUpperCase()} ${wpData.wp1}%</span>
+                                <span class="wp-label">Win Probability (Proj: ${wpData.projScore1} - ${wpData.projScore2})</span>
+                                <span>${wpData.wp2}% ${team2.toUpperCase()}</span>
                             </div>
                             <div class="wp-bar-wrapper">
-                                <div class="wp-bar-segment left" style="width: ${wpData.wp1}\%;">${wpData.wp1 > 10 ? wpData.wp1 + '%' : ''}</div>
-                                <div class="wp-bar-segment right" style="width: ${wpData.wp2}\%;">${wpData.wp2 > 10 ? wpData.wp2 + '%' : ''}</div>
+                                <div class="wp-bar-segment left" style="width: ${wpData.wp1}%;">${wpData.wp1 > 10 ? wpData.wp1 + '%' : ''}</div>
+                                <div class="wp-bar-segment right" style="width: ${wpData.wp2}%;">${wpData.wp2 > 10 ? wpData.wp2 + '%' : ''}</div>
                             </div>
                         </div>
                         ${swingNote}
@@ -2119,6 +2180,122 @@
             }
         }
 
+        async function ensureScheduleMetadata(forceRefresh = false) {
+            if (!forceRefresh && window.currentGameLabel && window.currentGameLabel.includes('Game') && Object.keys(window.teamRecordsMap || {}).length > 0) {
+                return;
+            }
+
+            const seasonConfigs = {
+                '4': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1921814921&single=true&output=csv',
+                '5': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=44168754&single=true&output=csv',
+                '6': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=1595040071&single=true&output=csv',
+                '7': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS93Cbk4JUmCBgtIR1-RnSHlYY9E-dxEEWVT_Jx-T_Lm07oa6KYlnBGAqaGJin4VBpG4GmOGn8ktTPy/pub?gid=2117362389&single=true&output=csv'
+            };
+            const schedUrl = seasonConfigs[currentSeason] || seasonConfigs['7'];
+            const scheduleCsv = await fetchCSV(schedUrl);
+            if (!scheduleCsv || scheduleCsv.length < 2) return;
+
+            const todayDateString = getCurrentDateStringEST();
+            let dIdx = -1, t1Idx = -1, t2Idx = -1, wIdx = -1, s1Idx = -1, s2Idx = -1, gameIdx = -1, preIdx = -1;
+            let scheduleStartRow = 1;
+
+            for (let i = 0; i < Math.min(10, scheduleCsv.length); i++) {
+                const headers = scheduleCsv[i].map(h => typeof h === 'string' ? h.toLowerCase().trim() : '');
+                dIdx = findIndex(headers, ["date"]);
+                t1Idx = findIndex(headers, ["team 1", "team1", "away", "away team"]);
+                t2Idx = findIndex(headers, ["team 2", "team2", "home", "home team"]);
+                wIdx = findIndex(headers, ["winner", "win", "result"]);
+                s1Idx = findIndex(headers, ["team 1 score", "team1 score", "score 1", "score1", "away score", "t1 score"]);
+                s2Idx = findIndex(headers, ["team 2 score", "team2 score", "score 2", "score2", "home score", "t2 score"]);
+                gameIdx = findIndex(headers, ["game", "game #", "game number", "gm", "week"]);
+                preIdx = findIndex(headers, ["preseason", "is preseason", "type", "game type", "stage"]);
+
+                if (dIdx !== -1 && t1Idx !== -1 && t2Idx !== -1) {
+                    scheduleStartRow = i + 1;
+                    break;
+                }
+            }
+
+            const records = {};
+            const regSeasonDatesOrdered = [];
+            let detectedGameNum = '';
+
+            const normDateKey = (raw) => {
+                if (!raw) return '';
+                const s = String(raw).trim();
+                const slash = s.split('/');
+                if (slash.length >= 2) return `${parseInt(slash[0], 10)}/${parseInt(slash[1], 10)}`;
+                const parsed = new Date(s);
+                if (!isNaN(parsed.getTime())) return `${parsed.getMonth() + 1}/${parsed.getDate()}`;
+                return s;
+            };
+
+            const todayKey = normDateKey(todayDateString);
+
+            scheduleCsv.slice(scheduleStartRow).forEach(r => {
+                const rowDateRaw = r[dIdx] ? String(r[dIdx]).trim() : '';
+                const rowDateKey = normDateKey(rowDateRaw);
+                const t1 = r[t1Idx] ? String(r[t1Idx]).trim() : '';
+                const t2 = r[t2Idx] ? String(r[t2Idx]).trim() : '';
+                if (!t1 || !t2 || t1.toUpperCase() === 'TBD' || t2.toUpperCase() === 'TBD') return;
+
+                const gameColVal = gameIdx !== -1 && r[gameIdx] ? String(r[gameIdx]).trim() : '';
+                const preColVal = preIdx !== -1 && r[preIdx] ? String(r[preIdx]).trim().toLowerCase() : '';
+                const isPre = preColVal.includes('pre') || preColVal === 'yes' || preColVal === 'true' || preColVal === '1' ||
+                              gameColVal.toLowerCase().includes('pre') || gameColVal.toLowerCase().includes('exh');
+
+                if (isPre) return;
+
+                if (rowDateKey && !regSeasonDatesOrdered.includes(rowDateKey)) {
+                    regSeasonDatesOrdered.push(rowDateKey);
+                }
+
+                if (rowDateKey === todayKey && gameColVal && !detectedGameNum) {
+                    const numMatch = gameColVal.match(/(\d+)/);
+                    if (numMatch) detectedGameNum = numMatch[1];
+                }
+
+                const k1 = t1.toLowerCase();
+                const k2 = t2.toLowerCase();
+                if (!records[k1]) records[k1] = { w: 0, l: 0 };
+                if (!records[k2]) records[k2] = { w: 0, l: 0 };
+
+                // Evaluate completed game result from Winner column or Score columns
+                let winnerKey = '';
+                const winRaw = wIdx !== -1 && r[wIdx] ? String(r[wIdx]).trim() : '';
+                if (winRaw && winRaw.toUpperCase() !== 'TBD' && winRaw !== '-') {
+                    if (winRaw.toLowerCase() === k1) winnerKey = k1;
+                    else if (winRaw.toLowerCase() === k2) winnerKey = k2;
+                }
+
+                if (!winnerKey && s1Idx !== -1 && s2Idx !== -1 && rowDateKey !== todayKey) {
+                    const sc1 = parseFloat(r[s1Idx]);
+                    const sc2 = parseFloat(r[s2Idx]);
+                    if (!isNaN(sc1) && !isNaN(sc2) && (sc1 > 0 || sc2 > 0) && sc1 !== sc2) {
+                        winnerKey = sc1 > sc2 ? k1 : k2;
+                    }
+                }
+
+                if (winnerKey === k1) {
+                    records[k1].w++;
+                    records[k2].l++;
+                } else if (winnerKey === k2) {
+                    records[k2].w++;
+                    records[k1].l++;
+                }
+            });
+
+            if (!detectedGameNum && regSeasonDatesOrdered.length > 0) {
+                const todayIdx = regSeasonDatesOrdered.indexOf(todayKey);
+                if (todayIdx !== -1) detectedGameNum = String(todayIdx + 1);
+            }
+
+            window.teamRecordsMap = records;
+            window.currentGameLabel = detectedGameNum
+                ? `RDA S${currentSeason || '7'} Game ${detectedGameNum}`
+                : `RDA S${currentSeason || '7'}`;
+        }
+
         async function main(isManualRefresh = false) {
             const loadingDiv = document.getElementById('loading');
             loadingDiv.style.display = 'block';
@@ -2149,7 +2326,7 @@
                 const [playersCsv, scheduleCsv] = await Promise.all([fetchCSV(cfg.players), fetchCSV(cfg.schedule)]);
                 const todayDateString = getCurrentDateStringEST();
 
-                let dIdx = -1, t1Idx = -1, t2Idx = -1, activeSportsIdx = -1;
+                let dIdx = -1, t1Idx = -1, t2Idx = -1, activeSportsIdx = -1, wIdx = -1, preIdx = -1;
                 let scheduleStartRow = 1;
                 for (let i = 0; i < Math.min(10, scheduleCsv.length); i++) {
                     const headers = scheduleCsv[i].map(h => typeof h === 'string' ? h.toLowerCase().trim() : '');
@@ -2157,6 +2334,8 @@
                     t1Idx = findIndex(headers, ["team 1","team1","away","away team"]);
                     t2Idx = findIndex(headers, ["team 2","team2","home","home team"]);
                     activeSportsIdx = findIndex(headers, ["active sports", "sports"]);
+                    wIdx = findIndex(headers, ["winner"]);
+                    preIdx = findIndex(headers, ["preseason", "is preseason", "type"]);
                     if (dIdx !== -1 && t1Idx !== -1 && t2Idx !== -1) {
                         scheduleStartRow = i + 1;
                         break;
@@ -2171,6 +2350,45 @@
                         activeSports: activeSportsIdx !== -1 ? String(r[activeSportsIdx] || '').trim() : '',
                         id: `matchup-${i}` 
                     })).filter(m => m.team1 && m.team2 && m.team1.toUpperCase() !== 'TBD' && m.team2.toUpperCase() !== 'TBD');
+
+                // Calculate Season Records & Game Number from prior completed schedule rows
+                window.teamRecordsMap = {};
+                const priorDatesSet = new Set();
+                scheduleCsv.slice(scheduleStartRow).forEach(r => {
+                    const rowDate = r[dIdx] ? String(r[dIdx]).trim() : '';
+                    const t1 = r[t1Idx] ? String(r[t1Idx]).trim() : '';
+                    const t2 = r[t2Idx] ? String(r[t2Idx]).trim() : '';
+                    const win = wIdx !== -1 && r[wIdx] ? String(r[wIdx]).trim() : '';
+                    const preVal = preIdx !== -1 && r[preIdx] ? String(r[preIdx]).trim().toLowerCase() : '';
+                    const isPre = preVal === 'yes' || preVal === 'true' || preVal === '1' || preVal === 'preseason';
+
+                    if (!t1 || !t2 || t1.toUpperCase() === 'TBD' || t2.toUpperCase() === 'TBD' || isPre) return;
+
+                    if (!window.teamRecordsMap[t1]) window.teamRecordsMap[t1] = { w: 0, l: 0 };
+                    if (!window.teamRecordsMap[t2]) window.teamRecordsMap[t2] = { w: 0, l: 0 };
+
+                    if (win && win.toUpperCase() !== 'TBD') {
+                        if (win.toLowerCase() === t1.toLowerCase()) {
+                            window.teamRecordsMap[t1].w++;
+                            window.teamRecordsMap[t2].l++;
+                        } else if (win.toLowerCase() === t2.toLowerCase()) {
+                            window.teamRecordsMap[t2].w++;
+                            window.teamRecordsMap[t1].l++;
+                        }
+                    }
+
+                    if (rowDate) {
+                        const parts = rowDate.split('/');
+                        const todayParts = todayDateString.split('/');
+                        if (parts.length >= 2 && todayParts.length >= 2) {
+                            const rVal = parseInt(parts[0], 10) * 100 + parseInt(parts[1], 10);
+                            const tVal = parseInt(todayParts[0], 10) * 100 + parseInt(todayParts[1], 10);
+                            if (rVal <= tVal) priorDatesSet.add(`${parseInt(parts[0], 10)}/${parseInt(parts[1], 10)}`);
+                        }
+                    }
+                });
+                const gameNum = priorDatesSet.size > 0 ? priorDatesSet.size : '';
+                window.currentGameLabel = gameNum ? `RDA S${currentSeason} Game ${gameNum}` : `RDA S${currentSeason}`;
 
                 // Identify which teams are actively competing on today's schedule
                 const activeTeamsSet = new Set();
@@ -2370,7 +2588,15 @@
 
                 await fetch(`${workerProxy}snapshot`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ timestamp: Date.now(), dailyMatchups: window.dailyMatchups, teamsDataCache: window.teamsDataCache, playersToFetch: window.playersToFetch, realLifeSchedules: window.realLifeSchedules })
+                    body: JSON.stringify({
+                        timestamp: Date.now(),
+                        dailyMatchups: window.dailyMatchups,
+                        teamsDataCache: window.teamsDataCache,
+                        playersToFetch: window.playersToFetch,
+                        realLifeSchedules: window.realLifeSchedules,
+                        teamRecordsMap: window.teamRecordsMap,
+                        currentGameLabel: window.currentGameLabel
+                    })
                 });
 
                 document.getElementById('universal-cache-bar').style.display = 'flex';
@@ -2394,11 +2620,15 @@
                 applyEmergencyAutoSubs();
                 window.playersToFetch = snap.playersToFetch || {};
                 window.realLifeSchedules = snap.realLifeSchedules || {};
+                window.teamRecordsMap = snap.teamRecordsMap || {};
+                window.currentGameLabel = snap.currentGameLabel || `RDA S${currentSeason}`;
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('universal-cache-bar').style.display = 'flex';
                 document.getElementById('cache-time-text').textContent = new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ET';
                 renderTeamMatchupUI(false);
+
+                ensureScheduleMetadata(true);
 
                 const sports = new Set();
                 Object.values(window.playersToFetch).forEach(p => {
@@ -2413,6 +2643,97 @@
                 return false;
             }
         }
+
+        window.toggleCopyMenu = (e) => {
+            if (e) e.stopPropagation();
+            document.getElementById('copy-dropdown-menu')?.classList.toggle('open');
+        };
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.copy-breakdown-wrap')) {
+                document.getElementById('copy-dropdown-menu')?.classList.remove('open');
+            }
+        });
+
+        window.copyMatchupBreakdown = async (mode) => {
+            document.getElementById('copy-dropdown-menu')?.classList.remove('open');
+            if (!window.dailyMatchups || window.dailyMatchups.length === 0) return;
+
+            await ensureScheduleMetadata();
+
+            const divider = '——————————————————';
+            const header = window.currentGameLabel || `RDA S${currentSeason || '7'}`;
+            const sportsSet = new Set();
+
+            const lines = window.dailyMatchups.map(m => {
+                const { team1, team2 } = m;
+                const t1Players = window.teamsDataCache[team1] || [];
+                const t2Players = window.teamsDataCache[team2] || [];
+
+                const matchupSports = new Set();
+                [...t1Players, ...t2Players].forEach(p => {
+                    if (p.isBench) return;
+                    Object.keys(p.scoresBySport || {}).forEach(s => {
+                        const us = s.toUpperCase();
+                        if (us !== 'USER' && us !== 'DRAFT' && us !== 'SPORT') {
+                            matchupSports.add(s);
+                            sportsSet.add(s);
+                        }
+                    });
+                });
+
+                if (mode === 'pregame') {
+                    const r1 = window.teamRecordsMap[team1.toLowerCase()] || window.teamRecordsMap[team1] || { w: 0, l: 0 };
+                    const r2 = window.teamRecordsMap[team2.toLowerCase()] || window.teamRecordsMap[team2] || { w: 0, l: 0 };
+                    return `${team1} (${r1.w}-${r1.l}) vs. ${team2} (${r2.w}-${r2.l})`;
+                } else {
+                    const calcSportTotal = (team, s) => (window.teamsDataCache[team] || [])
+                        .filter(p => !p.isBench)
+                        .reduce((sum, p) => sum + (typeof p.scoresBySport?.[s] === 'number' ? p.scoresBySport[s] : 0), 0);
+
+                    let t1Wins = 0, t2Wins = 0;
+                    matchupSports.forEach(s => {
+                        const s1 = calcSportTotal(team1, s);
+                        const s2 = calcSportTotal(team2, s);
+                        if (s1 > s2) t1Wins++;
+                        else if (s2 > s1) t2Wins++;
+                    });
+                    return `${team1} vs. ${team2} (${t1Wins}-${t2Wins})`;
+                }
+            });
+
+            const sortedSports = Array.from(sportsSet).sort();
+            let textOutput = '';
+
+            if (mode === 'pregame') {
+                textOutput = [
+                    header,
+                    divider,
+                    ...lines,
+                    divider,
+                    'Sports of the Day:',
+                    sortedSports.join(', '),
+                    divider,
+                    'Live Scoring: https://real-draft-association.web.app/index.html'
+                ].join('\n');
+            } else {
+                textOutput = [
+                    header,
+                    divider,
+                    ...lines
+                ].join('\n');
+            }
+
+            try {
+                await navigator.clipboard.writeText(textOutput);
+                const btn = document.getElementById('copy-breakdown-toggle');
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = orig; }, 2000);
+            } catch (err) {
+                alert('Failed to copy to clipboard.');
+            }
+        };
 
         window.refreshMatchup = async (team1, team2, e) => {
             if (e) e.stopPropagation();
